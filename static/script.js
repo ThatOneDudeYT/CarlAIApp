@@ -39,7 +39,7 @@ document.getElementById('native-file-picker').addEventListener('change', functio
     reader.readAsDataURL(file);
 });
 
-// 2. Handle sending text AND images
+// 2. Handle sending text AND images with real-time stream reading
 async function sendMessage() {
     const input = document.getElementById("user-input");
     const text = input.value.trim();
@@ -61,23 +61,54 @@ async function sendMessage() {
     pendingImageSrc = null;
     document.getElementById('native-file-picker').value = "";
 
+    // Create Carl's empty chat bubble upfront for streaming
+    const log = document.getElementById("chat-log");
+    const carlBubble = document.createElement("div");
+    carlBubble.className = "chat-bubble carl";
+    const textNode = document.createElement("div");
+    carlBubble.appendChild(textNode);
+    log.appendChild(carlBubble);
+    log.scrollTop = log.scrollHeight;
+
     try {
         const response = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
-        
-        const data = await response.json();
-        if (data.response) {
-            appendMessage(data.response, "carl");
-            chatHistory.push({ role: "user", content: text || "Look at this image." });
-            chatHistory.push({ role: "assistant", content: data.response });
-        } else {
-            appendMessage("Error reaching Carl.", "carl");
+
+        if (!response.ok) {
+            textNode.innerText = "Error reaching Carl.";
+            return;
         }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            fullResponse += chunk;
+            
+            let cleanedResponse = fullResponse;
+            for (let bad_prefix of ["Carl:", "carl:", "Carl - ", "Assistant:"]) {
+                if (cleanedResponse.startsWith(bad_prefix)) {
+                    cleanedResponse = cleanedResponse.substring(bad_prefix.length).trim();
+                }
+            }
+
+            textNode.innerText = cleanedResponse;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        chatHistory.push({ role: "user", content: text || "Look at this image." });
+        chatHistory.push({ role: "assistant", content: fullResponse });
+
     } catch (err) {
-        appendMessage("Network error.", "carl");
+        textNode.innerText = "Network error.";
     }
 }
 

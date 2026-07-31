@@ -24,19 +24,31 @@ body {
     height: 100dvh;
     background-color: #1a1a1a;
     position: relative;
+    overflow: hidden;
+}
+
+/* --- VIEW ANIMATIONS (Stacked Absolute Positioning) --- */
+.view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
-}
-
-.view {
-    display: none;
-    flex-direction: column;
-    height: 100%;
     padding: 20px;
     justify-content: space-between;
+    opacity: 0;
+    transform: translateX(40px) scale(0.98);
+    pointer-events: none; /* Prevent clicking hidden views */
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.view.active { display: flex; }
+.view.active {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: auto; /* Allow clicking active view */
+}
 
 h1 {
     font-size: 48px;
@@ -140,6 +152,11 @@ h1 {
     cursor: pointer;
     opacity: 0.5;
     border-radius: 12px;
+    transition: transform 0.2s;
+}
+
+.nav-img:active {
+    transform: scale(0.9);
 }
 
 .nav-divider {
@@ -265,9 +282,13 @@ h1 {
     cursor: pointer;
     border-radius: 15px;
     border: 2px solid transparent; 
-    
+    transition: transform 0.2s;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+}
+
+.game-card-img:active {
+    transform: scale(0.95);
 }
 
 .game-card-img.selected {
@@ -284,6 +305,11 @@ h1 {
     cursor: pointer;
     margin-bottom: 20px;
     width: 100%;
+    transition: transform 0.1s;
+}
+
+.play-btn:active {
+    transform: scale(0.97);
 }
 
 /* --- TIC TAC TOE VIEW --- */
