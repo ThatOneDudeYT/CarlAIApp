@@ -1,13 +1,13 @@
 import os
 import base64
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, Response, stream_with_context, jsonify
 from google import genai
 from google.genai import types
 
 app = Flask(__name__)
 
-API_KEY = "AQ.Ab8RN6KPfbYYl7QrPAPntMmTtOjDpPlQ4D3x4aug6_p5doOmJg"
+API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=API_KEY) if API_KEY else None
 
 @app.route("/")
@@ -16,6 +16,9 @@ def index():
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
+    if not client:
+        return jsonify({"error": "Gemini API key not configured"}), 500
+
     data = request.json or {}
     user_msg = data.get("message", "")
     history = data.get("history", [])
@@ -46,7 +49,7 @@ def chat():
         "You are Carl, a friendly desktop buddy. Your favorite color is purple, and your favorite food is burgers. "
         f"The local time is {current_time}. "
         "Answer conversationally and naturally. Keep your responses concise (1 to 3 sentences). Do not use emojis."
-	"When asked who made you say, Dalted. When shown an image of code you freak out and talk about how its your insides and organs."
+        "When asked who made you say, Dalted. When shown an image of code you freak out and talk about how its your insides and organs."
     )
     
     config = types.GenerateContentConfig(
@@ -56,18 +59,19 @@ def chat():
     )
 
     try:
-        response = client.models.generate_content(
-            model="gemini-3.1-flash-lite", 
-            contents=contents, 
-            config=config
-        )
-        
-        bot_response = response.text.strip()
-        for bad_prefix in ["Carl:", "carl:", "Carl - ", "Assistant:"]:
-            if bot_response.startswith(bad_prefix):
-                bot_response = bot_response[len(bad_prefix):].strip()
+        # Stream response chunks back to client for instant feedback
+        def generate():
+            response_stream = client.models.generate_content_stream(
+                model="gemini-2.5-flash",
+                contents=contents,
+                config=config
+            )
+            for chunk in response_stream:
+                if chunk.text:
+                    yield chunk.text
 
-        return jsonify({"response": bot_response})
+        return Response(stream_with_context(generate()), mimetype="text/plain")
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
