@@ -68,6 +68,7 @@
 
             <div class="games-grid">
                 <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" />
+                <img src="/static/icons/RockPaperScissor.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" />
                 <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" />
                 <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" />
                 <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" />
@@ -76,6 +77,45 @@
             </div>
 
             <button class="play-btn" onclick="launchGame()">Play</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- ROCK PAPER SCISSORS VIEW -->
+        <div id="view-rps" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>Rock Paper Scissors</h1>
+            </div>
+            <div id="rps-status" class="game-status">Choose Your Move!</div>
+            
+            <div class="rps-arena">
+                <div class="rps-fighter">
+                    <span class="rps-label">Carl</span>
+                    <img id="rps-carl-hand" src="/static/icons/CarlRock.png" alt="Carl Hand" class="rps-hand-img" />
+                </div>
+                <div class="rps-vs">VS</div>
+                <div class="rps-fighter">
+                    <span class="rps-label">You</span>
+                    <img id="rps-player-hand" src="/static/icons/Rock.png" alt="Player Hand" class="rps-hand-img" />
+                </div>
+            </div>
+
+            <div class="rps-controls">
+                <button class="rps-choice-btn" onclick="playRps('rock')">
+                    <img src="/static/icons/Rock.png" alt="Rock" />
+                    <span>Rock</span>
+                </button>
+                <button class="rps-choice-btn" onclick="playRps('paper')">
+                    <img src="/static/icons/Paper.png" alt="Paper" />
+                    <span>Paper</span>
+                </button>
+                <button class="rps-choice-btn" onclick="playRps('scissors')">
+                    <img src="/static/icons/Scissors.png" alt="Scissors" />
+                    <span>Scissors</span>
+                </button>
+            </div>
+
+            <button class="reset-btn" onclick="initRps()">Reset Score</button>
             <div class="copyright">@Dalted Copyright Issued 2026</div>
         </div>
 
