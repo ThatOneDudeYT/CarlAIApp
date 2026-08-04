@@ -66,12 +66,13 @@
                 </select>
             </div>
 
+            <!-- SCROLLABLE 2-COLUMN GRID -->
             <div class="games-scroll-box">
                 <div class="games-grid">
                     <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" />
                     <img src="/static/icons/RockPaperScissors.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" />
-                    <!-- FIXED IMAGE NAME BELOW -->
-                    <img src="/static/icons/BlackJack.png" class="game-card-img" onclick="selectGame(this, 'BlackJack')" />
+                    <!-- UPDATED BLACKJACK ICON EXACT PATH -->
+                    <img src="/static/icons/BlackJack.png" class="game-card-img" onclick="selectGame(this, 'BlackJack')" onerror="console.log('BlackJack icon not found at this path!')"/>
                     <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" />
                     <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" />
                     <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" />
