@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Carl AI</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- CHAT VIEW -->
+        <div id="view-chat" class="view active">
+            <div id="chat-log" class="chat-log">
+                <div class="system-msg">Started a fresh session.</div>
+            </div>
+            
+            <div class="input-container">
+                <input type="text" id="user-input" placeholder="Message Carl..." autocomplete="off" />
+                <button id="send-btn" class="send-btn">↑</button>
+            </div>
+
+            <div class="bottom-nav">
+                <img src="/static/icons/GamesButtonIcon.png" alt="Games" class="nav-img" onclick="switchView('view-games')" />
+                <div class="nav-divider"></div>
+                <img src="/static/icons/UploadFile.png" alt="Upload" class="nav-img" onclick="document.getElementById('native-file-picker').click();" />
+                <input type="file" id="native-file-picker" style="display: none;" accept="image/*, .pdf, .txt, .doc, .docx" />
+                <div class="nav-divider"></div>
+                <img src="/static/icons/CallButtonIcon.png" alt="Call" class="nav-img" onclick="switchView('view-call')" />
+                <div class="nav-divider"></div>
+                <img src="/static/icons/NewChat.png" alt="New Chat" class="nav-img" onclick="startNewChat()" title="New Chat" />
+            </div>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- CALL VIEW -->
+        <div id="view-call" class="view">
+            <div class="call-header">
+                <h1>Carl AI</h1>
+                <div id="call-timer">00:16</div>
+            </div>
+
+            <div class="call-controls">
+                <div class="call-option-row">
+                    <img src="/static/icons/SpeakerButton.png" alt="Speaker" class="call-img-btn" />
+                    <img src="/static/icons/MuteButtonIcon.png" alt="Mute" class="call-img-btn" />
+                </div>
+                <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn-end" onclick="switchView('view-chat')" />
+            </div>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- GAMES VIEW -->
+        <div id="view-games" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-chat')">←</button>
+                <h1>Games</h1>
+            </div>
+
+            <div class="difficulty-picker">
+                <label for="difficulty-select">AI Difficulty</label>
+                <select id="difficulty-select" class="difficulty-dropdown">
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+
+            <div class="games-scroll-box">
+                <div class="games-grid">
+                    <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" />
+                    <img src="/static/icons/RockPaperScissors.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" />
+                    <img src="/static/icons/Blackjack.png" class="game-card-img" onclick="selectGame(this, 'BlackJack')" />
+                    <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" />
+                    <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" />
+                    <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" />
+                    <img src="/static/icons/Checkers.png" class="game-card-img" onclick="selectGame(this, 'Checkers')" />
+                    <img src="/static/icons/Battleship.png" class="game-card-img" onclick="selectGame(this, 'Battleship')" />
+                </div>
+            </div>
+
+            <button class="play-btn" onclick="launchGame()">Play</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- ROCK PAPER SCISSORS VIEW -->
+        <div id="view-rps" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>Rock Paper Scissors</h1>
+            </div>
+            <div id="rps-status" class="game-status">Choose Your Move!</div>
+            
+            <div class="rps-arena">
+                <div class="rps-fighter">
+                    <span class="rps-label">Carl</span>
+                    <div class="rps-img-wrapper">
+                        <img id="rps-carl-hand" src="/static/icons/CarlRock.png" alt="Carl Hand" class="rps-hand-img" />
+                    </div>
+                </div>
+                <div class="rps-vs">VS</div>
+                <div class="rps-fighter">
+                    <span class="rps-label">You</span>
+                    <div class="rps-img-wrapper">
+                        <img id="rps-player-hand" src="/static/icons/Rock.png" alt="Player Hand" class="rps-hand-img" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="rps-controls">
+                <button class="rps-choice-btn" onclick="playRps('rock')">
+                    <img src="/static/icons/Rock.png" alt="Rock" />
+                    <span>Rock</span>
+                </button>
+                <button class="rps-choice-btn" onclick="playRps('paper')">
+                    <img src="/static/icons/Paper.png" alt="Paper" />
+                    <span>Paper</span>
+                </button>
+                <button class="rps-choice-btn" onclick="playRps('scissors')">
+                    <img src="/static/icons/Scissors.png" alt="Scissors" />
+                    <span>Scissors</span>
+                </button>
+            </div>
+
+            <button class="reset-btn" onclick="initRps()">Reset Score</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- BLACKJACK VIEW -->
+        <div id="view-blackjack" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>BlackJack</h1>
+            </div>
+            <div id="bj-status" class="game-status">Your Turn - Hit or Stand?</div>
+            
+            <div class="bj-table">
+                <div class="bj-hand-section">
+                    <div class="bj-label">Carl's Hand (<span id="bj-dealer-score">0</span>)</div>
+                    <div id="bj-dealer-cards" class="bj-cards-row"></div>
+                </div>
+
+                <div class="bj-hand-section">
+                    <div class="bj-label">Your Hand (<span id="bj-player-score">0</span>)</div>
+                    <div id="bj-player-cards" class="bj-cards-row"></div>
+                </div>
+            </div>
+
+            <div class="bj-controls">
+                <button id="bj-hit-btn" class="bj-action-btn hit" onclick="bjHit()">Hit</button>
+                <button id="bj-stand-btn" class="bj-action-btn stand" onclick="bjStand()">Stand</button>
+            </div>
+
+            <button class="reset-btn" onclick="initBlackJack()">New Hand</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- TIC TAC TOE VIEW -->
+        <div id="view-tictactoe" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>Tic Tac Toe</h1>
+            </div>
+            <div id="ttt-status" class="game-status">Your Turn (X)</div>
+            <div class="ttt-board">
+                <button class="ttt-cell" id="ttt-cell-0" onclick="makeMove(0)"></button>
+                <button class="ttt-cell" id="ttt-cell-1" onclick="makeMove(1)"></button>
+                <button class="ttt-cell" id="ttt-cell-2" onclick="makeMove(2)"></button>
+                <button class="ttt-cell" id="ttt-cell-3" onclick="makeMove(3)"></button>
+                <button class="ttt-cell" id="ttt-cell-4" onclick="makeMove(4)"></button>
+                <button class="ttt-cell" id="ttt-cell-5" onclick="makeMove(5)"></button>
+                <button class="ttt-cell" id="ttt-cell-6" onclick="makeMove(6)"></button>
+                <button class="ttt-cell" id="ttt-cell-7" onclick="makeMove(7)"></button>
+                <button class="ttt-cell" id="ttt-cell-8" onclick="makeMove(8)"></button>
+            </div>
+            <button class="reset-btn" onclick="initTicTacToe()">Restart Game</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- HANGMAN VIEW -->
+        <div id="view-hangman" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>Hangman</h1>
+            </div>
+            <div id="hm-status" class="game-status">Loading Word...</div>
+            <div class="hm-drawing-container">
+                <svg id="hm-canvas" width="200" height="150" viewBox="0 0 200 150">
+                    <line x1="20" y1="140" x2="120" y2="140" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+                    <line x1="70" y1="140" x2="70" y2="10" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+                    <line x1="70" y1="10" x2="140" y2="10" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+                    <line x1="140" y1="10" x2="140" y2="30" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+                    <circle id="hm-part-1" cx="140" cy="45" r="15" stroke="#ef4444" stroke-width="4" fill="none" style="display:none;"/>
+                    <line id="hm-part-2" x1="140" y1="60" x2="140" y2="100" stroke="#ef4444" stroke-width="4" stroke-linecap="round" style="display:none;"/>
+                    <line id="hm-part-3" x1="140" y1="70" x2="120" y2="90" stroke="#ef4444" stroke-width="4" stroke-linecap="round" style="display:none;"/>
+                    <line id="hm-part-4" x1="140" y1="70" x2="160" y2="90" stroke="#ef4444" stroke-width="4" stroke-linecap="round" style="display:none;"/>
+                    <line id="hm-part-5" x1="140" y1="100" x2="120" y2="130" stroke="#ef4444" stroke-width="4" stroke-linecap="round" style="display:none;"/>
+                    <line id="hm-part-6" x1="140" y1="100" x2="160" y2="130" stroke="#ef4444" stroke-width="4" stroke-linecap="round" style="display:none;"/>
+                </svg>
+            </div>
+            <div id="hm-word" class="hm-word">_ _ _ _ _</div>
+            <div class="hm-keyboard">
+                <div class="hm-row">
+                    <button class="hm-key" onclick="hmGuess('Q')">Q</button>
+                    <button class="hm-key" onclick="hmGuess('W')">W</button>
+                    <button class="hm-key" onclick="hmGuess('E')">E</button>
+                    <button class="hm-key" onclick="hmGuess('R')">R</button>
+                    <button class="hm-key" onclick="hmGuess('T')">T</button>
+                    <button class="hm-key" onclick="hmGuess('Y')">Y</button>
+                    <button class="hm-key" onclick="hmGuess('U')">U</button>
+                    <button class="hm-key" onclick="hmGuess('I')">I</button>
+                    <button class="hm-key" onclick="hmGuess('O')">O</button>
+                    <button class="hm-key" onclick="hmGuess('P')">P</button>
+                </div>
+                <div class="hm-row">
+                    <button class="hm-key" onclick="hmGuess('A')">A</button>
+                    <button class="hm-key" onclick="hmGuess('S')">S</button>
+                    <button class="hm-key" onclick="hmGuess('D')">D</button>
+                    <button class="hm-key" onclick="hmGuess('F')">F</button>
+                    <button class="hm-key" onclick="hmGuess('G')">G</button>
+                    <button class="hm-key" onclick="hmGuess('H')">H</button>
+                    <button class="hm-key" onclick="hmGuess('J')">J</button>
+                    <button class="hm-key" onclick="hmGuess('K')">K</button>
+                    <button class="hm-key" onclick="hmGuess('L')">L</button>
+                </div>
+                <div class="hm-row">
+                    <button class="hm-key" onclick="hmGuess('Z')">Z</button>
+                    <button class="hm-key" onclick="hmGuess('X')">X</button>
+                    <button class="hm-key" onclick="hmGuess('C')">C</button>
+                    <button class="hm-key" onclick="hmGuess('V')">V</button>
+                    <button class="hm-key" onclick="hmGuess('B')">B</button>
+                    <button class="hm-key" onclick="hmGuess('N')">N</button>
+                    <button class="hm-key" onclick="hmGuess('M')">M</button>
+                </div>
+            </div>
+            <button class="reset-btn" onclick="initHangman()">Restart Game</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- CONNECT FOUR VIEW -->
+        <div id="view-connectfour" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>Connect Four</h1>
+            </div>
+            <div id="c4-status" class="game-status">Your Turn (Red)</div>
+            <div class="c4-container">
+                <div class="c4-drop-row">
+                    <button class="c4-drop-btn" onclick="c4HandleClick(0)">↓</button>
+                    <button class="c4-drop-btn" onclick="c4HandleClick(1)">↓</button>
+                    <button class="c4-drop-btn" onclick="c4HandleClick(2)">↓</button>
+                    <button class="c4-drop-btn" onclick="c4HandleClick(3)">↓</button>
+                    <button class="c4-drop-btn" onclick="c4HandleClick(4)">↓</button>
+                    <button class="c4-drop-btn" onclick="c4HandleClick(5)">↓</button>
+                    <button class="c4-drop-btn" onclick="c4HandleClick(6)">↓</button>
+                </div>
+                <div class="c4-board" id="c4-board"></div>
+            </div>
+            <button class="reset-btn" onclick="initConnectFour()">Restart Game</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- BATTLESHIP VIEW -->
+        <div id="view-battleship" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>Battleship</h1>
+            </div>
+            <div id="bs-status" class="game-status">Place your 4-length ship</div>
+            
+            <div class="bs-container">
+                <div id="bs-placement-controls" class="bs-controls-row">
+                    <button class="bs-action-btn" onclick="bsToggleRotate()">Rotate: Horizontal</button>
+                    <button class="bs-action-btn confirm" onclick="bsConfirmPlacement()">Place Ship</button>
+                </div>
+                
+                <div class="bs-label" id="bs-enemy-label" style="display:none;">Carl's Fleet (Tap to Attack)</div>
+                <div class="bs-grid" id="bs-enemy-grid" style="display:none;"></div>
+                
+                <div class="bs-label" id="bs-player-label">Your Fleet (Select position below)</div>
+                <div class="bs-grid" id="bs-player-grid"></div>
+            </div>
+
+            <button class="reset-btn" onclick="initBattleship()">Restart Game</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- CHECKERS VIEW -->
+        <div id="view-checkers" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>Checkers</h1>
+            </div>
+            <div id="chk-status" class="game-status">Your Turn (Red)</div>
+            
+            <div class="chk-container">
+                <div class="chk-board" id="chk-board"></div>
+            </div>
+
+            <button class="reset-btn" onclick="initCheckers()">Restart Game</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- CHESS VIEW -->
+        <div id="view-chess" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>Chess</h1>
+            </div>
+            <div id="chs-status" class="game-status">Your Turn (White)</div>
+            
+            <div class="chs-container">
+                <div class="chs-board" id="chs-board"></div>
+            </div>
+
+            <button class="reset-btn" onclick="initChess()">Restart Game</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
