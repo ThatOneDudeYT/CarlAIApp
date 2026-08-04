@@ -13,7 +13,6 @@ def index():
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    # 1. Dynamically read the environment variable on every request
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         return jsonify({"error": "GEMINI_API_KEY environment variable is missing on Render."}), 500
@@ -31,7 +30,6 @@ def chat():
         role = "model" if item.get("role") == "assistant" else "user"
         contents.append(types.Content(role=role, parts=[types.Part.from_text(text=item.get("content", ""))]))
     
-    # Handle Text AND Image attachments
     user_parts = []
     if user_msg:
         user_parts.append(types.Part.from_text(text=user_msg))
@@ -59,11 +57,10 @@ def chat():
         system_instruction=system_instruction
     )
 
-    # 2. Catch errors INSIDE the stream generator
     def generate():
         try:
             response_stream = client.models.generate_content_stream(
-                model="gemini-2.5-flash",
+                model="gemini-3.1-flash-lite",
                 contents=contents,
                 config=config
             )
