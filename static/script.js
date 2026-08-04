@@ -230,17 +230,17 @@ function initBlackJack() {
 
 function bjRenderTable() {
     const dealerCardsDiv = document.getElementById("bj-dealer-cards");
-    const playerCardsDiv = document.getElementById("bj-dealer-cards");
+    const playerCardsDiv = document.getElementById("bj-player-cards");
     
     dealerCardsDiv.innerHTML = "";
-    document.getElementById("bj-player-cards").innerHTML = "";
+    playerCardsDiv.innerHTML = "";
 
     bjPlayerHand.forEach(card => {
         const isRed = card.suit === '♥' || card.suit === '♦';
         const el = document.createElement("div");
         el.className = `bj-card ${isRed ? "red" : ""}`;
         el.innerText = `${card.value}${card.suit}`;
-        document.getElementById("bj-player-cards").appendChild(el);
+        playerCardsDiv.appendChild(el);
     });
 
     bjDealerHand.forEach((card, i) => {
