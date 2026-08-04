@@ -66,14 +66,17 @@
                 </select>
             </div>
 
-            <div class="games-grid">
-                <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" />
-                <img src="/static/icons/RockPaperScissor.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" />
-                <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" />
-                <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" />
-                <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" />
-                <img src="/static/icons/Checkers.png" class="game-card-img" onclick="selectGame(this, 'Checkers')" />
-                <img src="/static/icons/Battleship.png" class="game-card-img" onclick="selectGame(this, 'Battleship')" />
+            <!-- New Scroll Box for Games -->
+            <div class="games-scroll-box">
+                <div class="games-grid">
+                    <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" />
+                    <img src="/static/icons/RockPaperScissors.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" />
+                    <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" />
+                    <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" />
+                    <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" />
+                    <img src="/static/icons/Checkers.png" class="game-card-img" onclick="selectGame(this, 'Checkers')" />
+                    <img src="/static/icons/Battleship.png" class="game-card-img" onclick="selectGame(this, 'Battleship')" />
+                </div>
             </div>
 
             <button class="play-btn" onclick="launchGame()">Play</button>
@@ -91,12 +94,16 @@
             <div class="rps-arena">
                 <div class="rps-fighter">
                     <span class="rps-label">Carl</span>
-                    <img id="rps-carl-hand" src="/static/icons/CarlRock.png" alt="Carl Hand" class="rps-hand-img" />
+                    <div class="rps-img-wrapper">
+                        <img id="rps-carl-hand" src="/static/icons/CarlRock.png" alt="Carl Hand" class="rps-hand-img" />
+                    </div>
                 </div>
                 <div class="rps-vs">VS</div>
                 <div class="rps-fighter">
                     <span class="rps-label">You</span>
-                    <img id="rps-player-hand" src="/static/icons/Rock.png" alt="Player Hand" class="rps-hand-img" />
+                    <div class="rps-img-wrapper">
+                        <img id="rps-player-hand" src="/static/icons/Rock.png" alt="Player Hand" class="rps-hand-img" />
+                    </div>
                 </div>
             </div>
 
