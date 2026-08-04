@@ -7,17 +7,18 @@ from google.genai import types
 
 app = Flask(__name__)
 
-API_KEY = os.environ.get("GEMINI_API_KEY")
-client = genai.Client(api_key=API_KEY) if API_KEY else None
-
 @app.route("/")
 def index():
     return render_template("index.html")
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    if not client:
-        return jsonify({"error": "Gemini API key not configured"}), 500
+    # 1. Dynamically read the environment variable on every request
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return jsonify({"error": "GEMINI_API_KEY environment variable is missing on Render."}), 500
+
+    client = genai.Client(api_key=api_key)
 
     data = request.json or {}
     user_msg = data.get("message", "")
@@ -58,9 +59,9 @@ def chat():
         system_instruction=system_instruction
     )
 
-    try:
-        # Stream response chunks back to client for instant feedback
-        def generate():
+    # 2. Catch errors INSIDE the stream generator
+    def generate():
+        try:
             response_stream = client.models.generate_content_stream(
                 model="gemini-2.5-flash",
                 contents=contents,
@@ -69,11 +70,10 @@ def chat():
             for chunk in response_stream:
                 if chunk.text:
                     yield chunk.text
+        except Exception as e:
+            yield f"[Carl Error: {str(e)}]"
 
-        return Response(stream_with_context(generate()), mimetype="text/plain")
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return Response(stream_with_context(generate()), mimetype="text/plain")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
