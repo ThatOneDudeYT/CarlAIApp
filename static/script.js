@@ -151,9 +151,9 @@ function launchGame() {
     } else if (selectedGame === "Rock Paper Scissors") {
         switchView("view-rps");
         initRps();
-    } else if (selectedGame === "BlackJack") {
+    } else if (selectedGame === "Blackjack") {
         switchView("view-blackjack");
-        initBlackJack();
+        initBlackjack();
     } else if (selectedGame === "Hangman") {
         switchView("view-hangman");
         initHangman();
@@ -174,134 +174,254 @@ function launchGame() {
     }
 }
 
-// --- GAME: BLACKJACK ---
+// --- GAME: HARD BLACKJACK (MULTI-DECK, SPLITTING, DOUBLING) ---
 let bjDeck = [];
-let bjPlayerHand = [];
-let bjDealerHand = [];
+let bjPlayerHands = [];
+let bjCarlHand = [];
+let bjActiveHand = 0;
 let bjGameOver = false;
+let bjResults = []; 
 
-const bjSuits = ['♥', '♦', '♣', '♠'];
-const bjValues = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-
-function bjCreateDeck() {
-    bjDeck = [];
-    for (let suit of bjSuits) {
-        for (let val of bjValues) {
-            bjDeck.push({ value: val, suit: suit });
+function buildDeck() {
+    const suits = ['♠', '♥', '♦', '♣'];
+    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    let deck = [];
+    // 4 Decks makes card counting harder!
+    for (let i = 0; i < 4; i++) {
+        for (let suit of suits) {
+            for (let value of values) {
+                deck.push({ suit, value });
+            }
         }
     }
-    bjDeck.sort(() => Math.random() - 0.5);
+    return deck.sort(() => Math.random() - 0.5);
 }
 
-function bjGetCardValue(card) {
-    if (['J', 'Q', 'K'].includes(card.value)) return 10;
-    if (card.value === 'A') return 11;
-    return parseInt(card.value);
+function getCardWeight(val) {
+    if (['J', 'Q', 'K'].includes(val)) return 10;
+    if (val === 'A') return 11;
+    return parseInt(val);
 }
 
-function bjCalculateScore(hand) {
+function getBjScore(hand) {
     let score = 0;
     let aces = 0;
     for (let card of hand) {
-        let val = bjGetCardValue(card);
-        score += val;
-        if (card.value === 'A') aces++;
+        if (['J', 'Q', 'K'].includes(card.value)) score += 10;
+        else if (card.value === 'A') { score += 11; aces += 1; }
+        else score += parseInt(card.value);
     }
-    while (score > 21 && aces > 0) {
-        score -= 10;
-        aces--;
-    }
+    while (score > 21 && aces > 0) { score -= 10; aces -= 1; }
     return score;
 }
 
-function initBlackJack() {
-    bjCreateDeck();
-    bjPlayerHand = [bjDeck.pop(), bjDeck.pop()];
-    bjDealerHand = [bjDeck.pop(), bjDeck.pop()];
+function initBlackjack() {
+    bjDeck = buildDeck();
+    bjPlayerHands = [ [bjDeck.pop(), bjDeck.pop()] ];
+    bjCarlHand = [bjDeck.pop(), bjDeck.pop()];
+    bjActiveHand = 0;
     bjGameOver = false;
+    bjResults = [];
+    
+    document.getElementById("bj-controls").style.display = "flex";
+    
+    // Immediate Dealer Blackjack Check (Casino Standard)
+    let dealerScore = getBjScore(bjCarlHand);
+    let playerScore = getBjScore(bjPlayerHands[0]);
 
-    document.getElementById("bj-hit-btn").disabled = false;
-    document.getElementById("bj-stand-btn").disabled = false;
-    document.getElementById("bj-status").innerText = "Your Turn - Hit or Stand?";
-    document.getElementById("bj-status").style.color = "#fff";
+    if (dealerScore === 21 && playerScore === 21) {
+        bjGameOver = true;
+        bjResults[0] = "Push (Tie)";
+    } else if (dealerScore === 21) {
+        bjGameOver = true;
+        bjResults[0] = "Carl Blackjack!";
+    } else if (playerScore === 21) {
+        bjGameOver = true;
+        bjResults[0] = "Blackjack! You Win!";
+    }
 
-    bjRenderTable();
+    renderBj();
 }
 
-function bjRenderTable() {
-    const dealerCardsDiv = document.getElementById("bj-dealer-cards");
-    const playerCardsDiv = document.getElementById("bj-player-cards");
-    
-    dealerCardsDiv.innerHTML = "";
-    playerCardsDiv.innerHTML = "";
-
-    bjPlayerHand.forEach(card => {
-        const isRed = card.suit === '♥' || card.suit === '♦';
-        const el = document.createElement("div");
-        el.className = `bj-card ${isRed ? "red" : ""}`;
-        el.innerText = `${card.value}${card.suit}`;
-        playerCardsDiv.appendChild(el);
-    });
-
-    bjDealerHand.forEach((card, i) => {
-        const isRed = card.suit === '♥' || card.suit === '♦';
-        const el = document.createElement("div");
-        if (i === 1 && !bjGameOver) {
+function renderBj() {
+    // Render Carl's Cards
+    const cCards = document.getElementById("bj-carl-cards");
+    cCards.innerHTML = "";
+    bjCarlHand.forEach((card, index) => {
+        let el = document.createElement("div");
+        if (!bjGameOver && index === 1) {
             el.className = "bj-card hidden";
-            el.innerText = "?";
+            el.innerText = "";
         } else {
-            el.className = `bj-card ${isRed ? "red" : ""}`;
+            el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
             el.innerText = `${card.value}${card.suit}`;
         }
-        dealerCardsDiv.appendChild(el);
+        cCards.appendChild(el);
     });
 
-    document.getElementById("bj-player-score").innerText = bjCalculateScore(bjPlayerHand);
-    document.getElementById("bj-dealer-score").innerText = bjGameOver 
-        ? bjCalculateScore(bjDealerHand) 
-        : bjGetCardValue(bjDealerHand[0]);
+    if (bjGameOver) {
+        document.getElementById("bj-carl-score").innerText = getBjScore(bjCarlHand);
+    } else {
+        let firstVal = bjCarlHand[0].value;
+        let val = ['J', 'Q', 'K'].includes(firstVal) ? 10 : (firstVal === 'A' ? 11 : parseInt(firstVal));
+        document.getElementById("bj-carl-score").innerText = val;
+    }
+
+    // Render Player Hands
+    const pHandsContainer = document.getElementById("bj-player-hands-container");
+    pHandsContainer.innerHTML = "";
+
+    bjPlayerHands.forEach((hand, index) => {
+        let handDiv = document.createElement("div");
+        handDiv.className = `bj-single-hand ${index === bjActiveHand && !bjGameOver ? 'active' : ''}`;
+
+        let scoreDiv = document.createElement("div");
+        scoreDiv.className = "bj-hand-score";
+        scoreDiv.innerText = `Score: ${getBjScore(hand)}`;
+        handDiv.appendChild(scoreDiv);
+
+        let cardsContainer = document.createElement("div");
+        cardsContainer.className = "bj-cards";
+        hand.forEach(card => {
+            let el = document.createElement("div");
+            el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
+            el.innerText = `${card.value}${card.suit}`;
+            cardsContainer.appendChild(el);
+        });
+        handDiv.appendChild(cardsContainer);
+
+        // Display results if hand is finished
+        if (bjResults[index] && bjResults[index] !== "Doubled") {
+            let resDiv = document.createElement("div");
+            resDiv.className = "bj-hand-result";
+            let txt = bjResults[index];
+            if (txt.includes("Win") || txt.includes("Blackjack")) resDiv.classList.add("win");
+            else if (txt.includes("Lose") || txt.includes("Bust")) resDiv.classList.add("lose");
+            else resDiv.classList.add("push");
+            resDiv.innerText = txt;
+            handDiv.appendChild(resDiv);
+        }
+
+        pHandsContainer.appendChild(handDiv);
+    });
+
+    // Update Controls
+    if (bjGameOver) {
+        document.getElementById("bj-controls").style.display = "none";
+        document.getElementById("bj-status").innerText = "Round Over";
+        document.getElementById("bj-status").style.color = "#aaa";
+    } else {
+        document.getElementById("bj-controls").style.display = "flex";
+        let currentHand = bjPlayerHands[bjActiveHand];
+
+        // Double is only valid on initial 2 cards
+        document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
+
+        // Split is valid if 2 cards match in weight, max 4 hands
+        let canSplit = currentHand.length === 2 && 
+                       getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && 
+                       bjPlayerHands.length < 4;
+        document.getElementById("bj-btn-split").disabled = !canSplit;
+
+        if (bjPlayerHands.length > 1) {
+            document.getElementById("bj-status").innerText = `Playing Hand ${bjActiveHand + 1}...`;
+        } else {
+            document.getElementById("bj-status").innerText = `Your Turn!`;
+        }
+        document.getElementById("bj-status").style.color = "#fff";
+    }
 }
 
 function bjHit() {
     if (bjGameOver) return;
-    bjPlayerHand.push(bjDeck.pop());
-    const score = bjCalculateScore(bjPlayerHand);
-    bjRenderTable();
+    let hand = bjPlayerHands[bjActiveHand];
+    hand.push(bjDeck.pop());
 
+    let score = getBjScore(hand);
     if (score > 21) {
-        bjGameOver = true;
-        document.getElementById("bj-status").innerText = "Bust! Carl Wins!";
-        document.getElementById("bj-status").style.color = "#ef4444";
-        document.getElementById("bj-hit-btn").disabled = true;
-        document.getElementById("bj-stand-btn").disabled = true;
-        bjRenderTable();
+        bjResults[bjActiveHand] = "Bust";
+        bjNextHand();
+    } else if (score === 21) {
+        bjNextHand();
+    } else {
+        renderBj();
     }
 }
 
 function bjStand() {
     if (bjGameOver) return;
-    bjGameOver = true;
-    document.getElementById("bj-hit-btn").disabled = true;
-    document.getElementById("bj-stand-btn").disabled = true;
+    bjNextHand();
+}
 
-    let dealerScore = bjCalculateScore(bjDealerHand);
-    while (dealerScore < 17) {
-        bjDealerHand.push(bjDeck.pop());
-        dealerScore = bjCalculateScore(bjDealerHand);
-    }
+function bjDouble() {
+    if (bjGameOver) return;
+    let hand = bjPlayerHands[bjActiveHand];
+    if (hand.length !== 2) return;
 
-    const playerScore = bjCalculateScore(bjPlayerHand);
-    bjRenderTable();
-
-    if (dealerScore > 21 || playerScore > dealerScore) {
-        document.getElementById("bj-status").innerText = "You Win!";
-        document.getElementById("bj-status").style.color = "#84cc16";
-    } else if (playerScore === dealerScore) {
-        document.getElementById("bj-status").innerText = "Push! (Tie)";
-        document.getElementById("bj-status").style.color = "#fff";
+    hand.push(bjDeck.pop()); // Only 1 card allowed on Double
+    if (getBjScore(hand) > 21) {
+        bjResults[bjActiveHand] = "Bust";
     } else {
-        document.getElementById("bj-status").innerText = "Carl Wins!";
-        document.getElementById("bj-status").style.color = "#ef4444";
+        bjResults[bjActiveHand] = "Doubled";
+    }
+    bjNextHand();
+}
+
+function bjSplit() {
+    if (bjGameOver) return;
+    let hand = bjPlayerHands[bjActiveHand];
+    if (hand.length !== 2 || getCardWeight(hand[0].value) !== getCardWeight(hand[1].value)) return;
+
+    let splitCard = hand.pop();
+    let newHand = [splitCard, bjDeck.pop()]; // Create second hand
+    hand.push(bjDeck.pop()); // Refill first hand
+    
+    bjPlayerHands.splice(bjActiveHand + 1, 0, newHand); // Insert new hand next in line
+    renderBj();
+}
+
+function bjNextHand() {
+    bjActiveHand++;
+    if (bjActiveHand >= bjPlayerHands.length) {
+        bjGameOver = true;
+        bjDealerTurn();
+    } else {
+        renderBj();
+    }
+}
+
+function bjDealerTurn() {
+    // If all player hands busted, the dealer doesn't need to draw
+    let allBusted = bjPlayerHands.every((_, i) => bjResults[i] === "Bust");
+
+    const playDealer = () => {
+        let score = getBjScore(bjCarlHand);
+        if (score < 17 && !allBusted) {
+            bjCarlHand.push(bjDeck.pop());
+            renderBj();
+            setTimeout(playDealer, 800);
+        } else {
+            // Evaluate all hands
+            for (let i = 0; i < bjPlayerHands.length; i++) {
+                if (bjResults[i] === "Bust" || bjResults[i] === "Blackjack! You Win!" || bjResults[i] === "Carl Blackjack!" || bjResults[i] === "Push (Tie)") continue;
+                
+                let pScore = getBjScore(bjPlayerHands[i]);
+                if (score > 21) bjResults[i] = "Win (Carl Busts)";
+                else if (pScore > score) bjResults[i] = "Win";
+                else if (score > pScore) bjResults[i] = "Lose";
+                else bjResults[i] = "Push";
+            }
+            renderBj();
+        }
+    };
+
+    if (allBusted) {
+        playDealer(); // Will immediately skip to evaluate
+    } else {
+        document.getElementById("bj-status").innerText = "Carl is dealing...";
+        document.getElementById("bj-status").style.color = "#eccc68";
+        renderBj();
+        setTimeout(playDealer, 800);
     }
 }
 

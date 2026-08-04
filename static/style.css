@@ -50,9 +50,8 @@ body {
 }
 
 h1 {
-    font-size: 40px;
+    font-size: 48px;
     letter-spacing: 1px;
-    line-height: 1.1;
 }
 
 /* --- CHAT VIEW --- */
@@ -218,11 +217,11 @@ h1 {
     cursor: pointer;
 }
 
-/* --- GAMES HEADER & BACK BUTTON --- */
+/* --- GAMES VIEW --- */
 .games-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     color: #666;
 }
 
@@ -232,15 +231,13 @@ h1 {
     border-radius: 50%;
     width: 40px;
     height: 40px;
-    min-width: 40px;
-    min-height: 40px;
-    flex-shrink: 0;
     color: #555;
     font-size: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .difficulty-picker {
@@ -270,7 +267,6 @@ h1 {
     cursor: pointer;
 }
 
-/* --- GAMES SCROLL BOX --- */
 .games-scroll-box {
     flex: 1;
     overflow-y: auto;
@@ -279,26 +275,23 @@ h1 {
     min-height: 0;
 }
 
-/* REVERTED TO 2 COLUMNS */
 .games-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
     justify-items: center;
-    padding-bottom: 20px;
+    padding-bottom: 10px;
 }
 
-/* FIXED ICON SIZING & TIGHT GREEN BORDER */
 .game-card-img {
     width: 100%;
-    max-width: 180px;
-    height: auto;           /* Lets the image maintain its natural proportions */
-    max-height: 110px;      /* Keeps them from getting too tall */
-    object-fit: contain;    /* Prevents cropping */
+    max-width: 150px;
+    height: 115px;
+    object-fit: contain;
     cursor: pointer;
     border-radius: 15px;
-    border: 3px solid transparent; 
-    transition: transform 0.2s, border-color 0.2s;
+    border: 2px solid transparent; 
+    transition: transform 0.2s;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
 }
@@ -327,6 +320,136 @@ h1 {
 .play-btn:active {
     transform: scale(0.97);
 }
+
+/* --- BLACKJACK VIEW ENHANCED --- */
+.bj-arena {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background-color: #262626;
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 20px 10px;
+    margin: auto 0;
+}
+
+.bj-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.bj-label {
+    font-size: 18px;
+    color: #aaa;
+}
+
+.bj-hands-container {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.bj-single-hand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.bj-single-hand.active {
+    border-color: #84cc16;
+    background-color: rgba(132, 204, 22, 0.1);
+}
+
+.bj-hand-score {
+    font-size: 14px;
+    color: #aaa;
+    margin-bottom: 6px;
+}
+
+.bj-hand-result {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 8px;
+    text-align: center;
+}
+.bj-hand-result.win { color: #84cc16; }
+.bj-hand-result.lose { color: #ef4444; }
+.bj-hand-result.push { color: #aaa; }
+
+.bj-cards {
+    display: flex;
+    gap: -15px;
+    justify-content: center;
+    min-height: 70px;
+}
+
+.bj-card {
+    background-color: #fff;
+    border-radius: 6px;
+    width: 50px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 22px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    color: #111;
+    box-shadow: -2px 2px 6px rgba(0,0,0,0.4);
+    margin-left: -15px;
+}
+
+.bj-card:first-child {
+    margin-left: 0;
+}
+
+.bj-card.red {
+    color: #ef4444;
+}
+
+.bj-card.hidden {
+    background: repeating-linear-gradient(45deg, #9333ea, #9333ea 10px, #7e22ce 10px, #7e22ce 20px);
+    color: transparent;
+}
+
+.bj-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.bj-controls-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.bj-btn {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 20px;
+    cursor: pointer;
+    color: #fff;
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+.bj-btn:active { transform: scale(0.95); }
+.bj-btn:disabled { opacity: 0.3; pointer-events: none; }
+.bj-btn.hit { background-color: #84cc16; color: #111; }
+.bj-btn.stand { background-color: #ef4444; }
+.bj-btn.double { background-color: #3b82f6; }
+.bj-btn.split { background-color: #9333ea; }
 
 /* --- ROCK PAPER SCISSORS --- */
 .rps-arena {
@@ -408,93 +531,6 @@ h1 {
 
 .rps-choice-btn span {
     font-size: 15px;
-}
-
-/* --- BLACKJACK VIEW --- */
-.bj-table {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    background-color: #262626;
-    border: 1px solid #333;
-    border-radius: 16px;
-    padding: 20px;
-    margin: auto 0;
-    min-height: 240px;
-}
-
-.bj-hand-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.bj-label {
-    font-size: 18px;
-    color: #aaa;
-}
-
-.bj-cards-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-height: 52px;
-}
-
-.bj-card {
-    background-color: #f4f4f5;
-    color: #18181b;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 20px;
-    display: inline-block;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-    min-width: 48px;
-    text-align: center;
-}
-
-.bj-card.red {
-    color: #ef4444;
-}
-
-.bj-card.hidden {
-    background-color: #9333ea;
-    color: transparent;
-}
-
-.bj-controls {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.bj-action-btn {
-    flex: 1;
-    border: none;
-    border-radius: 12px;
-    padding: 14px;
-    font-size: 22px;
-    cursor: pointer;
-    color: #fff;
-    transition: transform 0.1s;
-}
-
-.bj-action-btn:active {
-    transform: scale(0.96);
-}
-
-.bj-action-btn.hit {
-    background-color: #84cc16;
-    color: #111;
-}
-
-.bj-action-btn.stand {
-    background-color: #ef4444;
-}
-
-.bj-action-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
 }
 
 /* --- TIC TAC TOE VIEW --- */
