@@ -61,7 +61,6 @@ async function sendMessage() {
     pendingImageSrc = null;
     document.getElementById('native-file-picker').value = "";
 
-    // Create Carl's empty chat bubble upfront for streaming
     const log = document.getElementById("chat-log");
     const carlBubble = document.createElement("div");
     carlBubble.className = "chat-bubble carl";
@@ -149,6 +148,9 @@ function launchGame() {
     if (selectedGame === "Tic Tac Toe") {
         switchView("view-tictactoe");
         initTicTacToe();
+    } else if (selectedGame === "Rock Paper Scissors") {
+        switchView("view-rps");
+        initRps();
     } else if (selectedGame === "Hangman") {
         switchView("view-hangman");
         initHangman();
@@ -167,6 +169,80 @@ function launchGame() {
     } else {
         alert(`Starting ${selectedGame}...`);
     }
+}
+
+// --- GAME: ROCK PAPER SCISSORS ---
+let rpsScore = { player: 0, carl: 0 };
+let rpsPlaying = false;
+
+const rpsCarlHands = {
+    rock: '/static/icons/CarlRock.png',
+    paper: '/static/icons/CarlPaper.png',
+    scissors: '/static/icons/CarlScissors.png'
+};
+
+const rpsPlayerHands = {
+    rock: '/static/icons/Rock.png',
+    paper: '/static/icons/Paper.png',
+    scissors: '/static/icons/Scissors.png'
+};
+
+function initRps() {
+    rpsScore = { player: 0, carl: 0 };
+    rpsPlaying = false;
+    document.getElementById("rps-status").innerText = "Choose Your Move!";
+    document.getElementById("rps-status").style.color = "#fff";
+    document.getElementById("rps-carl-hand").src = rpsCarlHands.rock;
+    document.getElementById("rps-player-hand").src = rpsPlayerHands.rock;
+}
+
+function playRps(playerChoice) {
+    if (rpsPlaying) return;
+    rpsPlaying = true;
+
+    const choices = ['rock', 'paper', 'scissors'];
+    
+    document.getElementById("rps-player-hand").src = rpsPlayerHands[playerChoice];
+    document.getElementById("rps-status").innerText = "Carl is choosing...";
+    document.getElementById("rps-status").style.color = "#eccc68";
+
+    setTimeout(() => {
+        let diff = getDifficulty();
+        let carlChoice;
+
+        if (diff === "easy") {
+            if (playerChoice === 'rock') carlChoice = Math.random() < 0.6 ? 'scissors' : choices[Math.floor(Math.random() * 3)];
+            else if (playerChoice === 'paper') carlChoice = Math.random() < 0.6 ? 'rock' : choices[Math.floor(Math.random() * 3)];
+            else carlChoice = Math.random() < 0.6 ? 'paper' : choices[Math.floor(Math.random() * 3)];
+        } else if (diff === "hard") {
+            if (playerChoice === 'rock') carlChoice = Math.random() < 0.6 ? 'paper' : choices[Math.floor(Math.random() * 3)];
+            else if (playerChoice === 'paper') carlChoice = Math.random() < 0.6 ? 'scissors' : choices[Math.floor(Math.random() * 3)];
+            else carlChoice = Math.random() < 0.6 ? 'rock' : choices[Math.floor(Math.random() * 3)];
+        } else {
+            carlChoice = choices[Math.floor(Math.random() * choices.length)];
+        }
+
+        document.getElementById("rps-carl-hand").src = rpsCarlHands[carlChoice];
+
+        if (playerChoice === carlChoice) {
+            document.getElementById("rps-status").innerText = `It's a Tie! (${rpsScore.player} - ${rpsScore.carl})`;
+            document.getElementById("rps-status").style.color = "#fff";
+        } else if (
+            (playerChoice === 'rock' && carlChoice === 'scissors') ||
+            (playerChoice === 'paper' && carlChoice === 'rock') ||
+            (playerChoice === 'scissors' && carlChoice === 'paper')
+        ) {
+            rpsScore.player++;
+            document.getElementById("rps-status").innerText = `You Win! (${rpsScore.player} - ${rpsScore.carl})`;
+            document.getElementById("rps-status").style.color = "#84cc16";
+        } else {
+            rpsScore.carl++;
+            document.getElementById("rps-status").innerText = `Carl Wins! (${rpsScore.player} - ${rpsScore.carl})`;
+            document.getElementById("rps-status").style.color = "#ef4444";
+        }
+
+        rpsPlaying = false;
+    }, 500);
 }
 
 // --- GAME: TIC TAC TOE ---
