@@ -66,13 +66,12 @@
                 </select>
             </div>
 
-            <!-- SCROLLABLE 2-COLUMN GRID -->
+            <!-- Scroll Box for Games -->
             <div class="games-scroll-box">
                 <div class="games-grid">
                     <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" />
                     <img src="/static/icons/RockPaperScissors.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" />
-                    <!-- UPDATED BLACKJACK ICON EXACT PATH -->
-                    <img src="/static/icons/BlackJack.png" class="game-card-img" onclick="selectGame(this, 'BlackJack')" onerror="console.log('BlackJack icon not found at this path!')"/>
+                    <img src="/static/icons/Blackjack.png" class="game-card-img" onclick="selectGame(this, 'Blackjack')" alt="Blackjack" />
                     <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" />
                     <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" />
                     <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" />
@@ -82,6 +81,43 @@
             </div>
 
             <button class="play-btn" onclick="launchGame()">Play</button>
+            <div class="copyright">@Dalted Copyright Issued 2026</div>
+        </div>
+
+        <!-- BLACKJACK VIEW -->
+        <div id="view-blackjack" class="view">
+            <div class="games-header">
+                <button class="back-btn" onclick="switchView('view-games')">←</button>
+                <h1>Blackjack</h1>
+            </div>
+            <div id="bj-status" class="game-status">Dealing...</div>
+            
+            <div class="bj-arena">
+                <div class="bj-area">
+                    <div class="bj-label">Carl's Hand (<span id="bj-carl-score">?</span>)</div>
+                    <div class="bj-cards" id="bj-carl-cards"></div>
+                </div>
+                
+                <div class="bj-area">
+                    <div class="bj-label">Your Hand(s)</div>
+                    <div id="bj-player-hands-container" class="bj-hands-container">
+                        <!-- Javascript creates hands here dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="bj-controls" id="bj-controls">
+                <div class="bj-controls-row">
+                    <button class="bj-btn hit" onclick="bjHit()">Hit</button>
+                    <button class="bj-btn stand" onclick="bjStand()">Stand</button>
+                </div>
+                <div class="bj-controls-row">
+                    <button class="bj-btn double" id="bj-btn-double" onclick="bjDouble()">Double</button>
+                    <button class="bj-btn split" id="bj-btn-split" onclick="bjSplit()">Split</button>
+                </div>
+            </div>
+
+            <button class="reset-btn" onclick="initBlackjack()">Deal Again</button>
             <div class="copyright">@Dalted Copyright Issued 2026</div>
         </div>
 
@@ -125,35 +161,6 @@
             </div>
 
             <button class="reset-btn" onclick="initRps()">Reset Score</button>
-            <div class="copyright">@Dalted Copyright Issued 2026</div>
-        </div>
-
-        <!-- BLACKJACK VIEW -->
-        <div id="view-blackjack" class="view">
-            <div class="games-header">
-                <button class="back-btn" onclick="switchView('view-games')">←</button>
-                <h1>BlackJack</h1>
-            </div>
-            <div id="bj-status" class="game-status">Your Turn - Hit or Stand?</div>
-            
-            <div class="bj-table">
-                <div class="bj-hand-section">
-                    <div class="bj-label">Carl's Hand (<span id="bj-dealer-score">0</span>)</div>
-                    <div id="bj-dealer-cards" class="bj-cards-row"></div>
-                </div>
-
-                <div class="bj-hand-section">
-                    <div class="bj-label">Your Hand (<span id="bj-player-score">0</span>)</div>
-                    <div id="bj-player-cards" class="bj-cards-row"></div>
-                </div>
-            </div>
-
-            <div class="bj-controls">
-                <button id="bj-hit-btn" class="bj-action-btn hit" onclick="bjHit()">Hit</button>
-                <button id="bj-stand-btn" class="bj-action-btn stand" onclick="bjStand()">Stand</button>
-            </div>
-
-            <button class="reset-btn" onclick="initBlackJack()">New Hand</button>
             <div class="copyright">@Dalted Copyright Issued 2026</div>
         </div>
 
