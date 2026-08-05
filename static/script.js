@@ -139,6 +139,7 @@ document.getElementById("user-input").addEventListener("keypress", (e) => {
 });
 
 // =========================================================================
+// =========================================================================
 // --- CALL FEATURE SYSTEM (Web Audio, SpeechSynthesis TTS, SpeechRecognition STT) ---
 // =========================================================================
 
@@ -178,7 +179,7 @@ if ('speechSynthesis' in window) {
     loadCarlVoice();
 }
 
-// 1. Web Audio Ringtone Generator (Realistic US Ringback Tone)
+// 1. Web Audio Ringtone Generator (US Phone Dial Tone)
 function getAudioContext() {
     if (!audioCtx) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -200,22 +201,24 @@ function playToneBurst(freq1, freq2, duration) {
         osc1.frequency.value = freq1;
         osc2.frequency.value = freq2;
 
+        // Hold steady volume for ring duration, then smooth release to prevent popping
         gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05);
+        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration);
 
         osc1.connect(gain);
         osc2.connect(gain);
         gain.connect(ctx.destination);
 
-        osc1.start();
-        osc2.start();
+        osc1.start(ctx.currentTime);
+        osc2.start(ctx.currentTime);
         osc1.stop(ctx.currentTime + duration);
         osc2.stop(ctx.currentTime + duration);
     } catch (e) { console.error("Web Audio error", e); }
 }
 
 function startRingingSound() {
-    // US Phone Ringback: 2 seconds ON, 4 seconds OFF (6 second cycle)
+    // US Phone Ringback: 2s Ring (440Hz + 480Hz), 2s Silence (4s total cycle)
     playToneBurst(440, 480, 2.0);
     ringInterval = setInterval(() => {
         if (!isCallActive || isCallConnected) {
@@ -223,11 +226,14 @@ function startRingingSound() {
             return;
         }
         playToneBurst(440, 480, 2.0);
-    }, 6000);
+    }, 4000);
 }
 
 function stopRingingSound() {
-    if (ringInterval) clearInterval(ringInterval);
+    if (ringInterval) {
+        clearInterval(ringInterval);
+        ringInterval = null;
+    }
 }
 
 function playPickupClick() {
@@ -258,18 +264,17 @@ function startCall() {
     isMuted = false;
     callSeconds = 0;
 
-    // Wake up browser audio engines
-    try {
-        getAudioContext().resume();
-        if ('speechSynthesis' in window) {
-            let wakeUp = new SpeechSynthesisUtterance('');
-            wakeUp.volume = 0;
-            window.speechSynthesis.speak(wakeUp);
-        }
-    } catch(e) {}
+    // Direct synchronous unlock of Web Audio and SpeechSynthesis on click gesture
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
+
+    if ('speechSynthesis' in window) {
+        let wakeUp = new SpeechSynthesisUtterance('');
+        wakeUp.volume = 0;
+        window.speechSynthesis.speak(wakeUp);
+    }
 
     document.getElementById("call-status").innerText = "Calling Carl...";
-    document.getElementById("call-status").style.color = "#9333ea";
     document.getElementById("call-timer").innerText = "00:00";
     
     document.getElementById("mute-btn").style.opacity = "1";
@@ -277,7 +282,7 @@ function startCall() {
 
     startRingingSound();
 
-    // Random delay between 2 and 8 seconds (2000ms + random up to 6000ms)
+    // Random call connection delay between 2 and 8 seconds
     const delay = Math.floor(Math.random() * 6000) + 2000;
 
     ringTimeout = setTimeout(() => {
@@ -288,7 +293,6 @@ function startCall() {
 
         isCallConnected = true;
         document.getElementById("call-status").innerText = "Connected";
-        document.getElementById("call-status").style.color = "#84cc16";
 
         callTimerInterval = setInterval(() => {
             callSeconds++;
@@ -345,7 +349,6 @@ function toggleSpeaker() {
     isSpeakerOn = !isSpeakerOn;
     const btn = document.getElementById("speaker-btn");
     btn.style.opacity = isSpeakerOn ? "1" : "0.4";
-    // NOTE: We don't cancel speech here anymore. We let the volume drop in `speakCarl` handle the "earpiece" effect.
 }
 
 // 3. Speech Synthesis (Carl Speaking)
@@ -362,7 +365,7 @@ function speakCarl(text) {
     utterance.rate = 1.05; 
     utterance.pitch = 1.0;
     
-    // Simulate Speakerphone vs Earpiece
+    // Lowers volume when Speaker mode is off (simulates earpiece)
     utterance.volume = isSpeakerOn ? 1.0 : 0.15; 
 
     window.speechSynthesis.speak(utterance);
@@ -373,7 +376,6 @@ function initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
         document.getElementById("call-status").innerText = "Browser doesn't support mic!";
-        document.getElementById("call-status").style.color = "#ef4444";
         return;
     }
 
@@ -409,7 +411,6 @@ function initSpeechRecognition() {
             if (callAbortController) callAbortController.abort();
 
             document.getElementById("call-status").innerText = "Carl is thinking...";
-            document.getElementById("call-status").style.color = "#eccc68";
 
             await processCallUserMessage(userQuery);
         }
@@ -418,7 +419,6 @@ function initSpeechRecognition() {
     recognition.onerror = (e) => {
         if (e.error === 'not-allowed') {
             document.getElementById("call-status").innerText = "Mic Permission Denied";
-            document.getElementById("call-status").style.color = "#ef4444";
         }
     };
 
@@ -458,7 +458,6 @@ async function processCallUserMessage(userText) {
         let sentenceBuffer = "";
 
         document.getElementById("call-status").innerText = "Connected";
-        document.getElementById("call-status").style.color = "#84cc16";
 
         while (true) {
             const { done, value } = await reader.read();

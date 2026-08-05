@@ -175,8 +175,10 @@ h1 {
 
 /* --- CALL VIEW --- */
 #view-call {
-    padding: 24px 20px 10px 20px; /* Tighter bottom padding */
-    justify-content: space-between;
+    padding: 24px 20px 12px 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .call-header {
@@ -203,8 +205,8 @@ h1 {
     align-items: center;
     gap: 14px;
     width: 100%;
-    margin-top: auto;
-    margin-bottom: 8px; /* Pushes the buttons flush against the copyright text */
+    margin-top: auto; /* Absorbs all vertical space above the controls */
+    margin-bottom: 12px;
 }
 
 .call-option-row {
@@ -238,6 +240,11 @@ h1 {
 
 .call-img-btn-end:active {
     transform: scale(0.96);
+}
+
+/* OVERRIDE: Prevents flexbox from splitting vertical space below buttons */
+#view-call .copyright {
+    margin-top: 0 !important;
 }
 
 /* --- GAMES VIEW --- */
