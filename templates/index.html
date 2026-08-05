@@ -31,7 +31,7 @@
                 <img src="/static/icons/UploadFile.png" alt="Upload" class="nav-img" onclick="document.getElementById('native-file-picker').click();" />
                 <input type="file" id="native-file-picker" style="display: none;" accept="image/*, .pdf, .txt, .doc, .docx" />
                 <div class="nav-divider"></div>
-                <img src="/static/icons/CallButtonIcon.png" alt="Call" class="nav-img" onclick="switchView('view-call')" />
+                <img src="/static/icons/CallButtonIcon.png" alt="Call" class="nav-img" onclick="startCall()" />
                 <div class="nav-divider"></div>
                 <img src="/static/icons/NewChat.png" alt="New Chat" class="nav-img" onclick="startNewChat()" title="New Chat" />
             </div>
@@ -42,15 +42,16 @@
         <div id="view-call" class="view">
             <div class="call-header">
                 <h1>Carl AI</h1>
-                <div id="call-timer">00:16</div>
+                <div id="call-status" style="color: #9333ea; font-size: 20px; margin-top: 8px;">Calling Carl...</div>
+                <div id="call-timer">00:00</div>
             </div>
 
             <div class="call-controls">
                 <div class="call-option-row">
-                    <img src="/static/icons/SpeakerButton.png" alt="Speaker" class="call-img-btn" />
-                    <img src="/static/icons/MuteButtonIcon.png" alt="Mute" class="call-img-btn" />
+                    <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" />
+                    <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" />
                 </div>
-                <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn-end" onclick="switchView('view-chat')" />
+                <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn-end" onclick="endCall()" />
             </div>
             <div class="copyright">@Dalted Copyright Issued 2026</div>
         </div>
@@ -105,9 +106,7 @@
                 
                 <div class="bj-area">
                     <div class="bj-label">Your Hand(s)</div>
-                    <div id="bj-player-hands-container" class="bj-hands-container">
-                        <!-- Javascript creates hands here dynamically -->
-                    </div>
+                    <div id="bj-player-hands-container" class="bj-hands-container"></div>
                 </div>
             </div>
 
