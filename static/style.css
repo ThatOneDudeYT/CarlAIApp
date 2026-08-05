@@ -174,47 +174,70 @@ h1 {
 }
 
 /* --- CALL VIEW --- */
+#view-call {
+    padding: 24px 20px 20px 20px;
+    justify-content: space-between;
+}
+
 .call-header {
     text-align: center;
-    margin-top: 35px;
+    margin-top: 45px;
 }
 
 .call-header h1 {
-    font-size: 58px;
+    font-size: 62px;
+    letter-spacing: 1px;
+    line-height: 1;
 }
 
 #call-timer {
-    color: #888;
+    color: #888888;
     font-size: 28px;
-    margin-top: 4px;
+    margin-top: 6px;
+    letter-spacing: 1px;
 }
 
 .call-controls {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 50px;
+    gap: 14px;
+    width: 100%;
     margin-top: auto;
+    margin-bottom: 25px;
 }
 
 .call-option-row {
     display: flex;
-    gap: 20px;
+    gap: 14px;
+    width: 100%;
+    justify-content: center;
 }
 
 .call-img-btn {
-    width: 175px;
-    height: 115px;
+    width: 48%;
+    max-width: 175px;
+    height: auto;
     object-fit: contain;
     cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+.call-img-btn:active {
+    transform: scale(0.96);
 }
 
 .call-img-btn-end {
-    width: 360px;
-    height: 105px;
+    width: 100%;
+    max-width: 364px;
+    height: auto;
     object-fit: contain;
     cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.call-img-btn-end:active {
+    transform: scale(0.96);
 }
 
 /* --- GAMES VIEW --- */
