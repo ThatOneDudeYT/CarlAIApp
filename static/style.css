@@ -345,25 +345,20 @@ h1 {
     .sidebar-brand {
         display: flex;
         align-items: center;
-        gap: 12px;
         overflow: hidden;
         white-space: nowrap;
     }
 
-    .sidebar-logo {
-        width: 32px;
-        height: 32px;
+    .sidebar-logo-watermark {
+        height: 36px;
         object-fit: contain;
-    }
-
-    .sidebar-title {
-        font-size: 26px;
-        color: #fff;
-        opacity: 1;
         transition: opacity 0.2s;
     }
 
-    .desktop-sidebar.collapsed .sidebar-title { opacity: 0; pointer-events: none; }
+    .desktop-sidebar.collapsed .sidebar-logo-watermark {
+        opacity: 0;
+        pointer-events: none;
+    }
 
     .sidebar-toggle {
         background: transparent;
@@ -393,8 +388,12 @@ h1 {
         object-fit: contain;
         object-position: left;
         cursor: pointer;
-        transition: transform 0.1s, opacity 0.2s;
+        transition: transform 0.2s ease, opacity 0.2s ease;
         margin-left: 0;
+    }
+    .pc-nav-btn:hover {
+        transform: scale(1.04) translateX(4px);
+        opacity: 0.9;
     }
     .pc-nav-btn:active { transform: scale(0.97); }
     
@@ -405,27 +404,23 @@ h1 {
         align-items: center;
     }
 
-    .mini-btn {
-        width: 38px;
-        height: 38px;
-        background-color: #333;
-        border-radius: 50%;
-        color: #fff;
-        font-size: 16px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    .mini-nav-btn {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: transform 0.2s ease;
     }
-    .mini-btn:hover { background-color: #444; }
+    .mini-nav-btn:hover {
+        transform: scale(1.15);
+    }
 
     .desktop-sidebar.expanded .mini-nav-items { display: none; }
     .desktop-sidebar.collapsed .full-nav-items { display: none; }
     .desktop-sidebar.collapsed .mini-nav-items { display: flex; }
     .desktop-sidebar.collapsed .sidebar-nav { align-items: center; padding: 0; }
     .desktop-sidebar.collapsed .sidebar-header { justify-content: center; }
-    .desktop-sidebar.collapsed .sidebar-logo { display: none; }
+    .desktop-sidebar.collapsed .sidebar-brand { display: none; }
 
     .sidebar-chats {
         flex: 1;
@@ -459,8 +454,18 @@ h1 {
         padding: 20px;
         display: flex;
         align-items: center;
+        margin-top: auto;
     }
-    .settings-icon { font-size: 22px; color: #666; cursor: pointer; }
+    .settings-icon-img {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+    .settings-icon-img:hover {
+        transform: rotate(90deg) scale(1.1);
+    }
     .desktop-sidebar.collapsed .sidebar-footer { justify-content: center; }
 
     /* DESKTOP CONTENT RE-ALIGNMENT */
