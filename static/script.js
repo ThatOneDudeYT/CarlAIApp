@@ -178,7 +178,7 @@ if ('speechSynthesis' in window) {
     loadCarlVoice();
 }
 
-// 1. Web Audio Ringtone Generator
+// 1. Web Audio Ringtone Generator (Realistic US Ringback Tone)
 function getAudioContext() {
     if (!audioCtx) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -215,14 +215,15 @@ function playToneBurst(freq1, freq2, duration) {
 }
 
 function startRingingSound() {
-    playToneBurst(440, 480, 1.8);
+    // US Phone Ringback: 2 seconds ON, 4 seconds OFF (6 second cycle)
+    playToneBurst(440, 480, 2.0);
     ringInterval = setInterval(() => {
         if (!isCallActive || isCallConnected) {
             clearInterval(ringInterval);
             return;
         }
-        playToneBurst(440, 480, 1.8);
-    }, 4000);
+        playToneBurst(440, 480, 2.0);
+    }, 6000);
 }
 
 function stopRingingSound() {
@@ -257,7 +258,7 @@ function startCall() {
     isMuted = false;
     callSeconds = 0;
 
-    // FIX: Wake up browser audio engines immediately on user click to bypass autoplay restrictions
+    // Wake up browser audio engines
     try {
         getAudioContext().resume();
         if ('speechSynthesis' in window) {
@@ -272,11 +273,12 @@ function startCall() {
     document.getElementById("call-timer").innerText = "00:00";
     
     document.getElementById("mute-btn").style.opacity = "1";
-    document.getElementById("speaker-btn").style.opacity = "1";
+    document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4";
 
     startRingingSound();
 
-    const delay = Math.floor(Math.random() * 3000) + 2000;
+    // Random delay between 2 and 8 seconds (2000ms + random up to 6000ms)
+    const delay = Math.floor(Math.random() * 6000) + 2000;
 
     ringTimeout = setTimeout(() => {
         if (!isCallActive) return;
@@ -301,7 +303,6 @@ function startCall() {
 }
 
 function endCall() {
-    // FIX: Wrapped in try/catch to ensure the view ALWAYS changes back even if an API fails
     try {
         isCallActive = false;
         isCallConnected = false;
@@ -310,12 +311,8 @@ function endCall() {
         stopRingingSound();
         if (callTimerInterval) clearInterval(callTimerInterval);
 
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-        }
-        if (callAbortController) {
-            callAbortController.abort();
-        }
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        if (callAbortController) callAbortController.abort();
         if (recognition) {
             try { recognition.stop(); } catch(e) {}
             recognition = null;
@@ -326,8 +323,7 @@ function endCall() {
         
         switchView('view-chat');
     } catch (err) {
-        console.error("End call forced:", err);
-        switchView('view-chat'); // Failsafe fallback
+        switchView('view-chat'); 
     }
 }
 
@@ -349,16 +345,13 @@ function toggleSpeaker() {
     isSpeakerOn = !isSpeakerOn;
     const btn = document.getElementById("speaker-btn");
     btn.style.opacity = isSpeakerOn ? "1" : "0.4";
-    if (!isSpeakerOn && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-    }
+    // NOTE: We don't cancel speech here anymore. We let the volume drop in `speakCarl` handle the "earpiece" effect.
 }
 
 // 3. Speech Synthesis (Carl Speaking)
 function speakCarl(text) {
-    if (!('speechSynthesis' in window) || !isCallActive || !isSpeakerOn) return;
+    if (!('speechSynthesis' in window) || !isCallActive) return;
 
-    // Strip markdown chars so he doesn't say "asterisk" out loud
     let cleanText = text.replace(/[*_#~]/g, '').trim();
     if (!cleanText) return;
 
@@ -368,6 +361,9 @@ function speakCarl(text) {
 
     utterance.rate = 1.05; 
     utterance.pitch = 1.0;
+    
+    // Simulate Speakerphone vs Earpiece
+    utterance.volume = isSpeakerOn ? 1.0 : 0.15; 
 
     window.speechSynthesis.speak(utterance);
 }
@@ -400,7 +396,6 @@ function initSpeechRecognition() {
             }
         }
 
-        // Barge-in: If user speaks more than a tiny noise, stop Carl talking immediately
         let combined = finalTranscript + interimTranscript;
         if (combined.trim().length > 3 && window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
@@ -473,7 +468,6 @@ async function processCallUserMessage(userText) {
             fullResponse += chunk;
             sentenceBuffer += chunk;
 
-            // Stream speaking sentence by sentence
             let match;
             while ((match = sentenceBuffer.match(/([^.!?]+[.!?])/))) {
                 let sentence = match[0].trim();
