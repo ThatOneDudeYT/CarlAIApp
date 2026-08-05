@@ -138,6 +138,370 @@ document.getElementById("user-input").addEventListener("keypress", (e) => {
     if (e.key === "Enter") sendMessage();
 });
 
+// =========================================================================
+// --- CALL FEATURE SYSTEM (Web Audio, SpeechSynthesis TTS, SpeechRecognition STT) ---
+// =========================================================================
+
+let isCallActive = false;
+let isCallConnected = false;
+let isMuted = false;
+let isSpeakerOn = true;
+let callTimerInterval = null;
+let callSeconds = 0;
+let ringTimeout = null;
+let ringInterval = null;
+let audioCtx = null;
+
+// Speech APIs
+let recognition = null;
+let callAbortController = null;
+let carlVoice = null;
+
+// Voice loading logic
+function loadCarlVoice() {
+    if (!('speechSynthesis' in window)) return;
+    const voices = window.speechSynthesis.getVoices();
+    // Prioritize energetic male English voices across platforms
+    carlVoice = voices.find(v => v.lang.includes('en') && (
+        v.name.includes('Google US English') ||
+        v.name.includes('Aaron') ||
+        v.name.includes('Daniel') ||
+        v.name.includes('Guy') ||
+        v.name.includes('Natural') ||
+        v.name.includes('Male')
+    )) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+}
+
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = loadCarlVoice;
+    loadCarlVoice();
+}
+
+// 1. Web Audio Ringtone Generator (Zero Cost Audio)
+function getAudioContext() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
+
+function playToneBurst(freq1, freq2, duration) {
+    try {
+        const ctx = getAudioContext();
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.frequency.value = freq1;
+        osc2.frequency.value = freq2;
+
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start();
+        osc2.start();
+        osc1.stop(ctx.currentTime + duration);
+        osc2.stop(ctx.currentTime + duration);
+    } catch (e) { console.error("Web Audio error", e); }
+}
+
+function startRingingSound() {
+    // US Phone Dial Ring: 440Hz + 480Hz
+    playToneBurst(440, 480, 1.8);
+    ringInterval = setInterval(() => {
+        if (!isCallActive || isCallConnected) {
+            clearInterval(ringInterval);
+            return;
+        }
+        playToneBurst(440, 480, 1.8);
+    }, 4000);
+}
+
+function stopRingingSound() {
+    if (ringInterval) clearInterval(ringInterval);
+}
+
+function playPickupClick() {
+    try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+    } catch (e) {}
+}
+
+// 2. Call Control Lifecycle
+function startCall() {
+    switchView('view-call');
+    isCallActive = true;
+    isCallConnected = false;
+    isMuted = false;
+    callSeconds = 0;
+
+    document.getElementById("call-status").innerText = "Calling Carl...";
+    document.getElementById("call-status").style.color = "#9333ea";
+    document.getElementById("call-timer").innerText = "00:00";
+    
+    // Reset buttons UI
+    document.getElementById("mute-btn").style.opacity = "1";
+    document.getElementById("speaker-btn").style.opacity = "1";
+
+    startRingingSound();
+
+    // Random delay between 2 and 5 seconds to simulate ringing/pickup
+    const delay = Math.floor(Math.random() * 3000) + 2000;
+
+    ringTimeout = setTimeout(() => {
+        if (!isCallActive) return;
+        
+        stopRingingSound();
+        playPickupClick();
+
+        isCallConnected = true;
+        document.getElementById("call-status").innerText = "Connected";
+        document.getElementById("call-status").style.color = "#84cc16";
+
+        // Start Live Timer
+        callTimerInterval = setInterval(() => {
+            callSeconds++;
+            const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+            const secs = String(callSeconds % 60).padStart(2, '0');
+            document.getElementById("call-timer").innerText = `${mins}:${secs}`;
+        }, 1000);
+
+        // Start Continuous STT Listening & Carl Greeting
+        initSpeechRecognition();
+        speakCarl("Hey! Carl here. What's on your mind?");
+    }, delay);
+}
+
+function endCall() {
+    isCallActive = false;
+    isCallConnected = false;
+
+    // Clear timers and ringing
+    if (ringTimeout) clearTimeout(ringTimeout);
+    stopRingingSound();
+    if (callTimerInterval) clearInterval(callTimerInterval);
+
+    // Stop Speech Synthesizer and STT
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (callAbortController) callAbortController.abort();
+    if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+        recognition = null;
+    }
+
+    // Reset UI
+    document.getElementById("call-timer").innerText = "00:00";
+    document.getElementById("call-status").innerText = "Call Ended";
+    
+    switchView('view-chat');
+}
+
+function toggleMute() {
+    isMuted = !isMuted;
+    const btn = document.getElementById("mute-btn");
+    if (isMuted) {
+        btn.style.opacity = "0.4";
+        if (recognition) try { recognition.stop(); } catch(e) {}
+    } else {
+        btn.style.opacity = "1";
+        if (recognition && isCallActive && isCallConnected) {
+            try { recognition.start(); } catch(e) {}
+        }
+    }
+}
+
+function toggleSpeaker() {
+    isSpeakerOn = !isSpeakerOn;
+    const btn = document.getElementById("speaker-btn");
+    btn.style.opacity = isSpeakerOn ? "1" : "0.4";
+    if (!isSpeakerOn && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+}
+
+// 3. Speech Synthesis (Carl Speaking)
+function speakCarl(text) {
+    if (!('speechSynthesis' in window) || !isCallActive || !isSpeakerOn) return;
+
+    // Clean text before speaking
+    let cleanText = text.replace(/[*_#`~]/g, '').trim();
+    if (!cleanText) return;
+
+    window.speechSynthesis.cancel(); // Stop anything ongoing
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    if (!carlVoice) loadCarlVoice();
+    if (carlVoice) utterance.voice = carlVoice;
+
+    utterance.rate = 1.05;  // Slightly natural energetic speed
+    utterance.pitch = 1.0;
+
+    window.speechSynthesis.speak(utterance);
+}
+
+// 4. Continuous Speech Recognition (User Speaking) & Barge-In Logic
+function initSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Speech Recognition is not supported on this browser. Please use Chrome/Safari.");
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    // REAL-TIME BARGE-IN / INTERRUPTION LOGIC
+    recognition.onspeechstart = () => {
+        if (window.speechSynthesis.speaking) {
+            // Immediately stop Carl from talking if user interrupts
+            window.speechSynthesis.cancel();
+            if (callAbortController) callAbortController.abort();
+        }
+    };
+
+    recognition.onresult = async (event) => {
+        if (isMuted || !isCallActive || !isCallConnected) return;
+
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+
+        // Interrupt Carl even if partial interim speech is heard
+        if (interimTranscript.length > 2 && window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            if (callAbortController) callAbortController.abort();
+        }
+
+        if (finalTranscript.trim().length > 0) {
+            const userQuery = finalTranscript.trim();
+            
+            // Interrupt TTS immediately
+            window.speechSynthesis.cancel();
+            if (callAbortController) callAbortController.abort();
+
+            // Query Backend & Read Aloud
+            await processCallUserMessage(userQuery);
+        }
+    };
+
+    recognition.onerror = (e) => {
+        if (e.error !== 'no-speech' && e.error !== 'aborted') {
+            console.warn("Speech recognition notice:", e.error);
+        }
+    };
+
+    recognition.onend = () => {
+        // Automatically restart listening if call is still active
+        if (isCallActive && isCallConnected && !isMuted) {
+            try { recognition.start(); } catch(e) {}
+        }
+    };
+
+    try { recognition.start(); } catch(e) {}
+}
+
+async function processCallUserMessage(userText) {
+    if (!isCallActive) return;
+
+    callAbortController = new AbortController();
+    
+    // Append to Chat History for context continuity
+    chatHistory.push({ role: "user", content: userText });
+
+    const payload = {
+        message: userText,
+        history: chatHistory
+    };
+
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: callAbortController.signal
+        });
+
+        if (!response.ok) return;
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = "";
+        let sentenceBuffer = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            fullResponse += chunk;
+            sentenceBuffer += chunk;
+
+            // Stream responses sentence-by-sentence for instantaneous vocal responses
+            let match;
+            while ((match = sentenceBuffer.match(/([^.!?]+[.!?])/))) {
+                let sentence = match[0].trim();
+                sentenceBuffer = sentenceBuffer.substring(match[0].length);
+                
+                // Remove prefixes if Carl responds with "Carl:"
+                for (let prefix of ["Carl:", "carl:", "Carl - "]) {
+                    if (sentence.startsWith(prefix)) sentence = sentence.replace(prefix, "").trim();
+                }
+
+                if (sentence) {
+                    speakCarl(sentence);
+                }
+            }
+        }
+
+        // Speak remaining buffer if any
+        if (sentenceBuffer.trim()) {
+            speakCarl(sentenceBuffer.trim());
+        }
+
+        chatHistory.push({ role: "assistant", content: fullResponse });
+
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            console.error("Call response error:", err);
+        }
+    }
+}
+
+// =========================================================================
+// --- MINI-GAMES LOGIC ---
+// =========================================================================
+
 function selectGame(element, gameName) {
     document.querySelectorAll('.game-card-img').forEach(card => card.classList.remove('selected'));
     element.classList.add('selected');
@@ -186,7 +550,6 @@ function buildDeck() {
     const suits = ['♠', '♥', '♦', '♣'];
     const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
     let deck = [];
-    // 4 Decks makes card counting harder!
     for (let i = 0; i < 4; i++) {
         for (let suit of suits) {
             for (let value of values) {
@@ -225,7 +588,6 @@ function initBlackjack() {
     
     document.getElementById("bj-controls").style.display = "flex";
     
-    // Immediate Dealer Blackjack Check (Casino Standard)
     let dealerScore = getBjScore(bjCarlHand);
     let playerScore = getBjScore(bjPlayerHands[0]);
 
@@ -244,7 +606,6 @@ function initBlackjack() {
 }
 
 function renderBj() {
-    // Render Carl's Cards
     const cCards = document.getElementById("bj-carl-cards");
     cCards.innerHTML = "";
     bjCarlHand.forEach((card, index) => {
@@ -267,7 +628,6 @@ function renderBj() {
         document.getElementById("bj-carl-score").innerText = val;
     }
 
-    // Render Player Hands
     const pHandsContainer = document.getElementById("bj-player-hands-container");
     pHandsContainer.innerHTML = "";
 
@@ -290,7 +650,6 @@ function renderBj() {
         });
         handDiv.appendChild(cardsContainer);
 
-        // Display results if hand is finished
         if (bjResults[index] && bjResults[index] !== "Doubled") {
             let resDiv = document.createElement("div");
             resDiv.className = "bj-hand-result";
@@ -305,7 +664,6 @@ function renderBj() {
         pHandsContainer.appendChild(handDiv);
     });
 
-    // Update Controls
     if (bjGameOver) {
         document.getElementById("bj-controls").style.display = "none";
         document.getElementById("bj-status").innerText = "Round Over";
@@ -314,10 +672,8 @@ function renderBj() {
         document.getElementById("bj-controls").style.display = "flex";
         let currentHand = bjPlayerHands[bjActiveHand];
 
-        // Double is only valid on initial 2 cards
         document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
 
-        // Split is valid if 2 cards match in weight, max 4 hands
         let canSplit = currentHand.length === 2 && 
                        getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && 
                        bjPlayerHands.length < 4;
@@ -358,7 +714,7 @@ function bjDouble() {
     let hand = bjPlayerHands[bjActiveHand];
     if (hand.length !== 2) return;
 
-    hand.push(bjDeck.pop()); // Only 1 card allowed on Double
+    hand.push(bjDeck.pop());
     if (getBjScore(hand) > 21) {
         bjResults[bjActiveHand] = "Bust";
     } else {
@@ -373,10 +729,10 @@ function bjSplit() {
     if (hand.length !== 2 || getCardWeight(hand[0].value) !== getCardWeight(hand[1].value)) return;
 
     let splitCard = hand.pop();
-    let newHand = [splitCard, bjDeck.pop()]; // Create second hand
-    hand.push(bjDeck.pop()); // Refill first hand
+    let newHand = [splitCard, bjDeck.pop()];
+    hand.push(bjDeck.pop());
     
-    bjPlayerHands.splice(bjActiveHand + 1, 0, newHand); // Insert new hand next in line
+    bjPlayerHands.splice(bjActiveHand + 1, 0, newHand);
     renderBj();
 }
 
@@ -391,7 +747,6 @@ function bjNextHand() {
 }
 
 function bjDealerTurn() {
-    // If all player hands busted, the dealer doesn't need to draw
     let allBusted = bjPlayerHands.every((_, i) => bjResults[i] === "Bust");
 
     const playDealer = () => {
@@ -401,7 +756,6 @@ function bjDealerTurn() {
             renderBj();
             setTimeout(playDealer, 800);
         } else {
-            // Evaluate all hands
             for (let i = 0; i < bjPlayerHands.length; i++) {
                 if (bjResults[i] === "Bust" || bjResults[i] === "Blackjack! You Win!" || bjResults[i] === "Carl Blackjack!" || bjResults[i] === "Push (Tie)") continue;
                 
@@ -416,7 +770,7 @@ function bjDealerTurn() {
     };
 
     if (allBusted) {
-        playDealer(); // Will immediately skip to evaluate
+        playDealer();
     } else {
         document.getElementById("bj-status").innerText = "Carl is dealing...";
         document.getElementById("bj-status").style.color = "#eccc68";
