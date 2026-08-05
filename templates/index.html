@@ -27,10 +27,10 @@
             <div class="sidebar-nav">
                 <!-- Expanded PC Buttons (Full Images) -->
                 <div class="full-nav-items">
-                    <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()">
-                    <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()">
-                    <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')">
-                    <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()">
+                    <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat">
+                    <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search">
+                    <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games">
+                    <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call">
                 </div>
                 
                 <!-- Collapsed PC Buttons (Mini Icons) -->
@@ -45,7 +45,6 @@
             <div class="sidebar-chats">
                 <h3 class="chats-header">Chats</h3>
                 <div id="saved-chats-list">
-                    <!-- Chats will be loaded here by JavaScript -->
                     <div class="saved-chat-item">Test Chat 3</div>
                     <div class="saved-chat-item">Test Chat 2</div>
                     <div class="saved-chat-item">Test Chat 1</div>
@@ -124,24 +123,26 @@
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
                     <h1>Games</h1>
-                    <div class="difficulty-picker mobile-only">
-                        <select id="difficulty-select" class="difficulty-dropdown">
-                            <option value="easy">Easy</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="hard">Hard</option>
-                        </select>
-                    </div>
+                </div>
+
+                <div class="difficulty-picker">
+                    <label for="difficulty-select">AI Difficulty</label>
+                    <select id="difficulty-select" class="difficulty-dropdown">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
                 </div>
 
                 <div class="games-scroll-box">
                     <div class="games-grid">
-                        <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" />
-                        <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" />
-                        <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" />
-                        <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" />
-                        <img src="/static/icons/Checkers.png" class="game-card-img" onclick="selectGame(this, 'Checkers')" />
-                        <img src="/static/icons/Battleship.png" class="game-card-img" onclick="selectGame(this, 'Battleship')" />
-                        <img src="/static/icons/RockPaperScissors.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" />
+                        <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" alt="Tic Tac Toe" />
+                        <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" alt="Chess" />
+                        <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" alt="Hangman" />
+                        <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" alt="Connect Four" />
+                        <img src="/static/icons/Checkers.png" class="game-card-img" onclick="selectGame(this, 'Checkers')" alt="Checkers" />
+                        <img src="/static/icons/Battleship.png" class="game-card-img" onclick="selectGame(this, 'Battleship')" alt="Battleship" />
+                        <img src="/static/icons/RockPaperScissors.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" alt="Rock Paper Scissors" />
                         <img src="/static/icons/BlackJack.png" class="game-card-img" onclick="selectGame(this, 'Blackjack')" alt="Blackjack" />
                     </div>
                 </div>
@@ -397,7 +398,6 @@
 
     <script src="/static/script.js"></script>
     <script>
-        // Inline script to handle the sidebar toggle out of the box
         function toggleSidebar() {
             const sidebar = document.getElementById('desktop-sidebar');
             const toggleBtn = document.getElementById('sidebar-toggle-btn');
@@ -405,11 +405,11 @@
             if (sidebar.classList.contains('expanded')) {
                 sidebar.classList.remove('expanded');
                 sidebar.classList.add('collapsed');
-                toggleBtn.innerText = '❯'; // Arrow points right when collapsed
+                toggleBtn.innerText = '❯'; 
             } else {
                 sidebar.classList.remove('collapsed');
                 sidebar.classList.add('expanded');
-                toggleBtn.innerText = '❮'; // Arrow points left when expanded
+                toggleBtn.innerText = '❮'; 
             }
         }
     </script>
