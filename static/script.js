@@ -161,7 +161,8 @@ let carlVoice = null;
 function loadCarlVoice() {
     if (!('speechSynthesis' in window)) return;
     const voices = window.speechSynthesis.getVoices();
-    // Prioritize energetic male English voices across platforms
+    if (voices.length === 0) return;
+    
     carlVoice = voices.find(v => v.lang.includes('en') && (
         v.name.includes('Google US English') ||
         v.name.includes('Aaron') ||
@@ -177,7 +178,7 @@ if ('speechSynthesis' in window) {
     loadCarlVoice();
 }
 
-// 1. Web Audio Ringtone Generator (Zero Cost Audio)
+// 1. Web Audio Ringtone Generator
 function getAudioContext() {
     if (!audioCtx) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -214,7 +215,6 @@ function playToneBurst(freq1, freq2, duration) {
 }
 
 function startRingingSound() {
-    // US Phone Dial Ring: 440Hz + 480Hz
     playToneBurst(440, 480, 1.8);
     ringInterval = setInterval(() => {
         if (!isCallActive || isCallConnected) {
@@ -257,17 +257,25 @@ function startCall() {
     isMuted = false;
     callSeconds = 0;
 
+    // FIX: Wake up browser audio engines immediately on user click to bypass autoplay restrictions
+    try {
+        getAudioContext().resume();
+        if ('speechSynthesis' in window) {
+            let wakeUp = new SpeechSynthesisUtterance('');
+            wakeUp.volume = 0;
+            window.speechSynthesis.speak(wakeUp);
+        }
+    } catch(e) {}
+
     document.getElementById("call-status").innerText = "Calling Carl...";
     document.getElementById("call-status").style.color = "#9333ea";
     document.getElementById("call-timer").innerText = "00:00";
     
-    // Reset buttons UI
     document.getElementById("mute-btn").style.opacity = "1";
     document.getElementById("speaker-btn").style.opacity = "1";
 
     startRingingSound();
 
-    // Random delay between 2 and 5 seconds to simulate ringing/pickup
     const delay = Math.floor(Math.random() * 3000) + 2000;
 
     ringTimeout = setTimeout(() => {
@@ -280,7 +288,6 @@ function startCall() {
         document.getElementById("call-status").innerText = "Connected";
         document.getElementById("call-status").style.color = "#84cc16";
 
-        // Start Live Timer
         callTimerInterval = setInterval(() => {
             callSeconds++;
             const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
@@ -288,34 +295,40 @@ function startCall() {
             document.getElementById("call-timer").innerText = `${mins}:${secs}`;
         }, 1000);
 
-        // Start Continuous STT Listening & Carl Greeting
         initSpeechRecognition();
         speakCarl("Hey! Carl here. What's on your mind?");
     }, delay);
 }
 
 function endCall() {
-    isCallActive = false;
-    isCallConnected = false;
+    // FIX: Wrapped in try/catch to ensure the view ALWAYS changes back even if an API fails
+    try {
+        isCallActive = false;
+        isCallConnected = false;
 
-    // Clear timers and ringing
-    if (ringTimeout) clearTimeout(ringTimeout);
-    stopRingingSound();
-    if (callTimerInterval) clearInterval(callTimerInterval);
+        if (ringTimeout) clearTimeout(ringTimeout);
+        stopRingingSound();
+        if (callTimerInterval) clearInterval(callTimerInterval);
 
-    // Stop Speech Synthesizer and STT
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    if (callAbortController) callAbortController.abort();
-    if (recognition) {
-        try { recognition.stop(); } catch(e) {}
-        recognition = null;
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+        if (callAbortController) {
+            callAbortController.abort();
+        }
+        if (recognition) {
+            try { recognition.stop(); } catch(e) {}
+            recognition = null;
+        }
+
+        document.getElementById("call-timer").innerText = "00:00";
+        document.getElementById("call-status").innerText = "Call Ended";
+        
+        switchView('view-chat');
+    } catch (err) {
+        console.error("End call forced:", err);
+        switchView('view-chat'); // Failsafe fallback
     }
-
-    // Reset UI
-    document.getElementById("call-timer").innerText = "00:00";
-    document.getElementById("call-status").innerText = "Call Ended";
-    
-    switchView('view-chat');
 }
 
 function toggleMute() {
@@ -345,27 +358,26 @@ function toggleSpeaker() {
 function speakCarl(text) {
     if (!('speechSynthesis' in window) || !isCallActive || !isSpeakerOn) return;
 
-    // Clean text before speaking
-    let cleanText = text.replace(/[*_#`~]/g, '').trim();
+    // Strip markdown chars so he doesn't say "asterisk" out loud
+    let cleanText = text.replace(/[*_#~]/g, '').trim();
     if (!cleanText) return;
-
-    window.speechSynthesis.cancel(); // Stop anything ongoing
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     if (!carlVoice) loadCarlVoice();
     if (carlVoice) utterance.voice = carlVoice;
 
-    utterance.rate = 1.05;  // Slightly natural energetic speed
+    utterance.rate = 1.05; 
     utterance.pitch = 1.0;
 
     window.speechSynthesis.speak(utterance);
 }
 
-// 4. Continuous Speech Recognition (User Speaking) & Barge-In Logic
+// 4. Continuous Speech Recognition & Barge-In Logic
 function initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert("Speech Recognition is not supported on this browser. Please use Chrome/Safari.");
+        document.getElementById("call-status").innerText = "Browser doesn't support mic!";
+        document.getElementById("call-status").style.color = "#ef4444";
         return;
     }
 
@@ -373,15 +385,6 @@ function initSpeechRecognition() {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
-
-    // REAL-TIME BARGE-IN / INTERRUPTION LOGIC
-    recognition.onspeechstart = () => {
-        if (window.speechSynthesis.speaking) {
-            // Immediately stop Carl from talking if user interrupts
-            window.speechSynthesis.cancel();
-            if (callAbortController) callAbortController.abort();
-        }
-    };
 
     recognition.onresult = async (event) => {
         if (isMuted || !isCallActive || !isCallConnected) return;
@@ -397,8 +400,9 @@ function initSpeechRecognition() {
             }
         }
 
-        // Interrupt Carl even if partial interim speech is heard
-        if (interimTranscript.length > 2 && window.speechSynthesis.speaking) {
+        // Barge-in: If user speaks more than a tiny noise, stop Carl talking immediately
+        let combined = finalTranscript + interimTranscript;
+        if (combined.trim().length > 3 && window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
             if (callAbortController) callAbortController.abort();
         }
@@ -406,23 +410,24 @@ function initSpeechRecognition() {
         if (finalTranscript.trim().length > 0) {
             const userQuery = finalTranscript.trim();
             
-            // Interrupt TTS immediately
             window.speechSynthesis.cancel();
             if (callAbortController) callAbortController.abort();
 
-            // Query Backend & Read Aloud
+            document.getElementById("call-status").innerText = "Carl is thinking...";
+            document.getElementById("call-status").style.color = "#eccc68";
+
             await processCallUserMessage(userQuery);
         }
     };
 
     recognition.onerror = (e) => {
-        if (e.error !== 'no-speech' && e.error !== 'aborted') {
-            console.warn("Speech recognition notice:", e.error);
+        if (e.error === 'not-allowed') {
+            document.getElementById("call-status").innerText = "Mic Permission Denied";
+            document.getElementById("call-status").style.color = "#ef4444";
         }
     };
 
     recognition.onend = () => {
-        // Automatically restart listening if call is still active
         if (isCallActive && isCallConnected && !isMuted) {
             try { recognition.start(); } catch(e) {}
         }
@@ -435,8 +440,6 @@ async function processCallUserMessage(userText) {
     if (!isCallActive) return;
 
     callAbortController = new AbortController();
-    
-    // Append to Chat History for context continuity
     chatHistory.push({ role: "user", content: userText });
 
     const payload = {
@@ -459,6 +462,9 @@ async function processCallUserMessage(userText) {
         let fullResponse = "";
         let sentenceBuffer = "";
 
+        document.getElementById("call-status").innerText = "Connected";
+        document.getElementById("call-status").style.color = "#84cc16";
+
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -467,13 +473,12 @@ async function processCallUserMessage(userText) {
             fullResponse += chunk;
             sentenceBuffer += chunk;
 
-            // Stream responses sentence-by-sentence for instantaneous vocal responses
+            // Stream speaking sentence by sentence
             let match;
             while ((match = sentenceBuffer.match(/([^.!?]+[.!?])/))) {
                 let sentence = match[0].trim();
                 sentenceBuffer = sentenceBuffer.substring(match[0].length);
                 
-                // Remove prefixes if Carl responds with "Carl:"
                 for (let prefix of ["Carl:", "carl:", "Carl - "]) {
                     if (sentence.startsWith(prefix)) sentence = sentence.replace(prefix, "").trim();
                 }
@@ -484,9 +489,12 @@ async function processCallUserMessage(userText) {
             }
         }
 
-        // Speak remaining buffer if any
         if (sentenceBuffer.trim()) {
-            speakCarl(sentenceBuffer.trim());
+            let leftover = sentenceBuffer.trim();
+            for (let prefix of ["Carl:", "carl:", "Carl - "]) {
+                if (leftover.startsWith(prefix)) leftover = leftover.replace(prefix, "").trim();
+            }
+            speakCarl(leftover);
         }
 
         chatHistory.push({ role: "assistant", content: fullResponse });
