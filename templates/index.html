@@ -18,8 +18,7 @@
         <aside class="desktop-sidebar expanded" id="desktop-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
-                    <img src="/static/icons/CarlAILogo.png" alt="Carl" class="sidebar-logo">
-                    <span class="sidebar-title">Carl AI</span>
+                    <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="sidebar-logo-watermark">
                 </div>
                 <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn">❮</button>
             </div>
@@ -35,10 +34,10 @@
                 
                 <!-- Collapsed PC Buttons (Mini Icons) -->
                 <div class="mini-nav-items">
-                    <div class="mini-btn" onclick="startNewChat()" title="New Chat">💬</div>
-                    <div class="mini-btn" onclick="searchChats()" title="Search">🔍</div>
-                    <div class="mini-btn" onclick="switchView('view-games')" title="Games">🎮</div>
-                    <div class="mini-btn" onclick="startCall()" title="Call">📞</div>
+                    <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat">
+                    <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search">
+                    <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games">
+                    <img src="/static/icons/CallIcon.png" class="mini-nav-btn" onclick="startCall()" alt="Call" title="Call">
                 </div>
             </div>
 
@@ -52,7 +51,7 @@
             </div>
             
             <div class="sidebar-footer">
-                <div class="settings-icon">⚙️</div>
+                <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings">
             </div>
         </aside>
 
