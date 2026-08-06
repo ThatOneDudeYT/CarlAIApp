@@ -1,23 +1,69 @@
-let chatHistory = [];
+// =========================================================================
+// --- GLOBAL STATE MANAGEMENT & LIMITS ---
+// =========================================================================
+let currentUser = null;
+let customApiKey = "";
+let freeMessageCount = 0;
+const MAX_FREE_MESSAGES = 10;
+
+let chatsHistory = []; // Saved sessions archive
+let activeChatId = null;
+let chatHistory = [];  // Active chat context sent to /api/chat
+
 let selectedGame = "Tic Tac Toe";
 let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
+// =========================================================================
+// --- AUTH, SETTINGS & NAVIGATION ---
+// =========================================================================
 function switchView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
+    const target = document.getElementById(viewId);
+    if (target) target.classList.add('active');
 }
 
-function startNewChat() {
-    chatHistory = [];
-    const log = document.getElementById("chat-log");
-    log.innerHTML = '<div class="system-msg">Started a fresh session.</div>';
-    document.getElementById("user-input").value = "";
-    pendingImageBase64 = null;
-    pendingImageMime = null;
-    pendingImageSrc = null;
-    switchView('view-chat');
+function handleLogin(e) {
+    if (e) e.preventDefault();
+    const usernameInput = document.getElementById('auth-username');
+    const username = usernameInput ? usernameInput.value.trim() : "";
+    if (username) {
+        currentUser = username;
+        const overlay = document.getElementById('auth-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        startNewChat();
+    }
+}
+
+function toggleSettingsModal(show) {
+    const modal = document.getElementById('settings-modal');
+    if (!modal) return;
+    if (show) modal.classList.remove('hidden');
+    else modal.classList.add('hidden');
+}
+
+function toggleTheme() {
+    const body = document.body;
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (body.classList.contains('dark-mode')) {
+        body.classList.remove('dark-mode');
+        body.classList.add('light-mode');
+        if (themeBtn) themeBtn.innerText = "Switch to Dark Mode";
+    } else {
+        body.classList.remove('light-mode');
+        body.classList.add('dark-mode');
+        if (themeBtn) themeBtn.innerText = "Switch to Light Mode";
+    }
+}
+
+function saveSettings() {
+    const keyInput = document.getElementById('user-api-key');
+    customApiKey = keyInput ? keyInput.value.trim() : "";
+    toggleSettingsModal(false);
+    if (customApiKey) {
+        alert("API Key saved! You now have full custom API access.");
+    }
 }
 
 function getDifficulty() {
@@ -25,23 +71,101 @@ function getDifficulty() {
     return select ? select.value : "medium";
 }
 
-// 1. Listen for the user picking an image
-document.getElementById('native-file-picker').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+// =========================================================================
+// --- CHAT SESSION ARCHIVING & HISTORY ---
+// =========================================================================
+function archiveActiveChat() {
+    const log = document.getElementById("chat-log");
+    if (!log) return;
+    const bubbles = log.querySelectorAll('.chat-bubble');
 
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        pendingImageSrc = event.target.result;
-        pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1];
-        pendingImageBase64 = pendingImageSrc.split(',')[1];
-    };
-    reader.readAsDataURL(file);
-});
+    if (bubbles.length > 0 && activeChatId) {
+        let existing = chatsHistory.find(c => c.id === activeChatId);
+        if (existing) {
+            existing.html = log.innerHTML;
+            existing.apiHistory = [...chatHistory];
+        } else {
+            const firstMsgText = bubbles[0].innerText || "Chat Session";
+            const newTitle = firstMsgText.length > 20 ? firstMsgText.substring(0, 20) + "..." : firstMsgText;
+            chatsHistory.unshift({
+                id: activeChatId,
+                title: newTitle,
+                html: log.innerHTML,
+                apiHistory: [...chatHistory]
+            });
+        }
+    }
+    renderChatHistorySidebar();
+}
 
-// 2. Handle sending text AND images with real-time stream reading
+function startNewChat() {
+    archiveActiveChat();
+    activeChatId = "chat_" + Date.now();
+    chatHistory = [];
+    
+    const log = document.getElementById("chat-log");
+    if (log) log.innerHTML = '<div class="system-msg">Started a fresh session.</div>';
+    
+    const input = document.getElementById("user-input");
+    if (input) input.value = "";
+    
+    pendingImageBase64 = null;
+    pendingImageMime = null;
+    pendingImageSrc = null;
+    
+    switchView('view-chat');
+}
+
+function loadChat(chatId) {
+    archiveActiveChat();
+    const target = chatsHistory.find(c => c.id === chatId);
+    if (target) {
+        activeChatId = target.id;
+        const log = document.getElementById("chat-log");
+        if (log) log.innerHTML = target.html;
+        chatHistory = [...target.apiHistory];
+        switchView('view-chat');
+    }
+}
+
+function renderChatHistorySidebar() {
+    const container = document.getElementById("saved-chats-list");
+    if (!container) return;
+    container.innerHTML = "";
+    
+    chatsHistory.forEach(chat => {
+        const item = document.createElement("div");
+        item.className = "saved-chat-item";
+        item.innerText = chat.title;
+        item.onclick = () => loadChat(chat.id);
+        container.appendChild(item);
+    });
+}
+
+// =========================================================================
+// --- CORE MESSAGING & IMAGE PIPELINE ---
+// =========================================================================
+
+// Listen for file selection
+const filePicker = document.getElementById('native-file-picker');
+if (filePicker) {
+    filePicker.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            pendingImageSrc = event.target.result;
+            pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1];
+            pendingImageBase64 = pendingImageSrc.split(',')[1];
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 async function sendMessage() {
     const input = document.getElementById("user-input");
+    if (!input) return;
     const text = input.value.trim();
     
     if (!text && !pendingImageBase64) return;
@@ -52,14 +176,15 @@ async function sendMessage() {
         message: text || "Look at this image.", 
         history: chatHistory,
         image_b64: pendingImageBase64,
-        image_mime: pendingImageMime
+        image_mime: pendingImageMime,
+        api_key: customApiKey
     };
 
     input.value = "";
     pendingImageBase64 = null;
     pendingImageMime = null;
     pendingImageSrc = null;
-    document.getElementById('native-file-picker').value = "";
+    if (filePicker) filePicker.value = "";
 
     const log = document.getElementById("chat-log");
     const carlBubble = document.createElement("div");
@@ -113,6 +238,7 @@ async function sendMessage() {
 
 function appendMessage(msg, sender, imgSrc = null) {
     const log = document.getElementById("chat-log");
+    if (!log) return;
     const bubble = document.createElement("div");
     bubble.className = `chat-bubble ${sender}`;
     
@@ -133,12 +259,16 @@ function appendMessage(msg, sender, imgSrc = null) {
     log.scrollTop = log.scrollHeight;
 }
 
-document.getElementById("send-btn").addEventListener("click", sendMessage);
-document.getElementById("user-input").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") sendMessage();
-});
+const sendBtn = document.getElementById("send-btn");
+if (sendBtn) sendBtn.addEventListener("click", sendMessage);
 
-// =========================================================================
+const userInput = document.getElementById("user-input");
+if (userInput) {
+    userInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+}
+
 // =========================================================================
 // --- CALL FEATURE SYSTEM (Web Audio, SpeechSynthesis TTS, SpeechRecognition STT) ---
 // =========================================================================
@@ -153,12 +283,10 @@ let ringTimeout = null;
 let ringInterval = null;
 let audioCtx = null;
 
-// Speech APIs
 let recognition = null;
 let callAbortController = null;
 let carlVoice = null;
 
-// Voice loading logic
 function loadCarlVoice() {
     if (!('speechSynthesis' in window)) return;
     const voices = window.speechSynthesis.getVoices();
@@ -179,7 +307,6 @@ if ('speechSynthesis' in window) {
     loadCarlVoice();
 }
 
-// 1. Web Audio Ringtone Generator (US Phone Dial Tone)
 function getAudioContext() {
     if (!audioCtx) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -201,7 +328,6 @@ function playToneBurst(freq1, freq2, duration) {
         osc1.frequency.value = freq1;
         osc2.frequency.value = freq2;
 
-        // Hold steady volume for ring duration, then smooth release to prevent popping
         gain.gain.setValueAtTime(0.15, ctx.currentTime);
         gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05);
         gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration);
@@ -218,7 +344,6 @@ function playToneBurst(freq1, freq2, duration) {
 }
 
 function startRingingSound() {
-    // US Phone Ringback: 2s Ring (440Hz + 480Hz), 2s Silence (4s total cycle)
     playToneBurst(440, 480, 2.0);
     ringInterval = setInterval(() => {
         if (!isCallActive || isCallConnected) {
@@ -256,7 +381,6 @@ function playPickupClick() {
     } catch (e) {}
 }
 
-// 2. Call Control Lifecycle
 function startCall() {
     switchView('view-call');
     isCallActive = true;
@@ -264,7 +388,6 @@ function startCall() {
     isMuted = false;
     callSeconds = 0;
 
-    // Direct synchronous unlock of Web Audio and SpeechSynthesis on click gesture
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') ctx.resume();
 
@@ -282,7 +405,6 @@ function startCall() {
 
     startRingingSound();
 
-    // Random call connection delay between 2 and 8 seconds
     const delay = Math.floor(Math.random() * 6000) + 2000;
 
     ringTimeout = setTimeout(() => {
@@ -351,7 +473,6 @@ function toggleSpeaker() {
     btn.style.opacity = isSpeakerOn ? "1" : "0.4";
 }
 
-// 3. Speech Synthesis (Carl Speaking)
 function speakCarl(text) {
     if (!('speechSynthesis' in window) || !isCallActive) return;
 
@@ -364,14 +485,11 @@ function speakCarl(text) {
 
     utterance.rate = 1.05; 
     utterance.pitch = 1.0;
-    
-    // Lowers volume when Speaker mode is off (simulates earpiece)
     utterance.volume = isSpeakerOn ? 1.0 : 0.15; 
 
     window.speechSynthesis.speak(utterance);
 }
 
-// 4. Continuous Speech Recognition & Barge-In Logic
 function initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -439,7 +557,8 @@ async function processCallUserMessage(userText) {
 
     const payload = {
         message: userText,
-        history: chatHistory
+        history: chatHistory,
+        api_key: customApiKey
     };
 
     try {
@@ -500,7 +619,7 @@ async function processCallUserMessage(userText) {
 }
 
 // =========================================================================
-// --- MINI-GAMES LOGIC ---
+// --- MINI-GAMES LAUNCHER & LOGIC ---
 // =========================================================================
 
 function selectGame(element, gameName) {
@@ -539,7 +658,7 @@ function launchGame() {
     }
 }
 
-// --- GAME: HARD BLACKJACK (MULTI-DECK, SPLITTING, DOUBLING) ---
+// --- GAME 1: BLACKJACK (MULTI-DECK, SPLITTING, DOUBLING) ---
 let bjDeck = [];
 let bjPlayerHands = [];
 let bjCarlHand = [];
@@ -780,7 +899,7 @@ function bjDealerTurn() {
     }
 }
 
-// --- GAME: ROCK PAPER SCISSORS ---
+// --- GAME 2: ROCK PAPER SCISSORS ---
 let rpsScore = { player: 0, carl: 0 };
 let rpsPlaying = false;
 
@@ -854,7 +973,7 @@ function playRps(playerChoice) {
     }, 500);
 }
 
-// --- GAME: TIC TAC TOE ---
+// --- GAME 3: TIC TAC TOE ---
 let board = ["", "", "", "", "", "", "", "", ""];
 let playerTurn = true;
 const winCombos = [
@@ -897,8 +1016,10 @@ function makeMove(index) {
 
 function updateCell(index, player) {
     const cell = document.getElementById(`ttt-cell-${index}`);
-    cell.innerText = player;
-    cell.classList.add(player.toLowerCase());
+    if (cell) {
+        cell.innerText = player;
+        cell.classList.add(player.toLowerCase());
+    }
 }
 
 function carlMove() {
@@ -948,7 +1069,7 @@ function checkWin(player) {
     return winCombos.some(combo => combo.every(i => board[i] === player));
 }
 
-// --- GAME: HANGMAN ---
+// --- GAME 4: HANGMAN ---
 let hmWord = "";
 let hmGuessed = new Set();
 let hmMistakes = 0;
@@ -976,7 +1097,10 @@ function initHangman() {
     hmPlayerTurn = true;
     hmGameOver = false;
     
-    for(let i=1; i<=6; i++) document.getElementById(`hm-part-${i}`).style.display = "none";
+    for(let i=1; i<=6; i++) {
+        const part = document.getElementById(`hm-part-${i}`);
+        if (part) part.style.display = "none";
+    }
     document.querySelectorAll(".hm-key").forEach(btn => {
         btn.className = "hm-key";
         btn.disabled = false;
@@ -1017,7 +1141,8 @@ function hmGuess(letter) {
     } else {
         if (btn) btn.classList.add("wrong");
         hmMistakes++;
-        document.getElementById(`hm-part-${hmMistakes}`).style.display = "block";
+        const part = document.getElementById(`hm-part-${hmMistakes}`);
+        if (part) part.style.display = "block";
         
         if (hmMistakes >= 6) {
             hmGameOver = true;
@@ -1069,7 +1194,7 @@ function carlHmMove() {
     if (guess) hmGuess(guess);
 }
 
-// --- GAME: CONNECT FOUR ---
+// --- GAME 5: CONNECT FOUR ---
 const C4_ROWS = 6;
 const C4_COLS = 7;
 let c4Board = [];
@@ -1226,15 +1351,17 @@ function c4UpdateBoardUI() {
     for (let r = 0; r < C4_ROWS; r++) {
         for (let c = 0; c < C4_COLS; c++) {
             const cell = document.getElementById(`c4-${r}-${c}`);
-            let val = c4Board[r][c];
-            if (val === 1) cell.className = "c4-cell red";
-            else if (val === 2) cell.className = "c4-cell yellow";
-            else cell.className = "c4-cell";
+            if (cell) {
+                let val = c4Board[r][c];
+                if (val === 1) cell.className = "c4-cell red";
+                else if (val === 2) cell.className = "c4-cell yellow";
+                else cell.className = "c4-cell";
+            }
         }
     }
 }
 
-// --- GAME: BATTLESHIP ---
+// --- GAME 6: BATTLESHIP ---
 const BS_SIZE = 6;
 let bsPlayerGrid = [];
 let bsEnemyGrid = [];
@@ -1460,6 +1587,8 @@ function bsCarlTurn() {
 function bsUpdateBoardsUI() {
     const enemyDiv = document.getElementById("bs-enemy-grid");
     const playerDiv = document.getElementById("bs-player-grid");
+    if (!enemyDiv || !playerDiv) return;
+
     enemyDiv.innerHTML = "";
     playerDiv.innerHTML = "";
 
@@ -1498,7 +1627,7 @@ function bsUpdateBoardsUI() {
     }
 }
 
-// --- GAME: CHECKERS ---
+// --- GAME 7: CHECKERS ---
 const CHK_SIZE = 8;
 let chkBoard = [];
 let chkSelected = null;
@@ -1530,6 +1659,7 @@ function initCheckers() {
 
 function chkRenderBoard() {
     const boardDiv = document.getElementById("chk-board");
+    if (!boardDiv) return;
     boardDiv.innerHTML = "";
 
     for (let r = 0; r < CHK_SIZE; r++) {
@@ -1737,7 +1867,7 @@ function chkCheckWin(player) {
     return true;
 }
 
-// --- GAME: CHESS ---
+// --- GAME 8: CHESS ---
 const CHS_SIZE = 8;
 let chsBoard = [];
 let chsSelected = null;
@@ -1786,6 +1916,7 @@ function initChess() {
 
 function chsRenderBoard() {
     const boardDiv = document.getElementById("chs-board");
+    if (!boardDiv) return;
     boardDiv.innerHTML = "";
 
     for (let r = 0; r < CHS_SIZE; r++) {
