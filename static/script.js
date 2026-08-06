@@ -16,10 +16,30 @@ let pendingImageSrc = null;
 
 // Initialize persisted state on startup
 window.addEventListener("DOMContentLoaded", () => {
+    loadPersistedTheme();
     loadPersistedSession();
     initGoogleSignIn();
     initMobileNavIcons();
 });
+
+function loadPersistedTheme() {
+    try {
+        const savedTheme = localStorage.getItem("carl_theme");
+        const body = document.body;
+        const themeBtn = document.getElementById('theme-toggle-btn');
+        if (savedTheme === "light") {
+            body.classList.remove("dark-mode");
+            body.classList.add("light-mode");
+            if (themeBtn) themeBtn.innerText = "Switch to Dark Mode";
+        } else {
+            body.classList.remove("light-mode");
+            body.classList.add("dark-mode");
+            if (themeBtn) themeBtn.innerText = "Switch to Light Mode";
+        }
+    } catch (e) {
+        console.error("Failed to load theme:", e);
+    }
+}
 
 function loadPersistedSession() {
     try {
@@ -144,6 +164,7 @@ function initGoogleSignIn() {
 
 function handleSignOut() {
     const retainedApiKey = customApiKey; // Ensures API key persists across logouts
+    const retainedTheme = localStorage.getItem("carl_theme");
     
     localStorage.clear();
     
@@ -153,12 +174,15 @@ function handleSignOut() {
     chatHistory = [];
     activeChatId = null;
     
-    // Put API Key back in so they don't lose it
+    // Put API Key and Theme back in so they don't lose them
     if (retainedApiKey) {
         customApiKey = retainedApiKey;
         localStorage.setItem("carl_api_key", customApiKey);
     } else {
         customApiKey = "";
+    }
+    if (retainedTheme) {
+        localStorage.setItem("carl_theme", retainedTheme);
     }
 
     updateProfileUI();
@@ -206,10 +230,12 @@ function toggleTheme() {
         body.classList.remove('dark-mode');
         body.classList.add('light-mode');
         if (themeBtn) themeBtn.innerText = "Switch to Dark Mode";
+        localStorage.setItem("carl_theme", "light");
     } else {
         body.classList.remove('light-mode');
         body.classList.add('dark-mode');
         if (themeBtn) themeBtn.innerText = "Switch to Light Mode";
+        localStorage.setItem("carl_theme", "dark");
     }
 }
 
@@ -239,10 +265,12 @@ function initMobileNavIcons() {
     const mobileChatBtn = document.getElementById("mobile-nav-chat");
     const mobileCallBtn = document.getElementById("mobile-nav-call");
     const mobileGamesBtn = document.getElementById("mobile-nav-games");
+    const mobileSettingsBtn = document.getElementById("mobile-nav-settings");
 
     if (mobileChatBtn) mobileChatBtn.onclick = () => startNewChat();
     if (mobileCallBtn) mobileCallBtn.onclick = () => startCall();
     if (mobileGamesBtn) mobileGamesBtn.onclick = () => switchView('view-games');
+    if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => toggleSettingsModal(true);
 }
 
 // =========================================================================
@@ -2334,7 +2362,7 @@ function chsCarlTurn() {
         }
     } else {
         allMoves.sort((a, b) => b.score - a.score);
-        let bestScore = allMoves[0].score;
+        let bestScore = allNames[0].score;
         let bestMoves = allMoves.filter(m => m.score === bestScore);
         chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
     }

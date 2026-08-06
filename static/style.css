@@ -249,9 +249,9 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .bottom-nav { justify-content: center; align-items: center; width: 100%; margin-bottom: 10px; }
 .nav-buttons-container { display: flex; justify-content: center; align-items: center; gap: 8px; }
 .nav-item { display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.nav-item img { width: 55px; height: 50px; object-fit: contain; opacity: 1; transition: transform 0.2s; }
+.nav-item img { width: 50px; height: 45px; object-fit: contain; opacity: 1; transition: transform 0.2s; }
 .nav-item:active img { transform: scale(0.9); }
-.nav-divider { width: 3px; height: 28px; background-color: var(--border-color); border-radius: 2px; }
+.nav-divider { width: 2px; height: 24px; background-color: var(--border-color); border-radius: 2px; }
 
 .copyright { text-align: center; color: var(--text-sub); font-size: 13px; letter-spacing: 0.5px; margin-top: auto; }
 
