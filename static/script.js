@@ -1,10 +1,9 @@
 // =========================================================================
-// --- GLOBAL STATE MANAGEMENT & LIMITS ---
+// --- GLOBAL STATE & LOCALSTORAGE PERSISTENCE ---
 // =========================================================================
 let currentUser = null;
+let currentUserAvatar = "/static/icons/default-avatar.png";
 let customApiKey = "";
-let freeMessageCount = 0;
-const MAX_FREE_MESSAGES = 10;
 
 let chatsHistory = []; // Saved sessions archive
 let activeChatId = null;
@@ -15,25 +14,150 @@ let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
+// Initialize persisted state on startup
+window.addEventListener("DOMContentLoaded", () => {
+    loadPersistedSession();
+    initGoogleSignIn();
+    initMobileNavIcons();
+});
+
+function loadPersistedSession() {
+    try {
+        const savedUser = localStorage.getItem("carl_user");
+        const savedAvatar = localStorage.getItem("carl_avatar");
+        const savedApiKey = localStorage.getItem("carl_api_key");
+        const savedChats = localStorage.getItem("carl_chats_history");
+        const savedActiveId = localStorage.getItem("carl_active_id");
+
+        if (savedApiKey) {
+            customApiKey = savedApiKey;
+            const keyInput = document.getElementById('user-api-key');
+            if (keyInput) keyInput.value = customApiKey;
+        }
+
+        if (savedChats) chatsHistory = JSON.parse(savedChats);
+        
+        if (savedUser) {
+            currentUser = savedUser;
+            currentUserAvatar = savedAvatar || "/static/icons/default-avatar.png";
+            
+            const overlay = document.getElementById('auth-overlay');
+            if (overlay) overlay.classList.add('hidden');
+            
+            updateProfileUI();
+
+            if (savedActiveId && chatsHistory.some(c => c.id === savedActiveId)) {
+                loadChat(savedActiveId);
+            } else {
+                startNewChat();
+            }
+        }
+    } catch (e) {
+        console.error("Failed to restore session:", e);
+    }
+}
+
+function saveSessionData() {
+    try {
+        if (currentUser) {
+            localStorage.setItem("carl_user", currentUser);
+            localStorage.setItem("carl_avatar", currentUserAvatar);
+        }
+        localStorage.setItem("carl_api_key", customApiKey);
+        localStorage.setItem("carl_chats_history", JSON.stringify(chatsHistory));
+        if (activeChatId) localStorage.setItem("carl_active_id", activeChatId);
+    } catch (e) {
+        console.error("Failed to save session:", e);
+    }
+}
+
 // =========================================================================
-// --- AUTH, SETTINGS & NAVIGATION ---
+// --- AUTHENTICATION, GOOGLE SIGN-IN & PROFILE HEADER ---
 // =========================================================================
-function switchView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    const target = document.getElementById(viewId);
-    if (target) target.classList.add('active');
+
+function updateProfileUI() {
+    const avatarEl = document.getElementById("header-user-avatar");
+    const nameEl = document.getElementById("header-user-name");
+
+    if (avatarEl) avatarEl.src = currentUserAvatar;
+    if (nameEl) nameEl.innerText = currentUser || "Guest";
 }
 
 function handleLogin(e) {
     if (e) e.preventDefault();
     const usernameInput = document.getElementById('auth-username');
     const username = usernameInput ? usernameInput.value.trim() : "";
+    
     if (username) {
         currentUser = username;
+        currentUserAvatar = "/static/icons/default-avatar.png";
+        
         const overlay = document.getElementById('auth-overlay');
         if (overlay) overlay.classList.add('hidden');
+        
+        updateProfileUI();
+        saveSessionData();
         startNewChat();
     }
+}
+
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+}
+
+function handleGoogleCredentialResponse(response) {
+    const data = parseJwt(response.credential);
+    if (data) {
+        currentUser = data.name || data.email;
+        currentUserAvatar = data.picture || "/static/icons/default-avatar.png";
+
+        const overlay = document.getElementById('auth-overlay');
+        if (overlay) overlay.classList.add('hidden');
+
+        updateProfileUI();
+        saveSessionData();
+        startNewChat();
+    }
+}
+
+function initGoogleSignIn() {
+    if (window.google && window.google.accounts) {
+        window.google.accounts.id.initialize({
+            client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com", // Replace with your OAuth Client ID
+            callback: handleGoogleCredentialResponse
+        });
+        const btnContainer = document.getElementById("google-signin-btn");
+        if (btnContainer) {
+            window.google.accounts.id.renderButton(btnContainer, { theme: "outline", size: "large" });
+        }
+    }
+}
+
+function handleSignOut() {
+    localStorage.clear();
+    currentUser = null;
+    currentUserAvatar = "/static/icons/default-avatar.png";
+    customApiKey = "";
+    chatsHistory = [];
+    chatHistory = [];
+    activeChatId = null;
+
+    updateProfileUI();
+
+    const settingsModal = document.getElementById('settings-modal');
+    if (settingsModal) settingsModal.classList.add('hidden');
+
+    const overlay = document.getElementById('auth-overlay');
+    if (overlay) overlay.classList.remove('hidden');
 }
 
 function toggleSettingsModal(show) {
@@ -41,6 +165,21 @@ function toggleSettingsModal(show) {
     if (!modal) return;
     if (show) modal.classList.remove('hidden');
     else modal.classList.add('hidden');
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('desktop-sidebar');
+    const btn = document.getElementById('sidebar-toggle-btn');
+    if (!sidebar) return;
+    if (sidebar.classList.contains('expanded')) {
+        sidebar.classList.remove('expanded');
+        sidebar.classList.add('collapsed');
+        if (btn) btn.innerText = "❯";
+    } else {
+        sidebar.classList.remove('collapsed');
+        sidebar.classList.add('expanded');
+        if (btn) btn.innerText = "❮";
+    }
 }
 
 function toggleTheme() {
@@ -60,10 +199,8 @@ function toggleTheme() {
 function saveSettings() {
     const keyInput = document.getElementById('user-api-key');
     customApiKey = keyInput ? keyInput.value.trim() : "";
+    saveSessionData();
     toggleSettingsModal(false);
-    if (customApiKey) {
-        alert("API Key saved! You now have full custom API access.");
-    }
 }
 
 function getDifficulty() {
@@ -71,9 +208,30 @@ function getDifficulty() {
     return select ? select.value : "medium";
 }
 
+function switchView(viewId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const target = document.getElementById(viewId);
+    if (target) target.classList.add('active');
+}
+
+function searchChats() {
+    alert("Search functionality: Type in the search box to filter archived chats!");
+}
+
+function initMobileNavIcons() {
+    const mobileChatBtn = document.getElementById("mobile-nav-chat");
+    const mobileCallBtn = document.getElementById("mobile-nav-call");
+    const mobileGamesBtn = document.getElementById("mobile-nav-games");
+
+    if (mobileChatBtn) mobileChatBtn.onclick = () => startNewChat();
+    if (mobileCallBtn) mobileCallBtn.onclick = () => startCall();
+    if (mobileGamesBtn) mobileGamesBtn.onclick = () => switchView('view-games');
+}
+
 // =========================================================================
-// --- CHAT SESSION ARCHIVING & HISTORY ---
+// --- CHAT SESSION ARCHIVING & UNLIMITED MESSAGING ---
 // =========================================================================
+
 function archiveActiveChat() {
     const log = document.getElementById("chat-log");
     if (!log) return;
@@ -95,6 +253,7 @@ function archiveActiveChat() {
             });
         }
     }
+    saveSessionData();
     renderChatHistorySidebar();
 }
 
@@ -113,6 +272,7 @@ function startNewChat() {
     pendingImageMime = null;
     pendingImageSrc = null;
     
+    saveSessionData();
     switchView('view-chat');
 }
 
@@ -124,6 +284,7 @@ function loadChat(chatId) {
         const log = document.getElementById("chat-log");
         if (log) log.innerHTML = target.html;
         chatHistory = [...target.apiHistory];
+        saveSessionData();
         switchView('view-chat');
     }
 }
@@ -142,11 +303,7 @@ function renderChatHistorySidebar() {
     });
 }
 
-// =========================================================================
-// --- CORE MESSAGING & IMAGE PIPELINE ---
-// =========================================================================
-
-// Listen for file selection
+// File picker handler
 const filePicker = document.getElementById('native-file-picker');
 if (filePicker) {
     filePicker.addEventListener('change', function(e) {
@@ -230,6 +387,8 @@ async function sendMessage() {
 
         chatHistory.push({ role: "user", content: text || "Look at this image." });
         chatHistory.push({ role: "assistant", content: fullResponse });
+        
+        saveSessionData();
 
     } catch (err) {
         textNode.innerText = "Network error.";
@@ -658,7 +817,7 @@ function launchGame() {
     }
 }
 
-// --- GAME 1: BLACKJACK (MULTI-DECK, SPLITTING, DOUBLING) ---
+// --- GAME 1: BLACKJACK ---
 let bjDeck = [];
 let bjPlayerHands = [];
 let bjCarlHand = [];
