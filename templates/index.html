@@ -6,10 +6,12 @@
     <title>Carl AI</title>
     <link rel="stylesheet" href="/static/style.css">
     
-    <!-- iPhone Home Screen App Icon -->
+    <!-- iPhone Home Screen App Icon & Favicon -->
     <link rel="apple-touch-icon" href="/static/icons/CarlAILogo.png">
-    <!-- Standard Browser Favicon -->
     <link rel="icon" type="image/png" href="/static/icons/CarlAILogo.png">
+
+    <!-- Google Sign-In SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="dark-mode">
 
@@ -24,6 +26,11 @@
                 <input type="password" id="auth-password" placeholder="Password" required>
                 <button type="submit" class="auth-btn">Sign In</button>
             </form>
+
+            <div class="auth-divider"><span>OR</span></div>
+
+            <!-- Google Sign-In Button Container -->
+            <div id="google-signin-btn" class="google-btn-container"></div>
         </div>
     </div>
 
@@ -41,15 +48,16 @@
                 </div>
                 
                 <div class="setting-section">
-                    <label for="user-api-key">Gemini API Key</label>
-                    <input type="password" id="user-api-key" placeholder="Paste your API key here..." autocomplete="off">
+                    <label for="user-api-key">Gemini API Key (Optional)</label>
+                    <input type="password" id="user-api-key" placeholder="Paste custom API key here..." autocomplete="off">
                     <p class="setting-hint">
-                        Without a custom API key, you get <strong>10 free messages</strong> and calling Carl is disabled.
+                        Unlimited free text messaging is active by default. Providing a custom API key grants custom endpoint access.
                     </p>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="save-settings-btn" onclick="saveSettings()">Save & Close</button>
+                <button class="signout-btn" onclick="handleSignOut()">Sign Out</button>
             </div>
         </div>
     </div>
@@ -67,7 +75,7 @@
             </div>
             
             <div class="sidebar-nav">
-                <!-- Expanded PC Buttons (Full Images) -->
+                <!-- Expanded PC Buttons -->
                 <div class="full-nav-items">
                     <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat">
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search">
@@ -75,7 +83,7 @@
                     <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call">
                 </div>
                 
-                <!-- Collapsed PC Buttons (Mini Icons) -->
+                <!-- Collapsed PC Buttons -->
                 <div class="mini-nav-items">
                     <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat">
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search">
@@ -99,6 +107,12 @@
         <!-- MAIN CONTENT AREA -->
         <main class="main-content">
             
+            <!-- TOP-RIGHT PROFILE WIDGET -->
+            <div class="top-profile-bar" id="top-profile-bar">
+                <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar">
+                <span id="header-user-name" class="top-profile-name">Guest</span>
+            </div>
+
             <!-- CHAT VIEW -->
             <div id="view-chat" class="view active">
                 <div id="chat-log" class="chat-log">
@@ -119,19 +133,19 @@
                 <!-- Mobile Bottom Nav -->
                 <div class="bottom-nav mobile-only">
                     <div class="nav-buttons-container">
-                        <div class="nav-item" onclick="document.getElementById('native-file-picker').click();">
+                        <div class="nav-item" id="mobile-nav-upload" onclick="document.getElementById('native-file-picker').click();">
                             <img src="/static/icons/UploadFile.png" alt="Upload" />
                         </div>
                         <div class="nav-divider"></div>
-                        <div class="nav-item" onclick="switchView('view-games')">
+                        <div class="nav-item" id="mobile-nav-games" onclick="switchView('view-games')">
                             <img src="/static/icons/GamesIcon.png" alt="Games" />
                         </div>
                         <div class="nav-divider"></div>
-                        <div class="nav-item" onclick="startCall()">
+                        <div class="nav-item" id="mobile-nav-call" onclick="startCall()">
                             <img src="/static/icons/CallIcon.png" alt="Call" />
                         </div>
                         <div class="nav-divider"></div>
-                        <div class="nav-item" onclick="startNewChat()">
+                        <div class="nav-item" id="mobile-nav-chat" onclick="startNewChat()">
                             <img src="/static/icons/ChatIcon.png" alt="New Chat" />
                         </div>
                     </div>
