@@ -132,7 +132,7 @@ function handleGoogleCredentialResponse(response) {
 function initGoogleSignIn() {
     if (window.google && window.google.accounts) {
         window.google.accounts.id.initialize({
-            client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com", // Replace with your OAuth Client ID
+            client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
             callback: handleGoogleCredentialResponse
         });
         const btnContainer = document.getElementById("google-signin-btn");
