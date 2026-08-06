@@ -48,17 +48,25 @@
                 </div>
                 
                 <div class="setting-section">
-                    <label for="user-api-key">Gemini 3.1 Flash-Lite API Key (Optional)</label>
+                    <div class="setting-label-row">
+                        <label for="user-api-key">Gemini 3.1 Flash-Lite API Key (Optional)</label>
+                        <button type="button" class="help-btn-inline" onclick="toggleApiKeyHelp()">Need Help?</button>
+                    </div>
                     <input type="password" id="user-api-key" placeholder="Paste custom API key here..." autocomplete="off">
                     <p class="setting-hint">
-                        Free users are limited to 10 messages per day and voice calling is locked[cite: 1]. 
-                        <br><br>
-                        <strong>How to get a Gemini API Key:</strong><br>
-                        1. Go to Google AI Studio (aistudio.google.com).<br>
-                        2. Sign in with your Google account.<br>
-                        3. Click on <strong>Get API key</strong> in the top left corner.<br>
-                        4. Generate a new API key, copy it, and paste it into the box above to permanently unlock unlimited chats and voice calling!
+                        Free users are limited to 10 messages per day and voice calling is locked[cite: 1].
                     </p>
+                    
+                    <!-- Collapsible Tutorial Box -->
+                    <div id="api-key-help-box" class="api-help-box hidden">
+                        <p class="setting-hint">
+                            <strong>How to get a Gemini API Key:</strong><br>
+                            1. Go to Google AI Studio (aistudio.google.com).<br>
+                            2. Sign in with your Google account.<br>
+                            3. Click on <strong>Get API key</strong> in the top left corner.<br>
+                            4. Generate a new API key, copy it, and paste it into the box above to permanently unlock unlimited chats and voice calling!
+                        </p>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
