@@ -11,7 +11,50 @@
     <!-- Standard Browser Favicon -->
     <link rel="icon" type="image/png" href="/static/icons/CarlAILogo.png">
 </head>
-<body>
+<body class="dark-mode">
+
+    <!-- AUTH / SIGN-IN OVERLAY -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-card">
+            <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo">
+            <h2>Welcome Back</h2>
+            <p>Sign in to start chatting with Carl</p>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <input type="text" id="auth-username" placeholder="Username or Email" required autocomplete="off">
+                <input type="password" id="auth-password" placeholder="Password" required>
+                <button type="submit" class="auth-btn">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL WINDOW -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="modal-close" onclick="toggleSettingsModal(false)">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-row">
+                    <span>Appearance</span>
+                    <button id="theme-toggle-btn" class="theme-btn" onclick="toggleTheme()">Switch to Light Mode</button>
+                </div>
+                
+                <div class="setting-section">
+                    <label for="user-api-key">Gemini API Key</label>
+                    <input type="password" id="user-api-key" placeholder="Paste your API key here..." autocomplete="off">
+                    <p class="setting-hint">
+                        Without a custom API key, you get <strong>10 free messages</strong> and calling Carl is disabled.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="save-settings-btn" onclick="saveSettings()">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
     <div class="app-container">
         
         <!-- DESKTOP SIDEBAR -->
@@ -44,14 +87,12 @@
             <div class="sidebar-chats">
                 <h3 class="chats-header">Chats</h3>
                 <div id="saved-chats-list">
-                    <div class="saved-chat-item">Test Chat 3</div>
-                    <div class="saved-chat-item">Test Chat 2</div>
-                    <div class="saved-chat-item">Test Chat 1</div>
+                    <!-- Saved chat history loaded dynamically -->
                 </div>
             </div>
             
             <div class="sidebar-footer">
-                <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings">
+                <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="toggleSettingsModal(true)">
             </div>
         </aside>
 
@@ -75,23 +116,23 @@
                     <input type="file" id="native-file-picker" style="display: none;" accept="image/*, .pdf, .txt, .doc, .docx" />
                 </div>
 
-                <!-- Mobile Bottom Nav (Hidden on PC) -->
+                <!-- Mobile Bottom Nav -->
                 <div class="bottom-nav mobile-only">
                     <div class="nav-buttons-container">
                         <div class="nav-item" onclick="document.getElementById('native-file-picker').click();">
-                            <img src="/static/icons/UploadFile.png" alt="Search" />
+                            <img src="/static/icons/UploadFile.png" alt="Upload" />
                         </div>
                         <div class="nav-divider"></div>
                         <div class="nav-item" onclick="switchView('view-games')">
-                            <img src="/static/icons/GamesButtonIcon.png" alt="Games" />
+                            <img src="/static/icons/GamesIcon.png" alt="Games" />
                         </div>
                         <div class="nav-divider"></div>
                         <div class="nav-item" onclick="startCall()">
-                            <img src="/static/icons/CallButtonIcon.png" alt="Call" />
+                            <img src="/static/icons/CallIcon.png" alt="Call" />
                         </div>
                         <div class="nav-divider"></div>
                         <div class="nav-item" onclick="startNewChat()">
-                            <img src="/static/icons/NewChat.png" alt="New Chat" />
+                            <img src="/static/icons/ChatIcon.png" alt="New Chat" />
                         </div>
                     </div>
                 </div>
@@ -104,7 +145,7 @@
                 <div class="call-header">
                     <h1>Carl AI</h1>
                     <div id="call-status" style="display: none;">Calling Carl...</div>
-                    <div id="call-timer">00:16</div>
+                    <div id="call-timer">00:00</div>
                 </div>
 
                 <div class="call-controls">
@@ -396,21 +437,5 @@
     </div>
 
     <script src="/static/script.js"></script>
-    <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('desktop-sidebar');
-            const toggleBtn = document.getElementById('sidebar-toggle-btn');
-            
-            if (sidebar.classList.contains('expanded')) {
-                sidebar.classList.remove('expanded');
-                sidebar.classList.add('collapsed');
-                toggleBtn.innerText = '❯'; 
-            } else {
-                sidebar.classList.remove('collapsed');
-                sidebar.classList.add('expanded');
-                toggleBtn.innerText = '❮'; 
-            }
-        }
-    </script>
 </body>
 </html>
