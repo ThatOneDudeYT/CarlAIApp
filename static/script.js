@@ -177,6 +177,13 @@ function toggleSettingsModal(show) {
     else modal.classList.add('hidden');
 }
 
+function toggleApiKeyHelp() {
+    const helpBox = document.getElementById('api-key-help-box');
+    if (helpBox) {
+        helpBox.classList.toggle('hidden');
+    }
+}
+
 function toggleSidebar() {
     const sidebar = document.getElementById('desktop-sidebar');
     const btn = document.getElementById('sidebar-toggle-btn');
