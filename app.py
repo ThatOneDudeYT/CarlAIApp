@@ -13,13 +13,17 @@ def index():
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    api_key = os.environ.get("GEMINI_API_KEY")
+    data = request.json or {}
+    
+    # 1. Fetch custom API key from payload first, fallback to env variable
+    user_api_key = data.get("api_key")
+    api_key = user_api_key if user_api_key else os.environ.get("GEMINI_API_KEY")
+
     if not api_key:
-        return jsonify({"error": "GEMINI_API_KEY environment variable is missing on Render."}), 500
+        return jsonify({"error": "No API key provided. Please set your Gemini API key in Settings."}), 400
 
     client = genai.Client(api_key=api_key)
 
-    data = request.json or {}
     user_msg = data.get("message", "")
     history = data.get("history", [])
     image_b64 = data.get("image_b64")
