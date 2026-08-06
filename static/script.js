@@ -143,13 +143,23 @@ function initGoogleSignIn() {
 }
 
 function handleSignOut() {
+    const retainedApiKey = customApiKey; // Ensures API key persists across logouts
+    
     localStorage.clear();
+    
     currentUser = null;
     currentUserAvatar = "/static/icons/default-avatar.png";
-    customApiKey = "";
     chatsHistory = [];
     chatHistory = [];
     activeChatId = null;
+    
+    // Put API Key back in so they don't lose it
+    if (retainedApiKey) {
+        customApiKey = retainedApiKey;
+        localStorage.setItem("carl_api_key", customApiKey);
+    } else {
+        customApiKey = "";
+    }
 
     updateProfileUI();
 
@@ -229,8 +239,35 @@ function initMobileNavIcons() {
 }
 
 // =========================================================================
-// --- CHAT SESSION ARCHIVING & UNLIMITED MESSAGING ---
+// --- CHAT SESSION ARCHIVING & UNLIMITED MESSAGING LIMIT CHECK ---
 // =========================================================================
+
+function checkDailyMessageLimit() {
+    // Unlimited Messaging if custom API key is present
+    if (customApiKey && customApiKey.trim().length > 0) {
+        return true; 
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    let lastDate = localStorage.getItem("carl_last_msg_date");
+    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+
+    if (lastDate !== today) {
+        lastDate = today;
+        count = 0;
+    }
+
+    if (count >= 10) {
+        alert("Daily limit reached! You have used your 10 free messages for today. Please add your Gemini API Key in Settings to unlock unlimited messaging and calls.");
+        toggleSettingsModal(true);
+        return false;
+    }
+
+    count++;
+    localStorage.setItem("carl_last_msg_date", today);
+    localStorage.setItem("carl_msg_count", count.toString());
+    return true;
+}
 
 function archiveActiveChat() {
     const log = document.getElementById("chat-log");
@@ -326,6 +363,9 @@ async function sendMessage() {
     const text = input.value.trim();
     
     if (!text && !pendingImageBase64) return;
+    
+    // Check daily limit before proceeding to send the message
+    if (!checkDailyMessageLimit()) return;
 
     appendMessage(text, "user", pendingImageSrc);
     
@@ -541,6 +581,13 @@ function playPickupClick() {
 }
 
 function startCall() {
+    // Requires custom API Key check before allowing them to access the view
+    if (!customApiKey || customApiKey.trim().length === 0) {
+        alert("Calling Carl is locked! Please enter your custom Gemini API Key in Settings to unlock voice calls.");
+        toggleSettingsModal(true);
+        return;
+    }
+
     switchView('view-call');
     isCallActive = true;
     isCallConnected = false;
