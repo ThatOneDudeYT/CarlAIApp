@@ -26,15 +26,15 @@ function loadPersistedTheme() {
     try {
         const savedTheme = localStorage.getItem("carl_theme");
         const body = document.body;
-        const themeBtn = document.getElementById('theme-toggle-btn');
+        const themeSwitch = document.getElementById('theme-toggle-switch');
         if (savedTheme === "light") {
             body.classList.remove("dark-mode");
             body.classList.add("light-mode");
-            if (themeBtn) themeBtn.innerText = "Switch to Dark Mode";
+            if (themeSwitch) themeSwitch.checked = true;
         } else {
             body.classList.remove("light-mode");
             body.classList.add("dark-mode");
-            if (themeBtn) themeBtn.innerText = "Switch to Light Mode";
+            if (themeSwitch) themeSwitch.checked = false;
         }
     } catch (e) {
         console.error("Failed to load theme:", e);
@@ -66,6 +66,9 @@ function loadPersistedSession() {
             
             updateProfileUI();
 
+            const usernameInput = document.getElementById('settings-username-input');
+            if (usernameInput) usernameInput.value = currentUser;
+
             if (savedActiveId && chatsHistory.some(c => c.id === savedActiveId)) {
                 loadChat(savedActiveId);
             } else {
@@ -92,7 +95,7 @@ function saveSessionData() {
 }
 
 // =========================================================================
-// --- AUTHENTICATION, GOOGLE SIGN-IN & PROFILE HEADER ---
+// --- USER PROFILE & SETTINGS TAB CONTROLS ---
 // =========================================================================
 
 function updateProfileUI() {
@@ -101,6 +104,34 @@ function updateProfileUI() {
 
     if (avatarEl) avatarEl.src = currentUserAvatar;
     if (nameEl) nameEl.innerText = currentUser || "Guest";
+}
+
+function updateUsernameFromSettings() {
+    const input = document.getElementById("settings-username-input");
+    if (!input) return;
+    const newName = input.value.trim();
+
+    if (newName.length >= 3 && newName.length <= 20) {
+        currentUser = newName;
+        updateProfileUI();
+        saveSessionData();
+    } else {
+        alert("Username must be between 3 and 20 characters!");
+        input.value = currentUser || "";
+    }
+}
+
+function handleAvatarUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        currentUserAvatar = e.target.result;
+        updateProfileUI();
+        saveSessionData();
+    };
+    reader.readAsDataURL(file);
 }
 
 function handleLogin(e) {
@@ -163,7 +194,7 @@ function initGoogleSignIn() {
 }
 
 function handleSignOut() {
-    const retainedApiKey = customApiKey; // Ensures API key persists across logouts
+    const retainedApiKey = customApiKey;
     const retainedTheme = localStorage.getItem("carl_theme");
     
     localStorage.clear();
@@ -174,7 +205,6 @@ function handleSignOut() {
     chatHistory = [];
     activeChatId = null;
     
-    // Put API Key and Theme back in so they don't lose them
     if (retainedApiKey) {
         customApiKey = retainedApiKey;
         localStorage.setItem("carl_api_key", customApiKey);
@@ -187,18 +217,8 @@ function handleSignOut() {
 
     updateProfileUI();
 
-    const settingsModal = document.getElementById('settings-modal');
-    if (settingsModal) settingsModal.classList.add('hidden');
-
     const overlay = document.getElementById('auth-overlay');
     if (overlay) overlay.classList.remove('hidden');
-}
-
-function toggleSettingsModal(show) {
-    const modal = document.getElementById('settings-modal');
-    if (!modal) return;
-    if (show) modal.classList.remove('hidden');
-    else modal.classList.add('hidden');
 }
 
 function toggleApiKeyHelp() {
@@ -225,16 +245,16 @@ function toggleSidebar() {
 
 function toggleTheme() {
     const body = document.body;
-    const themeBtn = document.getElementById('theme-toggle-btn');
+    const themeSwitch = document.getElementById('theme-toggle-switch');
     if (body.classList.contains('dark-mode')) {
         body.classList.remove('dark-mode');
         body.classList.add('light-mode');
-        if (themeBtn) themeBtn.innerText = "Switch to Dark Mode";
+        if (themeSwitch) themeSwitch.checked = true;
         localStorage.setItem("carl_theme", "light");
     } else {
         body.classList.remove('light-mode');
         body.classList.add('dark-mode');
-        if (themeBtn) themeBtn.innerText = "Switch to Light Mode";
+        if (themeSwitch) themeSwitch.checked = false;
         localStorage.setItem("carl_theme", "dark");
     }
 }
@@ -243,7 +263,6 @@ function saveSettings() {
     const keyInput = document.getElementById('user-api-key');
     customApiKey = keyInput ? keyInput.value.trim() : "";
     saveSessionData();
-    toggleSettingsModal(false);
 }
 
 function getDifficulty() {
@@ -270,19 +289,14 @@ function initMobileNavIcons() {
     if (mobileChatBtn) mobileChatBtn.onclick = () => startNewChat();
     if (mobileCallBtn) mobileCallBtn.onclick = () => startCall();
     if (mobileGamesBtn) mobileGamesBtn.onclick = () => switchView('view-games');
-    if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => toggleSettingsModal(true);
+    if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => switchView('view-settings');
 }
 
 // =========================================================================
-// --- CHAT SESSION ARCHIVING & UNLIMITED MESSAGING LIMIT CHECK ---
+// --- CHAT SESSION ARCHIVING & REAL API KEY LIMIT CHECK ---
 // =========================================================================
 
 function checkDailyMessageLimit() {
-    // Unlimited Messaging if custom API key is present
-    if (customApiKey && customApiKey.trim().length > 0) {
-        return true; 
-    }
-
     const today = new Date().toISOString().split('T')[0];
     let lastDate = localStorage.getItem("carl_last_msg_date");
     let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
@@ -292,15 +306,12 @@ function checkDailyMessageLimit() {
         count = 0;
     }
 
-    if (count >= 10) {
-        alert("Daily limit reached! You have used your 10 free messages for today. Please add your Gemini API Key in Settings to unlock unlimited messaging and calls.");
-        toggleSettingsModal(true);
+    if (count >= 10 && (!customApiKey || customApiKey.trim().length === 0)) {
+        alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
+        switchView('view-settings');
         return false;
     }
 
-    count++;
-    localStorage.setItem("carl_last_msg_date", today);
-    localStorage.setItem("carl_msg_count", count.toString());
     return true;
 }
 
@@ -399,7 +410,6 @@ async function sendMessage() {
     
     if (!text && !pendingImageBase64) return;
     
-    // Check daily limit before proceeding to send the message
     if (!checkDailyMessageLimit()) return;
 
     appendMessage(text, "user", pendingImageSrc);
@@ -434,8 +444,22 @@ async function sendMessage() {
         });
 
         if (!response.ok) {
+            // Handle invalid key response from backend
+            if (response.status === 401 || response.status === 403) {
+                textNode.innerText = "Error: Invalid API Key provided. Reverting to free limit (10 messages/day).";
+                alert("The API key provided is invalid! Please check your key in Settings.");
+                return;
+            }
             textNode.innerText = "Error reaching Carl.";
             return;
+        }
+
+        // Successfully sent message: track free daily count if key isn't present
+        if (!customApiKey) {
+            const today = new Date().toISOString().split('T')[0];
+            let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + 1;
+            localStorage.setItem("carl_last_msg_date", today);
+            localStorage.setItem("carl_msg_count", count.toString());
         }
 
         const reader = response.body.getReader();
@@ -504,7 +528,7 @@ if (userInput) {
 }
 
 // =========================================================================
-// --- CALL FEATURE SYSTEM (Web Audio, SpeechSynthesis TTS, SpeechRecognition STT) ---
+// --- CALL FEATURE SYSTEM ---
 // =========================================================================
 
 let isCallActive = false;
@@ -616,10 +640,9 @@ function playPickupClick() {
 }
 
 function startCall() {
-    // Requires custom API Key check before allowing them to access the view
     if (!customApiKey || customApiKey.trim().length === 0) {
-        alert("Calling Carl is locked! Please enter your custom Gemini API Key in Settings to unlock voice calls.");
-        toggleSettingsModal(true);
+        alert("Calling Carl requires a valid custom Gemini API Key! Please enter your key in Settings to unlock voice calls.");
+        switchView('view-settings');
         return;
     }
 
@@ -2362,7 +2385,7 @@ function chsCarlTurn() {
         }
     } else {
         allMoves.sort((a, b) => b.score - a.score);
-        let bestScore = allNames[0].score;
+        let bestScore = allMoves[0].score;
         let bestMoves = allMoves.filter(m => m.score === bestScore);
         chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
     }
