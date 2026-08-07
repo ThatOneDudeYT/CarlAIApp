@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Lilita+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lilita One&display=swap');
 
 * {
     box-sizing: border-box;
@@ -6,6 +6,33 @@
     padding: 0;
     font-family: 'Lilita One', cursive, sans-serif;
     -webkit-tap-highlight-color: transparent;
+}
+
+/* --- CUSTOM SLEEK SCROLLBAR (PC) --- */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-main);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #9333ea;
+}
+
+/* Firefox Scrollbar */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #3f3f46 var(--bg-main);
 }
 
 /* --- THEME SYSTEM --- */
@@ -607,13 +634,31 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     /* DESKTOP CONTENT RE-ALIGNMENT */
     #view-chat { justify-content: flex-end; padding-bottom: 15px; }
     .chat-log { max-width: 800px; margin: 0 auto; width: 100%; flex: none; height: calc(100% - 70px); overflow-y: auto; }
-    .games-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; justify-content: center; align-content: center; max-width: 450px; margin: 0 auto; }
     
-    /* PC Game Card Image Zoom Fix */
-    .game-card-img { 
-        width: 100%;
-        height: auto;
+    /* Horizontal Games Layout on PC Only */
+    .games-scroll-box { 
+        max-width: 800px; 
+        margin: 15px auto; 
+        width: 100%; 
+    }
+
+    .games-grid { 
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 16px; 
+        justify-content: flex-start; 
+        align-items: center; 
         max-width: 100%; 
+        margin: 0 auto; 
+        padding-bottom: 12px;
+    }
+    
+    .game-card-img { 
+        width: 140px;
+        flex-shrink: 0;
+        height: auto;
         object-fit: contain; 
     }
     
