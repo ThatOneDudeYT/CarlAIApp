@@ -498,11 +498,11 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     cursor: pointer;
     border: 3px solid transparent; 
     padding: 0;
-    transition: border-color 0.1s;
+    transition: transform 0.15s ease, border-color 0.1s ease;
 }
 
 .game-card-img:active { opacity: 0.85; }
-.game-card-img.selected { border-color: #84cc16; box-shadow: none; transform: none; outline: none; }
+.game-card-img.selected { border-color: #84cc16; box-shadow: none; outline: none; }
 
 .play-btn { background-color: #84cc16; color: #ffffff; border: none; border-radius: 16px; padding: 16px; font-size: 42px; cursor: pointer; margin-bottom: 15px; width: 100%; transition: transform 0.1s; }
 .play-btn:active { transform: scale(0.97); }
@@ -635,30 +635,35 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     #view-chat { justify-content: flex-end; padding-bottom: 15px; }
     .chat-log { max-width: 800px; margin: 0 auto; width: 100%; flex: none; height: calc(100% - 70px); overflow-y: auto; }
     
-    /* Farm Row Grid Layout on PC Only (Fills Left to Right, Wraps to Next Row) */
+    /* iPad Home Screen Responsive Grid on PC */
     .games-scroll-box { 
-        max-width: 800px; 
-        margin: 15px auto; 
+        max-width: 100%; 
         width: 100%; 
+        padding: 10px 30px;
+        margin: 15px 0; 
     }
 
     .games-grid { 
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap; /* Allows games to fill across rows then wrap down */
-        gap: 16px; 
-        justify-content: center; 
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* iPad app grid structure */
+        gap: 28px; 
+        justify-items: center;
         align-items: center; 
+        width: 100%; 
         max-width: 100%; 
         margin: 0 auto; 
-        padding-bottom: 12px;
+        padding-bottom: 20px;
     }
     
     .game-card-img { 
-        width: 140px; /* Fixed card width so multiple fit horizontally per row */
-        flex-shrink: 0;
+        width: 100%;
+        max-width: 220px; /* Bigger game icons */
         height: auto;
         object-fit: contain; 
+    }
+
+    .game-card-img:hover {
+        transform: scale(1.05); /* Interactive tactile lift effect on hover */
     }
     
     .play-btn { max-width: 300px; }
