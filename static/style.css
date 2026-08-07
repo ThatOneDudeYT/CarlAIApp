@@ -566,3 +566,28 @@ h1 { font-size: 48px; letter-spacing: 1px; }
         align-items: center;
     }
 }
+
+/* --- GOOGLE SIGN IN BUTTON FIX --- */
+.google-auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background-color: var(--bg-input);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 8px;
+    transition: background-color 0.2s, transform 0.1s;
+}
+.google-auth-btn:active {
+    transform: scale(0.97);
+}
+.google-auth-btn img {
+    width: 20px;
+    height: 20px;
+}

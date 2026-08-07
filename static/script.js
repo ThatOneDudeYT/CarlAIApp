@@ -1,6 +1,23 @@
 // =========================================================================
-// --- GLOBAL STATE & LOCALSTORAGE PERSISTENCE (PER-USER ISOLATION) ---
+// --- FIREBASE CLOUD PERSISTENCE & GLOBAL STATE ---
 // =========================================================================
+
+const firebaseConfig = {
+    apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg",
+    authDomain: "carl-ai-loggins.firebaseapp.com",
+    projectId: "carl-ai-loggins",
+    storageBucket: "carl-ai-loggins.firebasestorage.app",
+    messagingSenderId: "372926140822",
+    appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7",
+    measurementId: "G-G4H60BZHT3"
+};
+
+// Initialize Firebase Compat
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let firebaseUserId = null;
 let currentUser = null;
 let currentUserAvatar = "/static/icons/default-avatar.png";
 let customApiKey = "";
@@ -14,75 +31,120 @@ let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
-// Initialize persisted state on startup
+// Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
-    checkActiveSession();
-    initGoogleSignIn();
     initMobileNavIcons();
 });
 
-// Checks if someone was previously logged in on this browser
-function checkActiveSession() {
+// --- AUTHENTICATION LISTENER ---
+auth.onAuthStateChanged(async (user) => {
+    const overlay = document.getElementById('auth-overlay');
+    if (user) {
+        firebaseUserId = user.uid;
+        currentUser = user.displayName || user.email.split('@')[0];
+        currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
+        
+        if (overlay) overlay.classList.add('hidden');
+        
+        await loadUserDataFromCloud();
+    } else {
+        firebaseUserId = null;
+        if (overlay) overlay.classList.remove('hidden');
+    }
+});
+
+function signInWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(error => {
+        alert("Google Sign-In Error: " + error.message);
+    });
+}
+
+function handleLogin(e) {
+    if (e) e.preventDefault();
+    const email = document.getElementById('auth-username').value.trim();
+    const pass = document.getElementById('auth-password').value;
+    
+    // Log in. If user doesn't exist, register them.
+    auth.signInWithEmailAndPassword(email, pass).catch(error => {
+        if (error.code === 'auth/user-not-found') {
+            auth.createUserWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+        } else {
+            alert(error.message);
+        }
+    });
+}
+
+function handleSignOut() {
+    auth.signOut().then(() => {
+        currentUser = null;
+        currentUserAvatar = "/static/icons/default-avatar.png";
+        customApiKey = "";
+        chatsHistory = [];
+        chatHistory = [];
+        activeChatId = null;
+        
+        updateProfileUI();
+        renderChatHistorySidebar();
+        switchView('view-chat');
+    });
+}
+
+// --- CLOUD DATABASE FUNCTIONS ---
+async function loadUserDataFromCloud() {
+    if (!firebaseUserId) return;
+    
     try {
-        const activeUser = localStorage.getItem("carl_active_user");
-        if (activeUser) {
-            currentUser = activeUser;
-            const overlay = document.getElementById('auth-overlay');
-            if (overlay) overlay.classList.add('hidden');
-            
-            loadUserData(); // Loads data specific to this user only
-            
-            if (activeChatId && chatsHistory.some(c => c.id === activeChatId)) {
-                loadChat(activeChatId);
-            } else {
-                startNewChat();
-            }
+        const docRef = db.collection("users").doc(firebaseUserId);
+        const doc = await docRef.get();
+        
+        if (doc.exists) {
+            const data = doc.data();
+            customApiKey = data.apiKey || "";
+            chatsHistory = data.chats || [];
+            activeChatId = data.activeChatId || null;
+            applyTheme(data.theme || "dark");
+            if (data.avatar) currentUserAvatar = data.avatar;
+            if (data.username) currentUser = data.username;
+        } else {
+            startNewChat();
+        }
+        
+        updateProfileUI();
+        const keyInput = document.getElementById('user-api-key');
+        if (keyInput) keyInput.value = customApiKey;
+        const usernameInput = document.getElementById('settings-username-input');
+        if (usernameInput) usernameInput.value = currentUser;
+        
+        renderChatHistorySidebar();
+        
+        if (activeChatId && chatsHistory.some(c => c.id === activeChatId)) {
+            loadChat(activeChatId);
+        } else if (chatsHistory.length === 0) {
+            startNewChat();
         }
     } catch (e) {
-        console.error("Failed to restore active session:", e);
+        console.error("Error loading cloud data:", e);
     }
 }
 
-// Loads isolated data specifically for the currentUser
-function loadUserData() {
-    if (!currentUser) return;
-
-    currentUserAvatar = localStorage.getItem(`carl_avatar_${currentUser}`) || "/static/icons/default-avatar.png";
-    customApiKey = localStorage.getItem(`carl_api_key_${currentUser}`) || "";
-    
-    const savedChats = localStorage.getItem(`carl_chats_${currentUser}`);
-    chatsHistory = savedChats ? JSON.parse(savedChats) : [];
-    
-    activeChatId = localStorage.getItem(`carl_active_id_${currentUser}`) || null;
-
-    // Load Theme for user
-    const savedTheme = localStorage.getItem(`carl_theme_${currentUser}`) || "dark";
-    applyTheme(savedTheme);
-
-    // Update UI elements
-    updateProfileUI();
-    const usernameInput = document.getElementById('settings-username-input');
-    if (usernameInput) usernameInput.value = currentUser;
-
-    const keyInput = document.getElementById('user-api-key');
-    if (keyInput) keyInput.value = customApiKey;
-}
-
-// Saves isolated data specifically for the currentUser
 function saveSessionData() {
-    if (!currentUser) return;
-    try {
-        localStorage.setItem("carl_active_user", currentUser);
-        localStorage.setItem(`carl_avatar_${currentUser}`, currentUserAvatar);
-        localStorage.setItem(`carl_api_key_${currentUser}`, customApiKey);
-        localStorage.setItem(`carl_chats_${currentUser}`, JSON.stringify(chatsHistory));
-        if (activeChatId) localStorage.setItem(`carl_active_id_${currentUser}`, activeChatId);
-    } catch (e) {
-        console.error("Failed to save session:", e);
-    }
+    if (!firebaseUserId) return;
+    
+    db.collection("users").doc(firebaseUserId).set({
+        apiKey: customApiKey,
+        chats: chatsHistory,
+        activeChatId: activeChatId,
+        theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
+        avatar: currentUserAvatar,
+        username: currentUser
+    }, { merge: true }).catch(e => console.error("Error saving data:", e));
 }
 
-// Apply theme without toggling
+// =========================================================================
+// --- USER PROFILE & SETTINGS TAB CONTROLS ---
+// =========================================================================
+
 function applyTheme(theme) {
     const body = document.body;
     const themeSwitch = document.getElementById('theme-toggle-switch');
@@ -97,9 +159,20 @@ function applyTheme(theme) {
     }
 }
 
-// =========================================================================
-// --- USER PROFILE & SETTINGS TAB CONTROLS ---
-// =========================================================================
+function toggleTheme() {
+    const body = document.body;
+    const themeSwitch = document.getElementById('theme-toggle-switch');
+    if (body.classList.contains('dark-mode')) {
+        body.classList.remove('dark-mode');
+        body.classList.add('light-mode');
+        if (themeSwitch) themeSwitch.checked = true;
+    } else {
+        body.classList.remove('light-mode');
+        body.classList.add('dark-mode');
+        if (themeSwitch) themeSwitch.checked = false;
+    }
+    saveSessionData();
+}
 
 function updateProfileUI() {
     const avatarEl = document.getElementById("header-user-avatar");
@@ -114,24 +187,7 @@ function updateUsernameFromSettings() {
     if (!input || !currentUser) return;
     
     const newName = input.value.trim();
-
     if (newName.length >= 3 && newName.length <= 20) {
-        // Migrate old data to new username keys
-        const oldName = currentUser;
-        
-        localStorage.setItem(`carl_avatar_${newName}`, currentUserAvatar);
-        localStorage.setItem(`carl_api_key_${newName}`, customApiKey);
-        localStorage.setItem(`carl_chats_${newName}`, JSON.stringify(chatsHistory));
-        localStorage.setItem(`carl_theme_${newName}`, localStorage.getItem(`carl_theme_${oldName}`) || "dark");
-        if (activeChatId) localStorage.setItem(`carl_active_id_${newName}`, activeChatId);
-
-        // Delete old keys to prevent bloat
-        localStorage.removeItem(`carl_avatar_${oldName}`);
-        localStorage.removeItem(`carl_api_key_${oldName}`);
-        localStorage.removeItem(`carl_chats_${oldName}`);
-        localStorage.removeItem(`carl_theme_${oldName}`);
-        localStorage.removeItem(`carl_active_id_${oldName}`);
-
         currentUser = newName;
         updateProfileUI();
         saveSessionData();
@@ -154,85 +210,27 @@ function handleAvatarUpload(event) {
     reader.readAsDataURL(file);
 }
 
-function handleLogin(e) {
-    if (e) e.preventDefault();
-    const usernameInput = document.getElementById('auth-username');
-    const username = usernameInput ? usernameInput.value.trim() : "";
+function saveSettings() {
+    const keyInput = document.getElementById('user-api-key');
+    customApiKey = keyInput ? keyInput.value.trim() : "";
     
-    if (username) {
-        currentUser = username;
-        const overlay = document.getElementById('auth-overlay');
-        if (overlay) overlay.classList.add('hidden');
-        
-        loadUserData(); // Load specific user's isolated settings
-        startNewChat();
-    }
-}
-
-function parseJwt(token) {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        return null;
-    }
-}
-
-function handleGoogleCredentialResponse(response) {
-    const data = parseJwt(response.credential);
-    if (data) {
-        currentUser = data.name || data.email;
-        const overlay = document.getElementById('auth-overlay');
-        if (overlay) overlay.classList.add('hidden');
-
-        loadUserData();
-        
-        if (data.picture) {
-            currentUserAvatar = data.picture;
-            updateProfileUI();
-            saveSessionData();
-        }
-        
-        startNewChat();
-    }
-}
-
-function initGoogleSignIn() {
-    if (window.google && window.google.accounts) {
-        window.google.accounts.id.initialize({
-            client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
-            callback: handleGoogleCredentialResponse
-        });
-        const btnContainer = document.getElementById("google-signin-btn");
-        if (btnContainer) {
-            window.google.accounts.id.renderButton(btnContainer, { theme: "outline", size: "large" });
+    // Auth password updates via Firebase
+    const newPass = document.getElementById('settings-new-pass').value;
+    const confirmPass = document.getElementById('settings-confirm-pass').value;
+    
+    if (newPass || confirmPass) {
+        if (newPass === confirmPass) {
+            auth.currentUser.updatePassword(newPass).then(() => {
+                alert("Password updated successfully.");
+                document.getElementById('settings-new-pass').value = "";
+                document.getElementById('settings-confirm-pass').value = "";
+            }).catch(error => alert(error.message));
+        } else {
+            alert("Passwords do not match!");
         }
     }
-}
-
-function handleSignOut() {
-    // Only remove the global active tracker. The user-specific keys stay saved safely in storage.
-    localStorage.removeItem("carl_active_user");
     
-    currentUser = null;
-    currentUserAvatar = "/static/icons/default-avatar.png";
-    customApiKey = "";
-    chatsHistory = [];
-    chatHistory = [];
-    activeChatId = null;
-
-    updateProfileUI();
-    renderChatHistorySidebar();
-    
-    // Switch back to chat view visually before showing login screen
-    switchView('view-chat');
-
-    const overlay = document.getElementById('auth-overlay');
-    if (overlay) overlay.classList.remove('hidden');
+    saveSessionData();
 }
 
 function toggleApiKeyHelp() {
@@ -255,28 +253,6 @@ function toggleSidebar() {
         sidebar.classList.add('expanded');
         if (btn) btn.innerText = "❮";
     }
-}
-
-function toggleTheme() {
-    const body = document.body;
-    const themeSwitch = document.getElementById('theme-toggle-switch');
-    if (body.classList.contains('dark-mode')) {
-        body.classList.remove('dark-mode');
-        body.classList.add('light-mode');
-        if (themeSwitch) themeSwitch.checked = true;
-        if (currentUser) localStorage.setItem(`carl_theme_${currentUser}`, "light");
-    } else {
-        body.classList.remove('light-mode');
-        body.classList.add('dark-mode');
-        if (themeSwitch) themeSwitch.checked = false;
-        if (currentUser) localStorage.setItem(`carl_theme_${currentUser}`, "dark");
-    }
-}
-
-function saveSettings() {
-    const keyInput = document.getElementById('user-api-key');
-    customApiKey = keyInput ? keyInput.value.trim() : "";
-    saveSessionData();
 }
 
 function getDifficulty() {
@@ -458,7 +434,6 @@ async function sendMessage() {
         });
 
         if (!response.ok) {
-            // Handle invalid key response from backend
             if (response.status === 401 || response.status === 403) {
                 textNode.innerText = "Error: Invalid API Key provided. Reverting to free limit (10 messages/day).";
                 alert("The API key provided is invalid! Please check your key in Settings.");
@@ -468,7 +443,6 @@ async function sendMessage() {
             return;
         }
 
-        // Successfully sent message: track free daily count if key isn't present
         if (!customApiKey) {
             const today = new Date().toISOString().split('T')[0];
             let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + 1;
