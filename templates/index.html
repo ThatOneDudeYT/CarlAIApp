@@ -34,48 +34,6 @@
         </div>
     </div>
 
-    <!-- SETTINGS MODAL WINDOW -->
-    <div id="settings-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h2>Settings</h2>
-                <button class="modal-close" onclick="toggleSettingsModal(false)">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="setting-row">
-                    <span>Appearance</span>
-                    <button id="theme-toggle-btn" class="theme-btn" onclick="toggleTheme()">Switch to Light Mode</button>
-                </div>
-                
-                <div class="setting-section">
-                    <div class="setting-label-row">
-                        <label for="user-api-key">Gemini 3.1 Flash-Lite API Key (Optional)</label>
-                        <button type="button" class="help-btn-inline" onclick="toggleApiKeyHelp()">Need Help?</button>
-                    </div>
-                    <input type="password" id="user-api-key" placeholder="Paste custom API key here..." autocomplete="off">
-                    <p class="setting-hint">
-                        Free users are limited to 10 messages per day and voice calling is locked[cite: 1].
-                    </p>
-                    
-                    <!-- Collapsible Tutorial Box -->
-                    <div id="api-key-help-box" class="api-help-box hidden">
-                        <p class="setting-hint">
-                            <strong>How to get a Gemini API Key:</strong><br>
-                            1. Go to Google AI Studio (aistudio.google.com).<br>
-                            2. Sign in with your Google account.<br>
-                            3. Click on <strong>Get API key</strong> in the top left corner.<br>
-                            4. Generate a new API key, copy it, and paste it into the box above to permanently unlock unlimited chats and voice calling!
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="save-settings-btn" onclick="saveSettings()">Save & Close</button>
-                <button class="signout-btn" onclick="handleSignOut()">Sign Out</button>
-            </div>
-        </div>
-    </div>
-
     <!-- MAIN APP CONTAINER -->
     <div class="app-container">
         
@@ -114,7 +72,7 @@
             </div>
             
             <div class="sidebar-footer">
-                <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="toggleSettingsModal(true)">
+                <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="switchView('view-settings')">
             </div>
         </aside>
 
@@ -163,12 +121,71 @@
                             <img src="/static/icons/NewChat.png" alt="New Chat" />
                         </div>
                         <div class="nav-divider"></div>
-                        <div class="nav-item" id="mobile-nav-settings" onclick="toggleSettingsModal(true)">
+                        <div class="nav-item" id="mobile-nav-settings" onclick="switchView('view-settings')">
                             <img src="/static/icons/SettingsMobile.png" alt="Settings" />
                         </div>
                     </div>
                 </div>
                 
+                <div class="copyright">@Dalted Copyright Issued 2026</div>
+            </div>
+
+            <!-- SETTINGS VIEW TAB -->
+            <div id="view-settings" class="view">
+                <div class="settings-header">
+                    <h1>Settings</h1>
+                </div>
+
+                <div class="settings-content-grid">
+                    <!-- Theme Row -->
+                    <div class="settings-row">
+                        <label class="settings-label">Theme</label>
+                        <div class="toggle-switch-wrapper">
+                            <label class="switch">
+                                <input type="checkbox" id="theme-toggle-switch" onchange="toggleTheme()">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- API Key Row -->
+                    <div class="settings-row vertical-on-mobile">
+                        <label class="settings-label" for="user-api-key">API Key</label>
+                        <div class="input-with-help">
+                            <input type="password" id="user-api-key" placeholder="Paste API Key Here" autocomplete="off" onchange="saveSettings()">
+                            <button type="button" class="help-btn-inline" onclick="toggleApiKeyHelp()">Need Help?</button>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Help Box -->
+                    <div id="api-key-help-box" class="api-help-box hidden">
+                        <p class="setting-hint">
+                            <strong>How to get a Gemini API Key:</strong><br>
+                            1. Go to Google AI Studio (aistudio.google.com).<br>
+                            2. Sign in with your Google account.<br>
+                            3. Click on <strong>Get API key</strong> in the top left corner.<br>
+                            4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats and voice calling!
+                        </p>
+                    </div>
+
+                    <!-- Username Row -->
+                    <div class="settings-row vertical-on-mobile">
+                        <label class="settings-label" for="settings-username-input">Username</label>
+                        <input type="text" id="settings-username-input" placeholder="Your Username (3–20 Characters)" maxlength="20" onchange="updateUsernameFromSettings()">
+                    </div>
+
+                    <!-- Profile Picture Row -->
+                    <div class="settings-row">
+                        <label class="settings-label">Profile Picture</label>
+                        <button class="settings-upload-btn" onclick="document.getElementById('avatar-file-picker').click();">Upload Profile</button>
+                        <input type="file" id="avatar-file-picker" style="display: none;" accept="image/*" onchange="handleAvatarUpload(event)">
+                    </div>
+
+                    <div class="settings-actions">
+                        <button class="signout-btn" onclick="handleSignOut()">Sign Out</button>
+                    </div>
+                </div>
+
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
