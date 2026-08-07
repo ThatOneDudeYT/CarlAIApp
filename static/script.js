@@ -270,7 +270,118 @@ function switchView(viewId) {
 }
 
 function searchChats() {
-    alert("Search functionality: Type in the search box to filter archived chats!");
+    // Remove existing search modal if it's already open
+    let oldModal = document.getElementById("search-modal");
+    if (oldModal) oldModal.remove();
+
+    // Create the overlay background
+    const modal = document.createElement("div");
+    modal.id = "search-modal";
+    modal.style.position = "fixed";
+    modal.style.top = "0"; modal.style.left = "0";
+    modal.style.width = "100vw"; modal.style.height = "100vh";
+    modal.style.backgroundColor = "rgba(0,0,0,0.85)";
+    modal.style.backdropFilter = "blur(5px)";
+    modal.style.zIndex = "10000";
+    modal.style.display = "flex";
+    modal.style.justifyContent = "center";
+    modal.style.alignItems = "center";
+
+    // Create the search box container
+    const box = document.createElement("div");
+    box.style.backgroundColor = "var(--bg-card)";
+    box.style.padding = "24px";
+    box.style.borderRadius = "20px";
+    box.style.width = "90%";
+    box.style.maxWidth = "420px";
+    box.style.border = "1px solid var(--border-color)";
+    box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
+
+    const title = document.createElement("h2");
+    title.innerText = "Search Chats";
+    title.style.marginBottom = "16px";
+    title.style.fontSize = "28px";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Search messages or titles...";
+    input.style.width = "100%";
+    input.style.padding = "14px";
+    input.style.borderRadius = "12px";
+    input.style.border = "1px solid var(--border-color)";
+    input.style.backgroundColor = "var(--bg-input)";
+    input.style.color = "var(--text-main)";
+    input.style.outline = "none";
+    input.style.fontSize = "16px";
+    input.style.marginBottom = "16px";
+
+    const results = document.createElement("div");
+    results.style.maxHeight = "250px";
+    results.style.overflowY = "auto";
+    results.style.display = "flex";
+    results.style.flexDirection = "column";
+    results.style.gap = "8px";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.innerText = "Close";
+    closeBtn.style.padding = "12px";
+    closeBtn.style.width = "100%";
+    closeBtn.style.marginTop = "16px";
+    closeBtn.style.borderRadius = "12px";
+    closeBtn.style.border = "none";
+    closeBtn.style.backgroundColor = "#ef4444";
+    closeBtn.style.color = "#fff";
+    closeBtn.style.fontSize = "18px";
+    closeBtn.style.cursor = "pointer";
+    closeBtn.onclick = () => modal.remove();
+
+    // Live search filtering logic
+    input.oninput = (e) => {
+        results.innerHTML = "";
+        const q = e.target.value.toLowerCase().trim();
+        if (!q) return;
+
+        // Search through titles AND actual messages inside the chat
+        const matched = chatsHistory.filter(c => 
+            c.title.toLowerCase().includes(q) || 
+            c.apiHistory.some(m => m.content.toLowerCase().includes(q))
+        );
+        
+        if (matched.length === 0) {
+            results.innerHTML = "<div style='color:var(--text-sub); font-size:15px; text-align:center; padding: 10px;'>No results found.</div>";
+        }
+
+        matched.forEach(chat => {
+            const item = document.createElement("div");
+            item.innerText = chat.title;
+            item.style.padding = "14px";
+            item.style.backgroundColor = "var(--bg-input)";
+            item.style.border = "1px solid var(--border-color)";
+            item.style.borderRadius = "12px";
+            item.style.cursor = "pointer";
+            item.style.transition = "background-color 0.2s";
+            
+            item.onmouseover = () => item.style.backgroundColor = "#9333ea";
+            item.onmouseleave = () => item.style.backgroundColor = "var(--bg-input)";
+            
+            item.onclick = () => {
+                loadChat(chat.id);
+                modal.remove();
+            };
+            results.appendChild(item);
+        });
+    };
+
+    // Assemble and display
+    box.appendChild(title);
+    box.appendChild(input);
+    box.appendChild(results);
+    box.appendChild(closeBtn);
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+
+    // Auto-focus the input box when opened
+    setTimeout(() => input.focus(), 100);
 }
 
 function initMobileNavIcons() {
