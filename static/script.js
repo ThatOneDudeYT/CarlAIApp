@@ -33,49 +33,8 @@ let pendingImageSrc = null;
 
 // Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
-    // Only initialize mobile hamburger and overlay elements for small screens or drawer toggling
     initMobileNavIcons();
-    
-    const oldNav = document.querySelector('.bottom-nav');
-    if (oldNav) oldNav.style.display = 'none';
-
-    if (!document.getElementById("mobile-hamburger-btn")) {
-        const hamburgerBtn = document.createElement("button");
-        hamburgerBtn.id = "mobile-hamburger-btn";
-        hamburgerBtn.className = "mobile-top-header";
-        hamburgerBtn.innerHTML = `
-            <div class="hamburger-line"></div>
-            <div class="hamburger-line"></div>
-            <div class="hamburger-line"></div>
-        `;
-        hamburgerBtn.onclick = toggleMobileSidebar; 
-        document.body.appendChild(hamburgerBtn);
-    }
-
-    if (!document.getElementById("sidebar-overlay")) {
-        const overlay = document.createElement("div");
-        overlay.id = "sidebar-overlay";
-        overlay.className = "sidebar-overlay";
-        overlay.onclick = toggleMobileSidebar;
-        document.body.appendChild(overlay);
-    }
-
-    // Ensure the chat view copyright is present
-    const chatView = document.getElementById("view-chat");
-    if (chatView && !chatView.querySelector('.copyright')) {
-        const cr = document.createElement("div");
-        cr.className = "copyright";
-        cr.innerText = "@Dalted Copyright Issued 2026";
-        chatView.appendChild(cr);
-    }
 });
-
-function toggleMobileSidebar() {
-    const sidebar = document.getElementById('desktop-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    if (sidebar) sidebar.classList.toggle('open');
-    if (overlay) overlay.classList.toggle('active');
-}
 
 // --- AUTHENTICATION LISTENER ---
 auth.onAuthStateChanged(async (user) => {
@@ -308,16 +267,6 @@ function switchView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(viewId);
     if (target) target.classList.add('active');
-
-    // Close mobile sidebar if open
-    const sidebar = document.getElementById('desktop-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    if (sidebar && sidebar.classList.contains('open')) {
-        sidebar.classList.remove('open');
-    }
-    if (overlay && overlay.classList.contains('active')) {
-        overlay.classList.remove('active');
-    }
 }
 
 function searchChats() {
