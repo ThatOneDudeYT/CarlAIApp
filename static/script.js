@@ -1,13 +1,13 @@
 // =========================================================================
-// --- GLOBAL STATE & LOCALSTORAGE PERSISTENCE ---
+// --- GLOBAL STATE & LOCALSTORAGE PERSISTENCE (PER-USER ISOLATION) ---
 // =========================================================================
 let currentUser = null;
 let currentUserAvatar = "/static/icons/default-avatar.png";
 let customApiKey = "";
 
-let chatsHistory = []; // Saved sessions archive
+let chatsHistory = []; 
 let activeChatId = null;
-let chatHistory = [];  // Active chat context sent to /api/chat
+let chatHistory = [];  
 
 let selectedGame = "Tic Tac Toe";
 let pendingImageBase64 = null;
@@ -16,81 +16,84 @@ let pendingImageSrc = null;
 
 // Initialize persisted state on startup
 window.addEventListener("DOMContentLoaded", () => {
-    loadPersistedTheme();
-    loadPersistedSession();
+    checkActiveSession();
     initGoogleSignIn();
     initMobileNavIcons();
 });
 
-function loadPersistedTheme() {
+// Checks if someone was previously logged in on this browser
+function checkActiveSession() {
     try {
-        const savedTheme = localStorage.getItem("carl_theme");
-        const body = document.body;
-        const themeSwitch = document.getElementById('theme-toggle-switch');
-        if (savedTheme === "light") {
-            body.classList.remove("dark-mode");
-            body.classList.add("light-mode");
-            if (themeSwitch) themeSwitch.checked = true;
-        } else {
-            body.classList.remove("light-mode");
-            body.classList.add("dark-mode");
-            if (themeSwitch) themeSwitch.checked = false;
-        }
-    } catch (e) {
-        console.error("Failed to load theme:", e);
-    }
-}
-
-function loadPersistedSession() {
-    try {
-        const savedUser = localStorage.getItem("carl_user");
-        const savedAvatar = localStorage.getItem("carl_avatar");
-        const savedApiKey = localStorage.getItem("carl_api_key");
-        const savedChats = localStorage.getItem("carl_chats_history");
-        const savedActiveId = localStorage.getItem("carl_active_id");
-
-        if (savedApiKey) {
-            customApiKey = savedApiKey;
-            const keyInput = document.getElementById('user-api-key');
-            if (keyInput) keyInput.value = customApiKey;
-        }
-
-        if (savedChats) chatsHistory = JSON.parse(savedChats);
-        
-        if (savedUser) {
-            currentUser = savedUser;
-            currentUserAvatar = savedAvatar || "/static/icons/default-avatar.png";
-            
+        const activeUser = localStorage.getItem("carl_active_user");
+        if (activeUser) {
+            currentUser = activeUser;
             const overlay = document.getElementById('auth-overlay');
             if (overlay) overlay.classList.add('hidden');
             
-            updateProfileUI();
-
-            const usernameInput = document.getElementById('settings-username-input');
-            if (usernameInput) usernameInput.value = currentUser;
-
-            if (savedActiveId && chatsHistory.some(c => c.id === savedActiveId)) {
-                loadChat(savedActiveId);
+            loadUserData(); // Loads data specific to this user only
+            
+            if (activeChatId && chatsHistory.some(c => c.id === activeChatId)) {
+                loadChat(activeChatId);
             } else {
                 startNewChat();
             }
         }
     } catch (e) {
-        console.error("Failed to restore session:", e);
+        console.error("Failed to restore active session:", e);
     }
 }
 
+// Loads isolated data specifically for the currentUser
+function loadUserData() {
+    if (!currentUser) return;
+
+    currentUserAvatar = localStorage.getItem(`carl_avatar_${currentUser}`) || "/static/icons/default-avatar.png";
+    customApiKey = localStorage.getItem(`carl_api_key_${currentUser}`) || "";
+    
+    const savedChats = localStorage.getItem(`carl_chats_${currentUser}`);
+    chatsHistory = savedChats ? JSON.parse(savedChats) : [];
+    
+    activeChatId = localStorage.getItem(`carl_active_id_${currentUser}`) || null;
+
+    // Load Theme for user
+    const savedTheme = localStorage.getItem(`carl_theme_${currentUser}`) || "dark";
+    applyTheme(savedTheme);
+
+    // Update UI elements
+    updateProfileUI();
+    const usernameInput = document.getElementById('settings-username-input');
+    if (usernameInput) usernameInput.value = currentUser;
+
+    const keyInput = document.getElementById('user-api-key');
+    if (keyInput) keyInput.value = customApiKey;
+}
+
+// Saves isolated data specifically for the currentUser
 function saveSessionData() {
+    if (!currentUser) return;
     try {
-        if (currentUser) {
-            localStorage.setItem("carl_user", currentUser);
-            localStorage.setItem("carl_avatar", currentUserAvatar);
-        }
-        localStorage.setItem("carl_api_key", customApiKey);
-        localStorage.setItem("carl_chats_history", JSON.stringify(chatsHistory));
-        if (activeChatId) localStorage.setItem("carl_active_id", activeChatId);
+        localStorage.setItem("carl_active_user", currentUser);
+        localStorage.setItem(`carl_avatar_${currentUser}`, currentUserAvatar);
+        localStorage.setItem(`carl_api_key_${currentUser}`, customApiKey);
+        localStorage.setItem(`carl_chats_${currentUser}`, JSON.stringify(chatsHistory));
+        if (activeChatId) localStorage.setItem(`carl_active_id_${currentUser}`, activeChatId);
     } catch (e) {
         console.error("Failed to save session:", e);
+    }
+}
+
+// Apply theme without toggling
+function applyTheme(theme) {
+    const body = document.body;
+    const themeSwitch = document.getElementById('theme-toggle-switch');
+    if (theme === "light") {
+        body.classList.remove("dark-mode");
+        body.classList.add("light-mode");
+        if (themeSwitch) themeSwitch.checked = true;
+    } else {
+        body.classList.remove("light-mode");
+        body.classList.add("dark-mode");
+        if (themeSwitch) themeSwitch.checked = false;
     }
 }
 
@@ -108,10 +111,27 @@ function updateProfileUI() {
 
 function updateUsernameFromSettings() {
     const input = document.getElementById("settings-username-input");
-    if (!input) return;
+    if (!input || !currentUser) return;
+    
     const newName = input.value.trim();
 
     if (newName.length >= 3 && newName.length <= 20) {
+        // Migrate old data to new username keys
+        const oldName = currentUser;
+        
+        localStorage.setItem(`carl_avatar_${newName}`, currentUserAvatar);
+        localStorage.setItem(`carl_api_key_${newName}`, customApiKey);
+        localStorage.setItem(`carl_chats_${newName}`, JSON.stringify(chatsHistory));
+        localStorage.setItem(`carl_theme_${newName}`, localStorage.getItem(`carl_theme_${oldName}`) || "dark");
+        if (activeChatId) localStorage.setItem(`carl_active_id_${newName}`, activeChatId);
+
+        // Delete old keys to prevent bloat
+        localStorage.removeItem(`carl_avatar_${oldName}`);
+        localStorage.removeItem(`carl_api_key_${oldName}`);
+        localStorage.removeItem(`carl_chats_${oldName}`);
+        localStorage.removeItem(`carl_theme_${oldName}`);
+        localStorage.removeItem(`carl_active_id_${oldName}`);
+
         currentUser = newName;
         updateProfileUI();
         saveSessionData();
@@ -141,13 +161,10 @@ function handleLogin(e) {
     
     if (username) {
         currentUser = username;
-        currentUserAvatar = "/static/icons/default-avatar.png";
-        
         const overlay = document.getElementById('auth-overlay');
         if (overlay) overlay.classList.add('hidden');
         
-        updateProfileUI();
-        saveSessionData();
+        loadUserData(); // Load specific user's isolated settings
         startNewChat();
     }
 }
@@ -169,13 +186,17 @@ function handleGoogleCredentialResponse(response) {
     const data = parseJwt(response.credential);
     if (data) {
         currentUser = data.name || data.email;
-        currentUserAvatar = data.picture || "/static/icons/default-avatar.png";
-
         const overlay = document.getElementById('auth-overlay');
         if (overlay) overlay.classList.add('hidden');
 
-        updateProfileUI();
-        saveSessionData();
+        loadUserData();
+        
+        if (data.picture) {
+            currentUserAvatar = data.picture;
+            updateProfileUI();
+            saveSessionData();
+        }
+        
         startNewChat();
     }
 }
@@ -194,28 +215,21 @@ function initGoogleSignIn() {
 }
 
 function handleSignOut() {
-    const retainedApiKey = customApiKey;
-    const retainedTheme = localStorage.getItem("carl_theme");
-    
-    localStorage.clear();
+    // Only remove the global active tracker. The user-specific keys stay saved safely in storage.
+    localStorage.removeItem("carl_active_user");
     
     currentUser = null;
     currentUserAvatar = "/static/icons/default-avatar.png";
+    customApiKey = "";
     chatsHistory = [];
     chatHistory = [];
     activeChatId = null;
-    
-    if (retainedApiKey) {
-        customApiKey = retainedApiKey;
-        localStorage.setItem("carl_api_key", customApiKey);
-    } else {
-        customApiKey = "";
-    }
-    if (retainedTheme) {
-        localStorage.setItem("carl_theme", retainedTheme);
-    }
 
     updateProfileUI();
+    renderChatHistorySidebar();
+    
+    // Switch back to chat view visually before showing login screen
+    switchView('view-chat');
 
     const overlay = document.getElementById('auth-overlay');
     if (overlay) overlay.classList.remove('hidden');
@@ -250,12 +264,12 @@ function toggleTheme() {
         body.classList.remove('dark-mode');
         body.classList.add('light-mode');
         if (themeSwitch) themeSwitch.checked = true;
-        localStorage.setItem("carl_theme", "light");
+        if (currentUser) localStorage.setItem(`carl_theme_${currentUser}`, "light");
     } else {
         body.classList.remove('light-mode');
         body.classList.add('dark-mode');
         if (themeSwitch) themeSwitch.checked = false;
-        localStorage.setItem("carl_theme", "dark");
+        if (currentUser) localStorage.setItem(`carl_theme_${currentUser}`, "dark");
     }
 }
 
