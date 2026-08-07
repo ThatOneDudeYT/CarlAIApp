@@ -31,6 +31,11 @@ let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
+// API Key Validation Helper
+function hasValidApiKey() {
+    return customApiKey && customApiKey.trim().length > 20;
+}
+
 // Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons();
@@ -446,9 +451,11 @@ function checkDailyMessageLimit() {
     if (lastDate !== today) {
         lastDate = today;
         count = 0;
+        localStorage.setItem("carl_last_msg_date", today);
+        localStorage.setItem("carl_msg_count", "0");
     }
 
-    if (count >= 10 && (!customApiKey || customApiKey.trim().length === 0)) {
+    if (count >= 10 && !hasValidApiKey()) {
         alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
         switchView('view-settings');
         return false;
@@ -593,15 +600,19 @@ async function sendMessage() {
 
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
-                textNode.innerText = "Error: Invalid API Key provided. Reverting to free limit (10 messages/day).";
+                textNode.innerText = "Error: Invalid API Key provided. Reverting key settings.";
                 alert("The API key provided is invalid! Please check your key in Settings.");
+                customApiKey = "";
+                const keyInput = document.getElementById('user-api-key');
+                if (keyInput) keyInput.value = "";
+                saveSessionData();
                 return;
             }
             textNode.innerText = "Error reaching Carl.";
             return;
         }
 
-        if (!customApiKey) {
+        if (!hasValidApiKey()) {
             const today = new Date().toISOString().split('T')[0];
             let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + 1;
             localStorage.setItem("carl_last_msg_date", today);
@@ -786,7 +797,7 @@ function playPickupClick() {
 }
 
 function startCall() {
-    if (!customApiKey || customApiKey.trim().length === 0) {
+    if (!hasValidApiKey()) {
         alert("Calling Carl requires a valid custom Gemini API Key! Please enter your key in Settings to unlock voice calls.");
         switchView('view-settings');
         return;
