@@ -392,15 +392,27 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; justify-items: center; padding-bottom: 10px; }
 
 /* Game Selection Box Fix */
+/* Game Selection Box Fix */
 .game-card-img {
-    width: 100%; max-width: 150px; height: 115px; object-fit: contain; cursor: pointer;
-    border-radius: 15px; border: 2px solid transparent; transition: transform 0.2s, border-color 0.1s, box-shadow 0.1s;
-    image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;
+    width: 100%; 
+    max-width: 120px; /* Reduced to hug the image tighter */
+    height: 115px; 
+    object-fit: cover; /* Fills the container better */
+    cursor: pointer;
+    border-radius: 20px; 
+    border: 3px solid transparent; 
+    padding: 0;
+    transition: transform 0.2s, border-color 0.1s, box-shadow 0.2s;
 }
-.game-card-img:active { transform: scale(0.95); }
+
+.game-card-img:active { 
+    transform: scale(0.95); 
+}
+
 .game-card-img.selected {
     border-color: #84cc16;
-    box-shadow: 0 0 0 1px #84cc16;
+    box-shadow: 0 0 15px rgba(132, 204, 22, 0.4); /* Soft green glow */
+    transform: scale(1.05); /* Slight pop out effect */
     outline: none;
 }
 
