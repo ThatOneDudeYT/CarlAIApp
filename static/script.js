@@ -33,14 +33,11 @@ let pendingImageSrc = null;
 
 // Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
-    // Leave original navigation HTML perfectly intact, just wire bindings
     initMobileNavIcons();
     
-    // Hide old bottom nav specifically
     const oldNav = document.querySelector('.bottom-nav');
     if (oldNav) oldNav.style.display = 'none';
 
-    // Inject Mobile Hamburger Button if not present
     if (!document.getElementById("mobile-hamburger-btn")) {
         const hamburgerBtn = document.createElement("button");
         hamburgerBtn.id = "mobile-hamburger-btn";
@@ -54,7 +51,6 @@ window.addEventListener("DOMContentLoaded", () => {
         document.body.appendChild(hamburgerBtn);
     }
 
-    // Inject Overlay for Mobile Drawer Menu if not present
     if (!document.getElementById("sidebar-overlay")) {
         const overlay = document.createElement("div");
         overlay.id = "sidebar-overlay";
@@ -63,7 +59,6 @@ window.addEventListener("DOMContentLoaded", () => {
         document.body.appendChild(overlay);
     }
 
-    // Ensure Chat View Copyright exists
     const chatView = document.getElementById("view-chat");
     if (chatView && !chatView.querySelector('.copyright')) {
         const cr = document.createElement("div");
@@ -109,11 +104,9 @@ function handleLogin(e) {
     const email = document.getElementById('auth-username').value.trim();
     const pass = document.getElementById('auth-password').value;
     
-    // Try logging in. If account doesn't exist yet, create it automatically!
     auth.signInWithEmailAndPassword(email, pass).catch(error => {
         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
             auth.createUserWithEmailAndPassword(email, pass).catch(err => {
-                // If account exists but password was wrong
                 alert("Sign In / Sign Up Error: " + err.message);
             });
         } else {
@@ -261,7 +254,6 @@ function saveSettings() {
     const keyInput = document.getElementById('user-api-key');
     customApiKey = keyInput ? keyInput.value.trim() : "";
     
-    // Auth password updates via Firebase
     const newPass = document.getElementById('settings-new-pass').value;
     const confirmPass = document.getElementById('settings-confirm-pass').value;
     
@@ -312,7 +304,6 @@ function switchView(viewId) {
     const target = document.getElementById(viewId);
     if (target) target.classList.add('active');
 
-    // Auto-Close mobile sidebar when a view is switched on mobile devices
     const sidebar = document.querySelector('.desktop-sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     if (sidebar && sidebar.classList.contains('open')) {
@@ -324,11 +315,9 @@ function switchView(viewId) {
 }
 
 function searchChats() {
-    // Remove existing search modal if it's already open
     let oldModal = document.getElementById("search-modal");
     if (oldModal) oldModal.remove();
 
-    // Create the overlay background
     const modal = document.createElement("div");
     modal.id = "search-modal";
     modal.style.position = "fixed";
@@ -341,7 +330,6 @@ function searchChats() {
     modal.style.justifyContent = "center";
     modal.style.alignItems = "center";
 
-    // Create the search box container
     const box = document.createElement("div");
     box.style.backgroundColor = "var(--bg-card)";
     box.style.padding = "24px";
@@ -389,13 +377,11 @@ function searchChats() {
     closeBtn.style.cursor = "pointer";
     closeBtn.onclick = () => modal.remove();
 
-    // Live search filtering logic
     input.oninput = (e) => {
         results.innerHTML = "";
         const q = e.target.value.toLowerCase().trim();
         if (!q) return;
 
-        // Search through titles AND actual messages inside the chat
         const matched = chatsHistory.filter(c => 
             c.title.toLowerCase().includes(q) || 
             c.apiHistory.some(m => m.content.toLowerCase().includes(q))
@@ -426,7 +412,6 @@ function searchChats() {
         });
     };
 
-    // Assemble and display
     box.appendChild(title);
     box.appendChild(input);
     box.appendChild(results);
@@ -434,7 +419,6 @@ function searchChats() {
     modal.appendChild(box);
     document.body.appendChild(modal);
 
-    // Auto-focus the input box when opened
     setTimeout(() => input.focus(), 100);
 }
 
@@ -544,7 +528,6 @@ function renderChatHistorySidebar() {
     });
 }
 
-// File picker handler
 const filePicker = document.getElementById('native-file-picker');
 if (filePicker) {
     filePicker.addEventListener('change', function(e) {
@@ -572,12 +555,19 @@ async function sendMessage() {
 
     appendMessage(text, "user", pendingImageSrc);
     
+    // Obtain Exact Client System Local Time & Timezone
+    const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     const payload = { 
         message: text || "Look at this image.", 
         history: chatHistory,
         image_b64: pendingImageBase64,
         image_mime: pendingImageMime,
-        api_key: customApiKey
+        api_key: customApiKey,
+        user_time: userLocalTime,
+        user_timezone: userTimezone,
+        client_time: `${userLocalTime} (${userTimezone})`
     };
 
     input.value = "";
@@ -975,10 +965,16 @@ async function processCallUserMessage(userText) {
     callAbortController = new AbortController();
     chatHistory.push({ role: "user", content: userText });
 
+    const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     const payload = {
         message: userText,
         history: chatHistory,
-        api_key: customApiKey
+        api_key: customApiKey,
+        user_time: userLocalTime,
+        user_timezone: userTimezone,
+        client_time: `${userLocalTime} (${userTimezone})`
     };
 
     try {

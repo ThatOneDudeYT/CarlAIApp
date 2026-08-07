@@ -461,13 +461,13 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .games-scroll-box { flex: 1; overflow-y: auto; margin: 15px 0; padding-right: 5px; min-height: 0; }
 .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; justify-items: center; padding-bottom: 10px; }
 
-/* --- Corrected Game Selection Box Aspect Ratio --- */
+/* Game Selection Card (Base Aspect Ratio) */
 .game-card-img {
     width: 100%; 
     height: auto;
     aspect-ratio: 9123 / 6773;
     border-radius: 11.36%;
-    object-fit: cover;
+    object-fit: contain;
     cursor: pointer;
     border: 3px solid transparent; 
     padding: 0;
@@ -607,8 +607,16 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     /* DESKTOP CONTENT RE-ALIGNMENT */
     #view-chat { justify-content: flex-end; padding-bottom: 15px; }
     .chat-log { max-width: 800px; margin: 0 auto; width: 100%; flex: none; height: calc(100% - 70px); overflow-y: auto; }
-    .games-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; justify-content: center; align-content: center; max-width: 400px; margin: 0 auto; }
-    .game-card-img { height: 110px; max-width: 100%; }
+    .games-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; justify-content: center; align-content: center; max-width: 450px; margin: 0 auto; }
+    
+    /* PC Game Card Image Zoom Fix */
+    .game-card-img { 
+        width: 100%;
+        height: auto;
+        max-width: 100%; 
+        object-fit: contain; 
+    }
+    
     .play-btn { max-width: 300px; }
     #view-call { justify-content: center; padding-bottom: 40px; }
     .call-controls { margin-top: 60px; }
