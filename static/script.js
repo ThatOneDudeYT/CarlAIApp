@@ -65,10 +65,13 @@ function handleLogin(e) {
     const email = document.getElementById('auth-username').value.trim();
     const pass = document.getElementById('auth-password').value;
     
-    // Log in. If user doesn't exist, register them.
+    // Try logging in. If account doesn't exist yet, create it automatically!
     auth.signInWithEmailAndPassword(email, pass).catch(error => {
-        if (error.code === 'auth/user-not-found') {
-            auth.createUserWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
+            auth.createUserWithEmailAndPassword(email, pass).catch(err => {
+                // If account exists but password was wrong
+                alert("Sign In / Sign Up Error: " + err.message);
+            });
         } else {
             alert(error.message);
         }
