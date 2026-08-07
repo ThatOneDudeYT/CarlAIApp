@@ -33,8 +33,52 @@ let pendingImageSrc = null;
 
 // Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
+    // Leave original navigation HTML perfectly intact, just wire bindings
     initMobileNavIcons();
+    
+    // Hide old bottom nav specifically
+    const oldNav = document.querySelector('.bottom-nav');
+    if (oldNav) oldNav.style.display = 'none';
+
+    // Inject Mobile Hamburger Button if not present
+    if (!document.getElementById("mobile-hamburger-btn")) {
+        const hamburgerBtn = document.createElement("button");
+        hamburgerBtn.id = "mobile-hamburger-btn";
+        hamburgerBtn.className = "mobile-top-header";
+        hamburgerBtn.innerHTML = `
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+        `;
+        hamburgerBtn.onclick = toggleMobileSidebar; 
+        document.body.appendChild(hamburgerBtn);
+    }
+
+    // Inject Overlay for Mobile Drawer Menu if not present
+    if (!document.getElementById("sidebar-overlay")) {
+        const overlay = document.createElement("div");
+        overlay.id = "sidebar-overlay";
+        overlay.className = "sidebar-overlay";
+        overlay.onclick = toggleMobileSidebar;
+        document.body.appendChild(overlay);
+    }
+
+    // Ensure Chat View Copyright exists
+    const chatView = document.getElementById("view-chat");
+    if (chatView && !chatView.querySelector('.copyright')) {
+        const cr = document.createElement("div");
+        cr.className = "copyright";
+        cr.innerText = "@Dalted Copyright Issued 2026";
+        chatView.appendChild(cr);
+    }
 });
+
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.desktop-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('active');
+}
 
 // --- AUTHENTICATION LISTENER ---
 auth.onAuthStateChanged(async (user) => {
@@ -267,6 +311,16 @@ function switchView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(viewId);
     if (target) target.classList.add('active');
+
+    // Auto-Close mobile sidebar when a view is switched on mobile devices
+    const sidebar = document.querySelector('.desktop-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar && sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+    }
+    if (overlay && overlay.classList.contains('active')) {
+        overlay.classList.remove('active');
+    }
 }
 
 function searchChats() {
