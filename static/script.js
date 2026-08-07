@@ -34,7 +34,89 @@ let pendingImageSrc = null;
 // Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons();
+    
+    // Mobile UI Fixes Integration
+    const oldNav = document.querySelector('.bottom-nav');
+    if (oldNav) oldNav.style.display = 'none';
+
+    if (!document.getElementById("mobile-hamburger-btn")) {
+        const hamburgerBtn = document.createElement("button");
+        hamburgerBtn.id = "mobile-hamburger-btn";
+        hamburgerBtn.className = "mobile-top-header";
+        hamburgerBtn.innerHTML = `
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+        `;
+        hamburgerBtn.onclick = toggleMobileSidebar; 
+        document.body.appendChild(hamburgerBtn);
+    }
+
+    if (!document.getElementById("sidebar-overlay")) {
+        const overlay = document.createElement("div");
+        overlay.id = "sidebar-overlay";
+        overlay.className = "sidebar-overlay";
+        overlay.onclick = toggleMobileSidebar;
+        document.body.appendChild(overlay);
+    }
+
+    // Force Sidebar UI to strictly match design
+    const sidebarHeader = document.querySelector('.sidebar-header');
+    if (sidebarHeader) {
+        sidebarHeader.innerHTML = `
+            <div class="sidebar-brand">
+                <img src="/static/icons/CarlAvatar.png" class="sidebar-logo-watermark" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23aaa%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
+                <span class="sidebar-brand-title">Carl AI</span>
+            </div>
+            <button class="sidebar-toggle" onclick="toggleMobileSidebar()">❮</button>
+        `;
+    }
+
+    const sidebarNav = document.querySelector('.sidebar-nav');
+    if (sidebarNav) {
+        sidebarNav.innerHTML = `
+            <button class="sidebar-menu-btn" onclick="startNewChat()">
+                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg> New Chat
+            </button>
+            <button class="sidebar-menu-btn" onclick="searchChats()">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 14z"/></svg> Search
+            </button>
+            <button class="sidebar-menu-btn" onclick="switchView('view-games')">
+                <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm3-3c-.83 0-1.5-.67-1.5-1.5S17.67 9 18.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg> Games
+            </button>
+            <button class="sidebar-menu-btn" onclick="startCall()">
+                <svg viewBox="0 0 24 24"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg> Call
+            </button>
+        `;
+    }
+    
+    const sidebarFooter = document.querySelector('.sidebar-footer');
+    if (sidebarFooter) {
+        sidebarFooter.innerHTML = `
+            <img src="/static/icons/settings-icon.png" class="settings-icon-img" onclick="switchView('view-settings')" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23aaa%22><path d=%22M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z%22/></svg>'">
+        `;
+    }
+
+    const sendBtn = document.getElementById("send-btn");
+    if (sendBtn) {
+        sendBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>`;
+    }
+    
+    const chatView = document.getElementById("view-chat");
+    if (chatView && !chatView.querySelector('.copyright')) {
+        const cr = document.createElement("div");
+        cr.className = "copyright";
+        cr.innerText = "@Dalted Copyright Issued 2026";
+        chatView.appendChild(cr);
+    }
 });
+
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('desktop-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('active');
+}
 
 // --- AUTHENTICATION LISTENER ---
 auth.onAuthStateChanged(async (user) => {
@@ -267,6 +349,16 @@ function switchView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(viewId);
     if (target) target.classList.add('active');
+
+    // Close mobile sidebar if open
+    const sidebar = document.getElementById('desktop-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar && sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+    }
+    if (overlay && overlay.classList.contains('active')) {
+        overlay.classList.remove('active');
+    }
 }
 
 function searchChats() {
