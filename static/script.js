@@ -489,6 +489,18 @@ function archiveActiveChat() {
     renderChatHistorySidebar();
 }
 
+function clearPendingImage() {
+    pendingImageBase64 = null;
+    pendingImageMime = null;
+    pendingImageSrc = null;
+    
+    const filePicker = document.getElementById('native-file-picker');
+    if (filePicker) filePicker.value = "";
+
+    const box = document.getElementById('image-preview-box');
+    if (box) box.classList.remove('active');
+}
+
 function startNewChat() {
     archiveActiveChat();
     activeChatId = "chat_" + Date.now();
@@ -500,9 +512,7 @@ function startNewChat() {
     const input = document.getElementById("user-input");
     if (input) input.value = "";
     
-    pendingImageBase64 = null;
-    pendingImageMime = null;
-    pendingImageSrc = null;
+    clearPendingImage();
     
     saveSessionData();
     switchView('view-chat');
@@ -546,6 +556,14 @@ if (filePicker) {
             pendingImageSrc = event.target.result;
             pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1];
             pendingImageBase64 = pendingImageSrc.split(',')[1];
+            
+            // Pop floating image preview bar above chat bar before messaging
+            const imgEl = document.getElementById('image-preview-img');
+            const boxEl = document.getElementById('image-preview-box');
+            if (imgEl && boxEl) {
+                imgEl.src = pendingImageSrc;
+                boxEl.classList.add('active');
+            }
         };
         reader.readAsDataURL(file);
     });
@@ -578,10 +596,7 @@ async function sendMessage() {
     };
 
     input.value = "";
-    pendingImageBase64 = null;
-    pendingImageMime = null;
-    pendingImageSrc = null;
-    if (filePicker) filePicker.value = "";
+    clearPendingImage(); // Clears internal variables and unmounts visual preview
 
     const log = document.getElementById("chat-log");
     const carlBubble = document.createElement("div");
@@ -685,7 +700,7 @@ if (userInput) {
 }
 
 // =========================================================================
-// --- CALL FEATURE SYSTEM ---
+// --- CALL FEATURE & FACETIME CAMERA SYSTEM ---
 // =========================================================================
 
 let isCallActive = false;
@@ -701,6 +716,10 @@ let audioCtx = null;
 let recognition = null;
 let callAbortController = null;
 let carlVoice = null;
+
+// FaceTime State Memory
+let isFacetimeActive = false;
+let facetimeStream = null;
 
 function loadCarlVoice() {
     if (!('speechSynthesis' in window)) return;
@@ -796,6 +815,77 @@ function playPickupClick() {
     } catch (e) {}
 }
 
+async function toggleFacetime() {
+    const btn = document.getElementById("facetime-btn");
+    
+    if (!isFacetimeActive) {
+        try {
+            facetimeStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, 
+                audio: false 
+            });
+
+            let vid = document.getElementById("facetime-video");
+            if (!vid) {
+                vid = document.createElement("video");
+                vid.id = "facetime-video";
+                vid.autoplay = true;
+                vid.playsInline = true;
+                vid.muted = true;
+                vid.style.position = "absolute";
+                vid.style.top = "0"; vid.style.left = "0";
+                vid.style.width = "100%"; vid.style.height = "100%";
+                vid.style.objectFit = "cover";
+                vid.style.zIndex = "0"; // Behind all the main visual buttons
+                vid.style.borderRadius = "20px";
+                
+                const callView = document.getElementById("view-call");
+                if (callView) callView.insertBefore(vid, callView.firstChild);
+            }
+            vid.srcObject = facetimeStream;
+            vid.style.display = "block";
+
+            isFacetimeActive = true;
+            if (btn) btn.style.opacity = "1";
+        } catch (err) {
+            alert("Unable to access camera for FaceTime mode: " + err.message);
+        }
+    } else {
+        stopFacetime();
+    }
+}
+
+function stopFacetime() {
+    isFacetimeActive = false;
+    if (facetimeStream) {
+        facetimeStream.getTracks().forEach(track => track.stop());
+        facetimeStream = null;
+    }
+    const vid = document.getElementById("facetime-video");
+    if (vid) vid.style.display = "none";
+
+    const btn = document.getElementById("facetime-btn");
+    if (btn) btn.style.opacity = "0.4";
+}
+
+function captureFacetimeFrame() {
+    if (!isFacetimeActive) return null;
+    const vid = document.getElementById("facetime-video");
+    if (!vid || vid.readyState < 2) return null;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = vid.videoWidth || 320;
+    canvas.height = vid.videoHeight || 240;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+    
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+    return {
+        base64: dataUrl.split(",")[1],
+        mime: "image/jpeg"
+    };
+}
+
 function startCall() {
     if (!hasValidApiKey()) {
         alert("Calling Carl requires a valid custom Gemini API Key! Please enter your key in Settings to unlock voice calls.");
@@ -823,6 +913,11 @@ function startCall() {
     
     document.getElementById("mute-btn").style.opacity = "1";
     document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4";
+    
+    const ftBtn = document.getElementById("facetime-btn");
+    if (ftBtn) {
+        ftBtn.style.opacity = "0.4";
+    }
 
     startRingingSound();
 
@@ -853,6 +948,8 @@ function endCall() {
     try {
         isCallActive = false;
         isCallConnected = false;
+
+        stopFacetime(); // Auto-closes camera view on hangup
 
         if (ringTimeout) clearTimeout(ringTimeout);
         stopRingingSound();
@@ -897,7 +994,13 @@ function toggleSpeaker() {
 function speakCarl(text) {
     if (!('speechSynthesis' in window) || !isCallActive) return;
 
-    let cleanText = text.replace(/[*_#~]/g, '').trim();
+    // Prevents codeblocks and markdown elements from being read out verbatim
+    let cleanText = text
+        .replace(/```[\s\S]*?```/g, '') 
+        .replace(/`[^`]*`/g, '') 
+        .replace(/[*_#~]/g, '') 
+        .trim();
+
     if (!cleanText) return;
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
@@ -979,9 +1082,14 @@ async function processCallUserMessage(userText) {
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
     const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+    // Checks visual status and scrapes the camera view if requested by the user dynamically over the phone
+    const ftFrame = captureFacetimeFrame();
+
     const payload = {
         message: userText,
         history: chatHistory,
+        image_b64: ftFrame ? ftFrame.base64 : null,
+        image_mime: ftFrame ? ftFrame.mime : null,
         api_key: customApiKey,
         user_time: userLocalTime,
         user_timezone: userTimezone,
