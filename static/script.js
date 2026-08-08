@@ -548,7 +548,6 @@ function renderChatHistorySidebar() {
         const item = document.createElement("div");
         item.className = "saved-chat-item";
         
-        // 1. Chat Title & Pin Icon
         // --- 1. Chat Title & Pin Icon ---
         const titleContainer = document.createElement("div");
         titleContainer.className = "chat-title-text";
@@ -556,7 +555,6 @@ function renderChatHistorySidebar() {
         if (chat.pinned) {
             const pinIcon = document.createElement("img");
             pinIcon.className = "pinned-icon-img";
-            // Adjust the folder path below if your image is stored somewhere else (like "/static/icons/PinIcon.png")
             pinIcon.src = "/static/icons/PinIcon.png"; 
             pinIcon.alt = "Pinned";
             titleContainer.appendChild(pinIcon);
@@ -686,6 +684,54 @@ if (filePicker) {
     });
 }
 
+// =========================================================================
+// --- CHAT FORMATTING & CODE BLOCK COPY SYSTEM ---
+// =========================================================================
+
+window.copyCode = function(button) {
+    const code = decodeURIComponent(button.getAttribute("data-code"));
+    navigator.clipboard.writeText(code).then(() => {
+        const img = button.querySelector('img');
+        if (img) {
+            img.style.opacity = "0.3";
+            setTimeout(() => img.style.opacity = "1", 200);
+        }
+    }).catch(err => console.error("Copy failed", err));
+};
+
+function formatMessage(text) {
+    let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
+    // Format large markdown code blocks (```lang ... ```)
+    const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
+    safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
+        const displayLang = (lang || "CODE").toUpperCase();
+        const encodedCode = encodeURIComponent(code);
+        
+        // Highlight strings in green
+        let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
+        
+        return `
+        <div class="code-block-wrapper">
+            <div class="code-block-header">
+                <span class="code-language">${displayLang}</span>
+                <button class="copy-code-btn" data-code="${encodedCode}" onclick="copyCode(this)">
+                    <img src="/static/icons/CopyIcon.png" alt="Copy">
+                </button>
+            </div>
+            <div class="code-block-body">${styledCode.trim()}</div>
+        </div>`;
+    });
+
+    // Format bold text
+    safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Format small inline code snippets
+    safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
+
+    return safeText;
+}
+
 async function sendMessage() {
     const input = document.getElementById("user-input");
     if (!input) return;
@@ -768,7 +814,7 @@ async function sendMessage() {
                 }
             }
 
-            textNode.innerText = cleanedResponse;
+            textNode.innerHTML = formatMessage(cleanedResponse);
             log.scrollTop = log.scrollHeight;
         }
 
