@@ -446,21 +446,26 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .image-preview-box {
     align-self: flex-start;
     margin-left: max(16px, calc(50% - 390px));
-    margin-bottom: 15px; /* Lifted it up slightly so it floats better */
+    margin-bottom: 12px;
     position: relative;
     display: none;
     z-index: 20;
 }
 
+/* SHOW BOX WHEN JS ADDS 'ACTIVE' CLASS */
+.image-preview-box.active {
+    display: block;
+}
+
 .image-preview-thumb {
-    width: 160px; /* Increased size significantly */
-    height: 160px; /* Increased size significantly */
-    object-fit: contain; /* Shows the whole image without ugly cropping */
-    border-radius: 12px; /* Smoothed out the corners uniformly */
+    width: 160px;
+    height: 160px;
+    object-fit: contain;
+    border-radius: 12px;
     border: 2px solid var(--border-color);
-    background-color: var(--bg-input); /* Blends better with the UI */
-    box-shadow: 0 8px 16px rgba(0,0,0,0.5); /* Better floating shadow */
-    padding: 4px; /* Adds a nice clean inner frame */
+    background-color: var(--bg-input);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    padding: 4px;
 }
 
 .image-preview-close {
@@ -471,7 +476,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     color: #fff;
     border: none;
     border-radius: 50%;
-    width: 28px; /* Slightly larger close button to match the bigger image */
+    width: 28px;
     height: 28px;
     font-size: 14px;
     cursor: pointer;
