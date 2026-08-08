@@ -481,7 +481,8 @@ function archiveActiveChat() {
                 id: activeChatId,
                 title: newTitle,
                 html: log.innerHTML,
-                apiHistory: [...chatHistory]
+                apiHistory: [...chatHistory],
+                pinned: false
             });
         }
     }
@@ -536,13 +537,127 @@ function renderChatHistorySidebar() {
     if (!container) return;
     container.innerHTML = "";
     
-    chatsHistory.forEach(chat => {
+    // Sort chats so pinned ones stay at the top
+    const sortedChats = [...chatsHistory].sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return 0;
+    });
+    
+    sortedChats.forEach(chat => {
         const item = document.createElement("div");
         item.className = "saved-chat-item";
-        item.innerText = chat.title;
-        item.onclick = () => loadChat(chat.id);
+        
+        // 1. Chat Title & Pin Icon
+        const titleContainer = document.createElement("div");
+        titleContainer.className = "chat-title-text";
+        
+        if (chat.pinned) {
+            const pinIcon = document.createElement("span");
+            pinIcon.className = "pinned-icon";
+            pinIcon.innerText = "📌";
+            titleContainer.appendChild(pinIcon);
+        }
+        
+        const titleText = document.createElement("span");
+        titleText.innerText = chat.title;
+        titleContainer.appendChild(titleText);
+        
+        titleContainer.onclick = () => loadChat(chat.id);
+
+        // 2. Three Dots Button
+        const optionsBtn = document.createElement("button");
+        optionsBtn.className = "chat-options-btn";
+        optionsBtn.innerText = "⋮";
+        
+        // 3. Dropdown Menu
+        const dropdown = document.createElement("div");
+        dropdown.className = "chat-dropdown-menu";
+        
+        const editBtn = document.createElement("button");
+        editBtn.className = "chat-dropdown-item";
+        editBtn.innerText = "Edit Name";
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            editChatTitle(chat.id);
+            dropdown.classList.remove('active');
+        };
+        
+        const pinBtn = document.createElement("button");
+        pinBtn.className = "chat-dropdown-item";
+        pinBtn.innerText = chat.pinned ? "Unpin Chat" : "Pin Chat";
+        pinBtn.onclick = (e) => {
+            e.stopPropagation();
+            togglePinChat(chat.id);
+            dropdown.classList.remove('active');
+        };
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "chat-dropdown-item delete";
+        deleteBtn.innerText = "Delete";
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteChat(chat.id);
+            dropdown.classList.remove('active');
+        };
+        
+        dropdown.appendChild(editBtn);
+        dropdown.appendChild(pinBtn);
+        dropdown.appendChild(deleteBtn);
+        
+        optionsBtn.onclick = (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => {
+                if (menu !== dropdown) menu.classList.remove('active');
+            });
+            dropdown.classList.toggle('active');
+        };
+
+        item.appendChild(titleContainer);
+        item.appendChild(optionsBtn);
+        item.appendChild(dropdown);
         container.appendChild(item);
     });
+}
+
+// Global click listener to close dropdowns when clicking outside
+document.addEventListener("click", () => {
+    document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => {
+        menu.classList.remove('active');
+    });
+});
+
+// --- MENU HELPER FUNCTIONS ---
+function editChatTitle(chatId) {
+    const chat = chatsHistory.find(c => c.id === chatId);
+    if (!chat) return;
+    const newTitle = prompt("Enter a new name for this chat:", chat.title);
+    if (newTitle && newTitle.trim() !== "") {
+        chat.title = newTitle.trim();
+        saveSessionData();
+        renderChatHistorySidebar();
+    }
+}
+
+function togglePinChat(chatId) {
+    const chat = chatsHistory.find(c => c.id === chatId);
+    if (!chat) return;
+    chat.pinned = !chat.pinned;
+    saveSessionData();
+    renderChatHistorySidebar();
+}
+
+function deleteChat(chatId) {
+    if (confirm("Are you sure you want to delete this chat forever?")) {
+        chatsHistory = chatsHistory.filter(c => c.id !== chatId);
+        
+        if (activeChatId === chatId) {
+            startNewChat();
+        } else {
+            saveSessionData();
+            renderChatHistorySidebar();
+        }
+    }
 }
 
 const filePicker = document.getElementById('native-file-picker');
@@ -557,7 +672,6 @@ if (filePicker) {
             pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1];
             pendingImageBase64 = pendingImageSrc.split(',')[1];
             
-            // Pop floating image preview bar above chat bar before messaging
             const imgEl = document.getElementById('image-preview-img');
             const boxEl = document.getElementById('image-preview-box');
             if (imgEl && boxEl) {
@@ -580,7 +694,6 @@ async function sendMessage() {
 
     appendMessage(text, "user", pendingImageSrc);
     
-    // Obtain Exact Client System Local Time & Timezone
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
     const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -596,7 +709,7 @@ async function sendMessage() {
     };
 
     input.value = "";
-    clearPendingImage(); // Clears internal variables and unmounts visual preview
+    clearPendingImage();
 
     const log = document.getElementById("chat-log");
     const carlBubble = document.createElement("div");
@@ -717,7 +830,6 @@ let recognition = null;
 let callAbortController = null;
 let carlVoice = null;
 
-// FaceTime State Memory
 let isFacetimeActive = false;
 let facetimeStream = null;
 
@@ -836,7 +948,7 @@ async function toggleFacetime() {
                 vid.style.top = "0"; vid.style.left = "0";
                 vid.style.width = "100%"; vid.style.height = "100%";
                 vid.style.objectFit = "cover";
-                vid.style.zIndex = "0"; // Behind all the main visual buttons
+                vid.style.zIndex = "0";
                 vid.style.borderRadius = "20px";
                 
                 const callView = document.getElementById("view-call");
@@ -949,7 +1061,7 @@ function endCall() {
         isCallActive = false;
         isCallConnected = false;
 
-        stopFacetime(); // Auto-closes camera view on hangup
+        stopFacetime();
 
         if (ringTimeout) clearTimeout(ringTimeout);
         stopRingingSound();
@@ -994,7 +1106,6 @@ function toggleSpeaker() {
 function speakCarl(text) {
     if (!('speechSynthesis' in window) || !isCallActive) return;
 
-    // Prevents codeblocks and markdown elements from being read out verbatim
     let cleanText = text
         .replace(/```[\s\S]*?```/g, '') 
         .replace(/`[^`]*`/g, '') 
@@ -1082,7 +1193,6 @@ async function processCallUserMessage(userText) {
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
     const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    // Checks visual status and scrapes the camera view if requested by the user dynamically over the phone
     const ftFrame = captureFacetimeFrame();
 
     const payload = {
