@@ -64,7 +64,7 @@ def chat():
     def generate():
         try:
             response_stream = client.models.generate_content_stream(
-                model="gemini-3.1-flash-lite",
+                model="gemini-3.5-flash-lite",
                 contents=contents,
                 config=config
             )
