@@ -438,8 +438,11 @@ input:checked + .slider:before { transform: translateX(28px); }
     color: var(--text-main);
 }
 
-.pinned-icon {
-    font-size: 12px;
+.pinned-icon-img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .chat-dropdown-menu {

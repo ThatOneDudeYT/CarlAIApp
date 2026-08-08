@@ -549,13 +549,16 @@ function renderChatHistorySidebar() {
         item.className = "saved-chat-item";
         
         // 1. Chat Title & Pin Icon
+        // --- 1. Chat Title & Pin Icon ---
         const titleContainer = document.createElement("div");
         titleContainer.className = "chat-title-text";
         
         if (chat.pinned) {
-            const pinIcon = document.createElement("span");
-            pinIcon.className = "pinned-icon";
-            pinIcon.innerText = "📌";
+            const pinIcon = document.createElement("img");
+            pinIcon.className = "pinned-icon-img";
+            // Adjust the folder path below if your image is stored somewhere else (like "/static/icons/PinIcon.png")
+            pinIcon.src = "/static/icons/PinIcon.png"; 
+            pinIcon.alt = "Pinned";
             titleContainer.appendChild(pinIcon);
         }
         
