@@ -691,13 +691,34 @@ if (filePicker) {
 window.copyCode = function(button) {
     const code = decodeURIComponent(button.getAttribute("data-code"));
     navigator.clipboard.writeText(code).then(() => {
-        const img = button.querySelector('img');
-        if (img) {
-            img.style.opacity = "0.3";
-            setTimeout(() => img.style.opacity = "1", 200);
-        }
+        showCopyToast();
     }).catch(err => console.error("Copy failed", err));
 };
+
+function showCopyToast() {
+    let toast = document.getElementById('copy-toast');
+    
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'copy-toast';
+        toast.className = 'copy-toast';
+        toast.innerHTML = `
+            <img src="/static/icons/CopyIcon.png" alt="Copy">
+            <span>Text Copied</span>
+        `;
+        document.body.appendChild(toast);
+    }
+
+    toast.classList.add('show');
+
+    if (window.copyToastTimeout) {
+        clearTimeout(window.copyToastTimeout);
+    }
+
+    window.copyToastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2500);
+}
 
 function formatMessage(text) {
     let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
