@@ -97,6 +97,12 @@
                 </div>
                 
                 <div class="input-wrapper">
+                    <!-- Floating Image Preview Box -->
+                    <div id="image-preview-box" class="image-preview-box">
+                        <img id="image-preview-img" class="image-preview-thumb" src="" alt="Preview">
+                        <button id="image-preview-close" class="image-preview-close" type="button" onclick="clearPendingImage()">✕</button>
+                    </div>
+
                     <div class="input-container">
                         <button class="upload-btn" onclick="document.getElementById('native-file-picker').click();">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -213,11 +219,16 @@
                 </div>
 
                 <div class="call-controls">
+                    <!-- Row 1: Speaker and Mute -->
                     <div class="call-option-row">
                         <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" />
                         <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" />
                     </div>
-                    <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn-end" onclick="endCall()" />
+                    <!-- Row 2: Facetime and End Call -->
+                    <div class="call-option-row">
+                        <img src="/static/icons/Facetime.png" id="facetime-btn" alt="Facetime" class="call-img-btn" onclick="toggleFacetime()" style="opacity: 0.4;" />
+                        <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn" onclick="endCall()" />
+                    </div>
                 </div>
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
