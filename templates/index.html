@@ -119,9 +119,9 @@
                         <button id="send-btn" class="send-btn">↑</button>
                     </div>
                     <input type="file" id="native-file-picker" style="display: none;" accept="image/*, .pdf, .txt, .doc, .docx, .py, .lua, .cs, .js, .json" />
+                    
+                    <div class="copyright">@Dalted Copyright Issued 2026</div>
                 </div>
-
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
             <!-- SETTINGS VIEW TAB -->
@@ -225,7 +225,6 @@
 
                 <div class="games-scroll-box">
                     <div class="games-grid">
-                        <img src="/static/icons/Drawzee.png" onerror="this.src='Drawzee.png'" class="game-card-img" onclick="selectGame(this, 'Drawzee')" alt="Drawzee" />
                         <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" alt="Tic Tac Toe" />
                         <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" alt="Chess" />
                         <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" alt="Hangman" />
@@ -241,60 +240,6 @@
                     <button class="play-btn" onclick="launchGame()">Play</button>
                     <div class="copyright">@Dalted Copyright Issued 2026</div>
                 </div>
-            </div>
-
-            <!-- DRAWZEE VIEW -->
-            <div id="view-drawzee" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Drawzee</h1>
-                </div>
-
-                <div class="drawzee-scoreboard">
-                    <div class="drawzee-stat-badge">
-                        <span class="stat-label">Prompt</span>
-                        <span id="drawzee-prompt-word" class="stat-value highlight">Loading...</span>
-                    </div>
-                    <div class="drawzee-stat-badge">
-                        <span class="stat-label">Time</span>
-                        <span id="drawzee-timer" class="stat-value">00:00.0</span>
-                    </div>
-                    <div class="drawzee-stat-badge">
-                        <span class="stat-label">Best Record</span>
-                        <span id="drawzee-best-time" class="stat-value">--.-s</span>
-                    </div>
-                </div>
-
-                <div class="drawzee-carl-bubble" id="drawzee-carl-bubble">
-                    <span class="carl-tag">Carl thinks:</span>
-                    <span id="drawzee-live-guess" class="carl-guess-text">"Start drawing and I'll start guessing..."</span>
-                </div>
-                
-                <div class="drawzee-container">
-                    <canvas id="drawzee-canvas"></canvas>
-
-                    <div class="drawzee-toolbar">
-                        <div class="drawzee-colors">
-                            <button class="drawzee-color-btn active" style="background: #000000;" onclick="setDrawzeeColor('#000000', this)"></button>
-                            <button class="drawzee-color-btn" style="background: #ef4444;" onclick="setDrawzeeColor('#ef4444', this)"></button>
-                            <button class="drawzee-color-btn" style="background: #3b82f6;" onclick="setDrawzeeColor('#3b82f6', this)"></button>
-                            <button class="drawzee-color-btn" style="background: #22c55e;" onclick="setDrawzeeColor('#22c55e', this)"></button>
-                            <button class="drawzee-color-btn" style="background: #eab308;" onclick="setDrawzeeColor('#eab308', this)"></button>
-                            <button class="drawzee-color-btn" style="background: #ffffff; border: 1px solid #666;" onclick="setDrawzeeColor('#ffffff', this)"></button>
-                        </div>
-                        <div class="drawzee-sizes">
-                            <button class="drawzee-size-btn" onclick="setDrawzeeSize(3, this)"><div style="width: 4px; height: 4px;"></div></button>
-                            <button class="drawzee-size-btn active" onclick="setDrawzeeSize(7, this)"><div style="width: 8px; height: 8px;"></div></button>
-                            <button class="drawzee-size-btn" onclick="setDrawzeeSize(14, this)"><div style="width: 14px; height: 14px;"></div></button>
-                        </div>
-                    </div>
-                    
-                    <div class="drawzee-actions">
-                        <button class="bs-action-btn" onclick="initDrawzee()">Next Word</button>
-                        <button class="bs-action-btn" onclick="clearDrawzeeCanvas()">Clear Canvas</button>
-                    </div>
-                </div>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
             <!-- BLACKJACK VIEW -->
