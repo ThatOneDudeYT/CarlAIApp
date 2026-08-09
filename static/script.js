@@ -31,17 +31,15 @@ let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
-// API Key Validation Helper
+let drawzeeBestTime = parseFloat(localStorage.getItem("drawzee_best_time") || "999999");
+
 function hasValidApiKey() {
     return customApiKey && customApiKey.trim().length > 20;
 }
 
-// Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons();
-    
-    const oldNav = document.querySelector('.bottom-nav');
-    if (oldNav) oldNav.style.display = 'none';
+    updateDrawzeeBestDisplay();
 
     if (!document.getElementById("mobile-hamburger-btn")) {
         const hamburgerBtn = document.createElement("button");
@@ -63,14 +61,6 @@ window.addEventListener("DOMContentLoaded", () => {
         overlay.onclick = toggleMobileSidebar;
         document.body.appendChild(overlay);
     }
-
-    const chatView = document.getElementById("view-chat");
-    if (chatView && !chatView.querySelector('.copyright')) {
-        const cr = document.createElement("div");
-        cr.className = "copyright";
-        cr.innerText = "@Dalted Copyright Issued 2026";
-        chatView.appendChild(cr);
-    }
 });
 
 function toggleMobileSidebar() {
@@ -89,7 +79,6 @@ auth.onAuthStateChanged(async (user) => {
         currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
         
         if (overlay) overlay.classList.add('hidden');
-        
         await loadUserDataFromCloud();
     } else {
         firebaseUserId = null;
@@ -151,6 +140,11 @@ async function loadUserDataFromCloud() {
             applyTheme(data.theme || "dark");
             if (data.avatar) currentUserAvatar = data.avatar;
             if (data.username) currentUser = data.username;
+            if (data.drawzeeBestTime && data.drawzeeBestTime < drawzeeBestTime) {
+                drawzeeBestTime = data.drawzeeBestTime;
+                localStorage.setItem("drawzee_best_time", drawzeeBestTime.toString());
+                updateDrawzeeBestDisplay();
+            }
         } else {
             startNewChat();
         }
@@ -182,7 +176,8 @@ function saveSessionData() {
         activeChatId: activeChatId,
         theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
         avatar: currentUserAvatar,
-        username: currentUser
+        username: currentUser,
+        drawzeeBestTime: drawzeeBestTime < 999999 ? drawzeeBestTime : null
     }, { merge: true }).catch(e => console.error("Error saving data:", e));
 }
 
@@ -305,6 +300,10 @@ function getDifficulty() {
 }
 
 function switchView(viewId) {
+    if (viewId !== "view-drawzee" && typeof dzStopGame === "function") {
+        dzStopGame();
+    }
+
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(viewId);
     if (target) target.classList.add('active');
@@ -537,7 +536,6 @@ function renderChatHistorySidebar() {
     if (!container) return;
     container.innerHTML = "";
     
-    // Sort chats so pinned ones stay at the top
     const sortedChats = [...chatsHistory].sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
@@ -548,7 +546,6 @@ function renderChatHistorySidebar() {
         const item = document.createElement("div");
         item.className = "saved-chat-item";
         
-        // --- 1. Chat Title & Pin Icon ---
         const titleContainer = document.createElement("div");
         titleContainer.className = "chat-title-text";
         
@@ -566,12 +563,10 @@ function renderChatHistorySidebar() {
         
         titleContainer.onclick = () => loadChat(chat.id);
 
-        // 2. Three Dots Button
         const optionsBtn = document.createElement("button");
         optionsBtn.className = "chat-options-btn";
         optionsBtn.innerText = "⋮";
         
-        // 3. Dropdown Menu
         const dropdown = document.createElement("div");
         dropdown.className = "chat-dropdown-menu";
         
@@ -621,14 +616,12 @@ function renderChatHistorySidebar() {
     });
 }
 
-// Global click listener to close dropdowns when clicking outside
 document.addEventListener("click", () => {
     document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => {
         menu.classList.remove('active');
     });
 });
 
-// --- MENU HELPER FUNCTIONS ---
 function editChatTitle(chatId) {
     const chat = chatsHistory.find(c => c.id === chatId);
     if (!chat) return;
@@ -666,7 +659,6 @@ function deleteChat(chatId) {
 // =========================================================================
 
 function processFile(file) {
-    // If the dropped file is an image, mount it to the chat input UI
     if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(event) {
@@ -682,9 +674,7 @@ function processFile(file) {
             }
         };
         reader.readAsDataURL(file);
-    } 
-    // If it's a script/text file, append the raw text immediately to the input
-    else {
+    } else {
         const reader = new FileReader();
         reader.onload = function(event) {
             const text = event.target.result;
@@ -698,25 +688,21 @@ function processFile(file) {
     }
 }
 
-// Attach listeners for manual upload clicking
 const filePicker = document.getElementById('native-file-picker');
 if (filePicker) {
     filePicker.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         processFile(file);
-        // Reset picker so the exact same file can be clicked again
         filePicker.value = ""; 
     });
 }
 
-// Global window Drag and Drop Listeners
 let dragCounter = 0;
 const dragOverlay = document.getElementById('drag-drop-overlay');
 const dragChatView = document.getElementById('view-chat');
 
 if (dragChatView && dragOverlay) {
-    // Prevent default browser behavior across the whole window
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         window.addEventListener(eventName, preventDefaults, false);
     });
@@ -726,7 +712,6 @@ if (dragChatView && dragOverlay) {
         e.stopPropagation();
     }
 
-    // Trigger overlay when dragging enters window
     window.addEventListener('dragenter', (e) => {
         if (dragChatView.classList.contains('active')) {
             dragCounter++;
@@ -734,7 +719,6 @@ if (dragChatView && dragOverlay) {
         }
     });
 
-    // Remove overlay when dragging leaves window boundaries
     window.addEventListener('dragleave', (e) => {
         if (dragChatView.classList.contains('active')) {
             dragCounter--;
@@ -745,7 +729,6 @@ if (dragChatView && dragOverlay) {
         }
     });
 
-    // Handle payload on drop
     window.addEventListener('drop', (e) => {
         dragCounter = 0;
         dragOverlay.classList.remove('active');
@@ -773,7 +756,6 @@ window.copyCode = function(button) {
 
 function showCopyToast() {
     let toast = document.getElementById('copy-toast');
-    
     if (!toast) {
         toast = document.createElement('div');
         toast.id = 'copy-toast';
@@ -786,26 +768,17 @@ function showCopyToast() {
     }
 
     toast.classList.add('show');
-
-    if (window.copyToastTimeout) {
-        clearTimeout(window.copyToastTimeout);
-    }
-
-    window.copyToastTimeout = setTimeout(() => {
-        toast.classList.remove('show');
-    }, 2500);
+    if (window.copyToastTimeout) clearTimeout(window.copyToastTimeout);
+    window.copyToastTimeout = setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
 function formatMessage(text) {
     let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     
-    // Format large markdown code blocks (```lang ... ```)
     const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
     safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
         const displayLang = (lang || "CODE").toUpperCase();
         const encodedCode = encodeURIComponent(code);
-        
-        // Highlight strings in green
         let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
         
         return `
@@ -820,10 +793,7 @@ function formatMessage(text) {
         </div>`;
     });
 
-    // Format bold text
     safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Format small inline code snippets
     safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
 
     return safeText;
@@ -835,7 +805,6 @@ async function sendMessage() {
     const text = input.value.trim();
     
     if (!text && !pendingImageBase64) return;
-    
     if (!checkDailyMessageLimit()) return;
 
     appendMessage(text, "user", pendingImageSrc);
@@ -917,7 +886,6 @@ async function sendMessage() {
 
         chatHistory.push({ role: "user", content: text || "Look at this image." });
         chatHistory.push({ role: "assistant", content: fullResponse });
-        
         saveSessionData();
 
     } catch (err) {
@@ -971,11 +939,9 @@ let callSeconds = 0;
 let ringTimeout = null;
 let ringInterval = null;
 let audioCtx = null;
-
 let recognition = null;
 let callAbortController = null;
 let carlVoice = null;
-
 let isFacetimeActive = false;
 let facetimeStream = null;
 
@@ -1004,9 +970,7 @@ function getAudioContext() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AudioContext();
     }
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
 }
 
@@ -1032,7 +996,7 @@ function playToneBurst(freq1, freq2, duration) {
         osc2.start(ctx.currentTime);
         osc1.stop(ctx.currentTime + duration);
         osc2.stop(ctx.currentTime + duration);
-    } catch (e) { console.error("Web Audio error", e); }
+    } catch (e) {}
 }
 
 function startRingingSound() {
@@ -1168,18 +1132,14 @@ function startCall() {
 
     document.getElementById("call-status").innerText = "Calling Carl...";
     document.getElementById("call-timer").innerText = "00:00";
-    
     document.getElementById("mute-btn").style.opacity = "1";
     document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4";
     
     const ftBtn = document.getElementById("facetime-btn");
-    if (ftBtn) {
-        ftBtn.style.opacity = "0.4";
-    }
+    if (ftBtn) ftBtn.style.opacity = "0.4";
 
     startRingingSound();
-
-    const delay = Math.floor(Math.random() * 6000) + 2000;
+    const delay = Math.floor(Math.random() * 4000) + 1500;
 
     ringTimeout = setTimeout(() => {
         if (!isCallActive) return;
@@ -1206,7 +1166,6 @@ function endCall() {
     try {
         isCallActive = false;
         isCallConnected = false;
-
         stopFacetime();
 
         if (ringTimeout) clearTimeout(ringTimeout);
@@ -1222,7 +1181,6 @@ function endCall() {
 
         document.getElementById("call-timer").innerText = "00:00";
         document.getElementById("call-status").innerText = "Call Ended";
-        
         switchView('view-chat');
     } catch (err) {
         switchView('view-chat'); 
@@ -1290,11 +1248,8 @@ function initSpeechRecognition() {
         let finalTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript;
-            } else {
-                interimTranscript += event.results[i][0].transcript;
-            }
+            if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+            else interimTranscript += event.results[i][0].transcript;
         }
 
         let combined = finalTranscript + interimTranscript;
@@ -1305,12 +1260,10 @@ function initSpeechRecognition() {
 
         if (finalTranscript.trim().length > 0) {
             const userQuery = finalTranscript.trim();
-            
             window.speechSynthesis.cancel();
             if (callAbortController) callAbortController.abort();
 
             document.getElementById("call-status").innerText = "Carl is thinking...";
-
             await processCallUserMessage(userQuery);
         }
     };
@@ -1338,7 +1291,6 @@ async function processCallUserMessage(userText) {
 
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
     const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
     const ftFrame = captureFacetimeFrame();
 
     const payload = {
@@ -1386,9 +1338,7 @@ async function processCallUserMessage(userText) {
                     if (sentence.startsWith(prefix)) sentence = sentence.replace(prefix, "").trim();
                 }
 
-                if (sentence) {
-                    speakCarl(sentence);
-                }
+                if (sentence) speakCarl(sentence);
             }
         }
 
@@ -1420,7 +1370,10 @@ function selectGame(element, gameName) {
 }
 
 function launchGame() {
-    if (selectedGame === "Tic Tac Toe") {
+    if (selectedGame === "Drawzee") {
+        switchView("view-drawzee");
+        initDrawzee();
+    } else if (selectedGame === "Tic Tac Toe") {
         switchView("view-tictactoe");
         initTicTacToe();
     } else if (selectedGame === "Rock Paper Scissors") {
@@ -1446,6 +1399,256 @@ function launchGame() {
         initChess();
     } else {
         alert(`Starting ${selectedGame}...`);
+    }
+}
+
+// =========================================================================
+// --- UPGRADED DRAWZEE SYSTEM (REAL-TIME LIVE GUESSING + SPEED RECORD) ---
+// =========================================================================
+
+const dzWords = [
+    "APPLE", "HOUSE", "TREE", "CAR", "CAT", "DOG", "SUN", "SWORD", 
+    "GUITAR", "SNAKE", "ROBOT", "CLOUD", "MOUNTAIN", "FISH", "AIRPLANE", 
+    "PIZZA", "BICYCLE", "FLOWER", "SMILE", "BOAT", "STAR", "CUP", "HEART"
+];
+
+let dzWord = "";
+let dzCanvas, dzCtx;
+let dzIsDrawing = false;
+let dzColor = "#000000";
+let dzSize = 7;
+let dzEventsBound = false;
+
+let dzTimerInterval = null;
+let dzGuessInterval = null;
+let dzStartTime = 0;
+let dzElapsedTime = 0;
+let dzStrokesMade = 0;
+let dzIsGuessing = false;
+let dzGameOver = false;
+
+function updateDrawzeeBestDisplay() {
+    const el = document.getElementById("drawzee-best-time");
+    if (el) {
+        el.innerText = drawzeeBestTime < 999999 ? `${drawzeeBestTime.toFixed(1)}s` : "--.-s";
+    }
+}
+
+function initDrawzee() {
+    dzStopGame();
+    
+    dzWord = dzWords[Math.floor(Math.random() * dzWords.length)];
+    dzGameOver = false;
+    dzStrokesMade = 0;
+    dzElapsedTime = 0;
+    dzIsGuessing = false;
+    
+    document.getElementById("drawzee-prompt-word").innerText = dzWord;
+    document.getElementById("drawzee-timer").innerText = "00:00.0";
+    
+    const bubbleText = document.getElementById("drawzee-live-guess");
+    if (bubbleText) {
+        bubbleText.innerText = `"Start drawing, and I'll start guessing..."`;
+        bubbleText.style.color = "#ffffff";
+    }
+    
+    updateDrawzeeBestDisplay();
+
+    dzCanvas = document.getElementById("drawzee-canvas");
+    dzCanvas.width = 400;
+    dzCanvas.height = 400;
+    dzCtx = dzCanvas.getContext("2d");
+    dzCtx.lineCap = "round";
+    dzCtx.lineJoin = "round";
+    
+    clearDrawzeeCanvas();
+    
+    if (!dzEventsBound) {
+        dzCanvas.addEventListener("mousedown", dzStart);
+        dzCanvas.addEventListener("mousemove", dzDraw);
+        dzCanvas.addEventListener("mouseup", dzStop);
+        dzCanvas.addEventListener("mouseleave", dzStop);
+        
+        dzCanvas.addEventListener("touchstart", dzStart, { passive: false });
+        dzCanvas.addEventListener("touchmove", dzDraw, { passive: false });
+        dzCanvas.addEventListener("touchend", dzStop);
+        dzEventsBound = true;
+    }
+
+    // Independent background auto-guessing interval (polls every 2 seconds)
+    dzGuessInterval = setInterval(() => {
+        if (!dzGameOver && dzStrokesMade > 2 && !dzIsGuessing) {
+            dzPerformGuess();
+        }
+    }, 2000);
+}
+
+function dzStopGame() {
+    if (dzTimerInterval) { clearInterval(dzTimerInterval); dzTimerInterval = null; }
+    if (dzGuessInterval) { clearInterval(dzGuessInterval); dzGuessInterval = null; }
+}
+
+function dzGetPos(e) {
+    const rect = dzCanvas.getBoundingClientRect();
+    let clientX, clientY;
+    
+    if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
+    
+    const scaleX = dzCanvas.width / rect.width;
+    const scaleY = dzCanvas.height / rect.height;
+    return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+    };
+}
+
+function dzStart(e) {
+    e.preventDefault();
+    if (dzGameOver) return;
+    
+    // Start stopwatch upon first stroke
+    if (!dzTimerInterval && dzStrokesMade === 0) {
+        dzStartTime = Date.now();
+        dzTimerInterval = setInterval(() => {
+            dzElapsedTime = (Date.now() - dzStartTime) / 1000;
+            const mins = String(Math.floor(dzElapsedTime / 60)).padStart(2, '0');
+            const secs = String(Math.floor(dzElapsedTime % 60)).padStart(2, '0');
+            const tenths = Math.floor((dzElapsedTime % 1) * 10);
+            document.getElementById("drawzee-timer").innerText = `${mins}:${secs}.${tenths}`;
+        }, 100);
+    }
+    
+    dzIsDrawing = true;
+    dzStrokesMade++;
+    const pos = dzGetPos(e);
+    dzCtx.beginPath();
+    dzCtx.moveTo(pos.x, pos.y);
+}
+
+function dzDraw(e) {
+    if (!dzIsDrawing || dzGameOver) return;
+    e.preventDefault();
+    const pos = dzGetPos(e);
+    dzCtx.lineTo(pos.x, pos.y);
+    dzCtx.strokeStyle = dzColor;
+    dzCtx.lineWidth = dzSize;
+    dzCtx.stroke();
+}
+
+function dzStop(e) {
+    if (dzIsDrawing) {
+        dzIsDrawing = false;
+        dzCtx.closePath();
+    }
+}
+
+function setDrawzeeColor(color, btn) {
+    dzColor = color;
+    document.querySelectorAll(".drawzee-color-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
+
+function setDrawzeeSize(size, btn) {
+    dzSize = size;
+    document.querySelectorAll(".drawzee-size-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
+
+function clearDrawzeeCanvas() {
+    dzCtx.fillStyle = "#ffffff";
+    dzCtx.fillRect(0, 0, dzCanvas.width, dzCanvas.height);
+}
+
+async function dzPerformGuess() {
+    if (dzIsGuessing || dzGameOver || dzStrokesMade === 0) return;
+    dzIsGuessing = true;
+    
+    const bubbleText = document.getElementById("drawzee-live-guess");
+
+    const dataUrl = dzCanvas.toDataURL("image/jpeg", 0.7);
+    const b64 = dataUrl.split(",")[1];
+
+    const payload = {
+        message: `Look at this user's drawing sketch. What single object or concept is being drawn? YOU MUST OUTPUT EXACTLY ONE WORD. NO PUNCTUATION. NO CONVERSATION. JUST THE RAW NOUN.`,
+        history: [],
+        image_b64: b64,
+        image_mime: "image/jpeg",
+        api_key: customApiKey,
+        user_time: new Date().toLocaleTimeString(),
+        user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        client_time: "Drawzee Live"
+    };
+
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            if (bubbleText) {
+                bubbleText.innerText = `"Enter a valid API key in Settings!"`;
+                bubbleText.style.color = "#ef4444";
+            }
+            dzIsGuessing = false;
+            return;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fullResponse += decoder.decode(value, { stream: true });
+        }
+
+        if (!dzGameOver) {
+            let rawUpper = fullResponse.toUpperCase();
+            let words = rawUpper.replace(/[^A-Z\s]/g, '').trim().split(/\s+/);
+            let displayGuess = words[0] || "...";
+
+            if (bubbleText) {
+                bubbleText.innerText = `"${displayGuess}"`;
+            }
+
+            // Win condition checks extracted word array
+            if (words.includes(dzWord) || displayGuess === dzWord) {
+                dzGameOver = true;
+                dzStopGame();
+
+                const finalTime = dzElapsedTime;
+                if (bubbleText) {
+                    bubbleText.innerText = `"${dzWord}" - BINGO! Solved in ${finalTime.toFixed(1)}s! 🎉`;
+                    bubbleText.style.color = "#84cc16";
+                }
+
+                if (finalTime < drawzeeBestTime) {
+                    drawzeeBestTime = finalTime;
+                    localStorage.setItem("drawzee_best_time", drawzeeBestTime.toString());
+                    updateDrawzeeBestDisplay();
+                    saveSessionData();
+                }
+            } else {
+                if (bubbleText) bubbleText.style.color = "#ffffff";
+            }
+        }
+
+    } catch (err) {
+        if (bubbleText && !dzGameOver) {
+            bubbleText.innerText = `"..."`;
+            bubbleText.style.color = "#aaaaaa";
+        }
+    } finally {
+        dzIsGuessing = false;
     }
 }
 
@@ -1584,7 +1787,6 @@ function renderBj() {
         let currentHand = bjPlayerHands[bjActiveHand];
 
         document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
-
         let canSplit = currentHand.length === 2 && 
                        getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && 
                        bjPlayerHands.length < 4;
@@ -1720,7 +1922,6 @@ function playRps(playerChoice) {
     rpsPlaying = true;
 
     const choices = ['rock', 'paper', 'scissors'];
-    
     document.getElementById("rps-player-hand").src = rpsPlayerHands[playerChoice];
     document.getElementById("rps-status").innerText = "Carl is choosing...";
     document.getElementById("rps-status").style.color = "#eccc68";
@@ -2195,9 +2396,7 @@ function initBattleship() {
 function bsToggleRotate() {
     bsIsHorizontal = !bsIsHorizontal;
     const btn = document.querySelector("#bs-placement-controls .bs-action-btn");
-    if (btn) {
-        btn.innerText = `Rotate: ${bsIsHorizontal ? "Horizontal" : "Vertical"}`;
-    }
+    if (btn) btn.innerText = `Rotate: ${bsIsHorizontal ? "Horizontal" : "Vertical"}`;
 
     if (bsPreviewOrigin) {
         bsPreviewCoords = bsCalculatePreview(bsPreviewOrigin.r, bsPreviewOrigin.c);
@@ -2233,16 +2432,12 @@ function bsPlaceEnemyShipsRandomly() {
 function bsCalculatePreview(r, c) {
     let size = bsShipSizes[bsCurrentShipIndex];
     let coords = [];
-    let fits = true;
-
     for (let i = 0; i < size; i++) {
         let nr = bsIsHorizontal ? r : r + i;
         let nc = bsIsHorizontal ? c + i : c;
-        if (nr >= BS_SIZE || nc >= BS_SIZE) { fits = false; break; }
+        if (nr >= BS_SIZE || nc >= BS_SIZE) return [];
         coords.push({r: nr, c: nc});
     }
-
-    if (!fits) return [];
 
     for (let coord of coords) {
         if (bsPlayerGrid[coord.r][coord.c] === 1) return [];
@@ -2252,7 +2447,6 @@ function bsCalculatePreview(r, c) {
 
 function bsCellClick(r, c) {
     if (bsGameOver) return;
-
     if (bsPlacing) {
         let coords = bsCalculatePreview(r, c);
         if (coords.length > 0) {
@@ -2268,7 +2462,6 @@ function bsCellClick(r, c) {
 
 function bsConfirmPlacement() {
     if (!bsPlacing) return;
-
     if (bsPreviewCoords.length === 0) {
         alert("Please tap a valid spot on the grid to position your ship first!");
         return;
@@ -2402,7 +2595,6 @@ function bsUpdateBoardsUI() {
             const cell = document.createElement("div");
             cell.className = "bs-cell";
             let val = bsPlayerGrid[r][c];
-            
             let isPreview = bsPreviewCoords.some(coord => coord.r === r && coord.c === c);
 
             if (val === 1) { cell.classList.add("ship"); }
@@ -2460,31 +2652,20 @@ function chkRenderBoard() {
             tile.className = `chk-tile ${isDark ? "dark" : "light"}`;
             
             let pieceVal = chkBoard[r][c];
-            
-            if (chkSelected && chkSelected.r === r && chkSelected.c === c) {
-                tile.classList.add("selected");
-            }
+            if (chkSelected && chkSelected.r === r && chkSelected.c === c) tile.classList.add("selected");
 
             let moveObj = chkValidMoves.find(m => m.toR === r && m.toC === c);
-            if (moveObj) {
-                tile.classList.add("target");
-            }
+            if (moveObj) tile.classList.add("target");
 
             let isJumped = chkValidMoves.some(m => m.isJump && m.jumpedR === r && m.jumpedC === c);
-            if (isJumped) {
-                tile.classList.add("jump-capture");
-            }
+            if (isJumped) tile.classList.add("jump-capture");
 
             if (pieceVal !== 0) {
                 const piece = document.createElement("div");
                 let isRed = pieceVal === 1 || pieceVal === 11;
                 let isKing = pieceVal === 11 || pieceVal === 22;
                 piece.className = `chk-piece ${isRed ? "red" : "black"}`;
-                
-                if (isKing) {
-                    piece.classList.add("king");
-                }
-                
+                if (isKing) piece.classList.add("king");
                 tile.appendChild(piece);
             }
 
@@ -2573,14 +2754,9 @@ function chkGetMovesForPiece(r, c, boardState) {
 function chkExecuteMove(move) {
     let p = chkBoard[move.fromR][move.fromC];
     chkBoard[move.fromR][move.fromC] = 0;
-
-    if (move.isJump) {
-        chkBoard[move.jumpedR][move.jumpedC] = 0;
-    }
-
+    if (move.isJump) chkBoard[move.jumpedR][move.jumpedC] = 0;
     if (p === 1 && move.toR === 0) p = 11;
     if (p === 2 && move.toR === 7) p = 22;
-
     chkBoard[move.toR][move.toC] = p;
 }
 
@@ -2701,7 +2877,6 @@ function initChess() {
 
     document.getElementById("chs-status").innerText = "Your Turn (White)";
     document.getElementById("chs-status").style.color = "#fff";
-
     chsRenderBoard();
 }
 
@@ -2717,10 +2892,7 @@ function chsRenderBoard() {
             tile.className = `chs-tile ${isDark ? "dark" : "light"}`;
             
             let p = chsBoard[r][c];
-            
-            if (chsSelected && chsSelected.r === r && chsSelected.c === c) {
-                tile.classList.add("selected");
-            }
+            if (chsSelected && chsSelected.r === r && chsSelected.c === c) tile.classList.add("selected");
 
             let moveObj = chsValidMoves.find(m => m.r === r && m.c === c);
             if (moveObj) {
