@@ -65,10 +65,10 @@ body {
     overflow: hidden;
 }
 
-/* --- START-UP SCREEN TYPING ANIMATION --- */
+/* --- START-UP SCREEN & GLOW EFFECT --- */
 .startup-screen {
     position: absolute;
-    top: 40%;
+    top: 38%; /* Kept slightly high to make room for input bar */
     left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
@@ -80,6 +80,20 @@ body {
     z-index: 5;
     pointer-events: none;
     transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Massive Glowing Background */
+.startup-screen::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1200px;
+    height: 1000px;
+    background: radial-gradient(circle, rgba(147, 51, 234, 0.25) 0%, rgba(17, 17, 17, 0) 50%);
+    transform: translate(-50%, -50%);
+    z-index: -1;
+    pointer-events: none;
 }
 
 .startup-screen.hidden {
@@ -579,6 +593,15 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     width: 100%;
     margin: 0 auto;
     z-index: 6;
+    opacity: 1;
+    transition: opacity 0.4s ease 0.2s; /* Delayed fade in when typing starts */
+}
+
+/* Hide the chat log when startup is active */
+#view-chat.startup-active .chat-log {
+    opacity: 0;
+    pointer-events: none;
+    transition: none; /* instant fade out on reset */
 }
 
 .system-msg { color: var(--text-sub); font-style: italic; font-size: 15px; }
@@ -600,6 +623,12 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     align-items: center; 
     position: relative; 
     z-index: 10;
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.3, 1);
+}
+
+/* This slides the bar up to the center! */
+#view-chat.startup-active .input-wrapper {
+    transform: translateY(-35vh);
 }
 
 .drag-drop-overlay {

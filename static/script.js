@@ -103,8 +103,12 @@ function typeLoop(titleEl, currentText, charIndex, isDeleting) {
 
 function hideStartupScreen() {
     const startupScreen = document.getElementById("startup-screen");
+    const viewChat = document.getElementById("view-chat");
     if (startupScreen) {
         startupScreen.classList.add("hidden");
+    }
+    if (viewChat) {
+        viewChat.classList.remove("startup-active");
     }
     if (typingTimeout) {
         clearTimeout(typingTimeout);
@@ -113,9 +117,13 @@ function hideStartupScreen() {
 
 function showStartupScreen() {
     const startupScreen = document.getElementById("startup-screen");
+    const viewChat = document.getElementById("view-chat");
     if (startupScreen) {
         startupScreen.classList.remove("hidden");
         initTypingAnimation();
+    }
+    if (viewChat) {
+        viewChat.classList.add("startup-active");
     }
 }
 
