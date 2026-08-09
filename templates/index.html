@@ -260,6 +260,8 @@
 
                 <div class="games-scroll-box">
                     <div class="games-grid">
+                        <!-- New Drawzee Button Added Here -->
+                        <img src="Drawzee.png" class="game-card-img" onclick="selectGame(this, 'Drawzee')" alt="Drawzee" />
                         <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" alt="Tic Tac Toe" />
                         <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" alt="Chess" />
                         <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" alt="Hangman" />
@@ -275,6 +277,42 @@
                     <button class="play-btn" onclick="launchGame()">Play</button>
                     <div class="copyright">@Dalted Copyright Issued 2026</div>
                 </div>
+            </div>
+
+            <!-- DRAWZEE VIEW -->
+            <div id="view-drawzee" class="view">
+                <div class="games-header">
+                    <button class="back-btn" onclick="switchView('view-games')">←</button>
+                    <h1>Drawzee</h1>
+                </div>
+                <div id="drawzee-status" class="game-status">Prompt: Loading...</div>
+                
+                <div class="drawzee-container">
+                    <canvas id="drawzee-canvas"></canvas>
+
+                    <div class="drawzee-toolbar">
+                        <div class="drawzee-colors">
+                            <button class="drawzee-color-btn active" style="background: #000000;" onclick="setDrawzeeColor('#000000', this)"></button>
+                            <button class="drawzee-color-btn" style="background: #ef4444;" onclick="setDrawzeeColor('#ef4444', this)"></button>
+                            <button class="drawzee-color-btn" style="background: #3b82f6;" onclick="setDrawzeeColor('#3b82f6', this)"></button>
+                            <button class="drawzee-color-btn" style="background: #22c55e;" onclick="setDrawzeeColor('#22c55e', this)"></button>
+                            <button class="drawzee-color-btn" style="background: #eab308;" onclick="setDrawzeeColor('#eab308', this)"></button>
+                            <button class="drawzee-color-btn" style="background: #ffffff; border: 1px solid #ccc;" onclick="setDrawzeeColor('#ffffff', this)"></button>
+                        </div>
+                        <div class="drawzee-sizes">
+                            <button class="drawzee-size-btn" onclick="setDrawzeeSize(2, this)"><div style="width: 4px; height: 4px;"></div></button>
+                            <button class="drawzee-size-btn active" onclick="setDrawzeeSize(5, this)"><div style="width: 8px; height: 8px;"></div></button>
+                            <button class="drawzee-size-btn" onclick="setDrawzeeSize(10, this)"><div style="width: 14px; height: 14px;"></div></button>
+                        </div>
+                    </div>
+                    
+                    <div class="drawzee-actions">
+                        <button class="bs-action-btn" onclick="initDrawzee()">Next Word</button>
+                        <button class="bs-action-btn" onclick="clearDrawzeeCanvas()">Clear</button>
+                        <button class="bs-action-btn confirm" onclick="submitDrawzeeGuess()">Guess!</button>
+                    </div>
+                </div>
+                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
             <!-- BLACKJACK VIEW -->
