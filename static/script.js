@@ -31,15 +31,17 @@ let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
-let drawzeeBestTime = parseFloat(localStorage.getItem("drawzee_best_time") || "999999");
-
+// API Key Validation Helper
 function hasValidApiKey() {
     return customApiKey && customApiKey.trim().length > 20;
 }
 
+// Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons();
-    updateDrawzeeBestDisplay();
+    
+    const oldNav = document.querySelector('.bottom-nav');
+    if (oldNav) oldNav.style.display = 'none';
 
     if (!document.getElementById("mobile-hamburger-btn")) {
         const hamburgerBtn = document.createElement("button");
@@ -140,11 +142,6 @@ async function loadUserDataFromCloud() {
             applyTheme(data.theme || "dark");
             if (data.avatar) currentUserAvatar = data.avatar;
             if (data.username) currentUser = data.username;
-            if (data.drawzeeBestTime && data.drawzeeBestTime < drawzeeBestTime) {
-                drawzeeBestTime = data.drawzeeBestTime;
-                localStorage.setItem("drawzee_best_time", drawzeeBestTime.toString());
-                updateDrawzeeBestDisplay();
-            }
         } else {
             startNewChat();
         }
@@ -176,8 +173,7 @@ function saveSessionData() {
         activeChatId: activeChatId,
         theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
         avatar: currentUserAvatar,
-        username: currentUser,
-        drawzeeBestTime: drawzeeBestTime < 999999 ? drawzeeBestTime : null
+        username: currentUser
     }, { merge: true }).catch(e => console.error("Error saving data:", e));
 }
 
@@ -300,10 +296,6 @@ function getDifficulty() {
 }
 
 function switchView(viewId) {
-    if (viewId !== "view-drawzee" && typeof dzStopGame === "function") {
-        dzStopGame();
-    }
-
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const target = document.getElementById(viewId);
     if (target) target.classList.add('active');
@@ -1370,10 +1362,7 @@ function selectGame(element, gameName) {
 }
 
 function launchGame() {
-    if (selectedGame === "Drawzee") {
-        switchView("view-drawzee");
-        initDrawzee();
-    } else if (selectedGame === "Tic Tac Toe") {
+    if (selectedGame === "Tic Tac Toe") {
         switchView("view-tictactoe");
         initTicTacToe();
     } else if (selectedGame === "Rock Paper Scissors") {
@@ -1399,256 +1388,6 @@ function launchGame() {
         initChess();
     } else {
         alert(`Starting ${selectedGame}...`);
-    }
-}
-
-// =========================================================================
-// --- UPGRADED DRAWZEE SYSTEM (REAL-TIME LIVE GUESSING + SPEED RECORD) ---
-// =========================================================================
-
-const dzWords = [
-    "APPLE", "HOUSE", "TREE", "CAR", "CAT", "DOG", "SUN", "SWORD", 
-    "GUITAR", "SNAKE", "ROBOT", "CLOUD", "MOUNTAIN", "FISH", "AIRPLANE", 
-    "PIZZA", "BICYCLE", "FLOWER", "SMILE", "BOAT", "STAR", "CUP", "HEART"
-];
-
-let dzWord = "";
-let dzCanvas, dzCtx;
-let dzIsDrawing = false;
-let dzColor = "#000000";
-let dzSize = 7;
-let dzEventsBound = false;
-
-let dzTimerInterval = null;
-let dzGuessInterval = null;
-let dzStartTime = 0;
-let dzElapsedTime = 0;
-let dzStrokesMade = 0;
-let dzIsGuessing = false;
-let dzGameOver = false;
-
-function updateDrawzeeBestDisplay() {
-    const el = document.getElementById("drawzee-best-time");
-    if (el) {
-        el.innerText = drawzeeBestTime < 999999 ? `${drawzeeBestTime.toFixed(1)}s` : "--.-s";
-    }
-}
-
-function initDrawzee() {
-    dzStopGame();
-    
-    dzWord = dzWords[Math.floor(Math.random() * dzWords.length)];
-    dzGameOver = false;
-    dzStrokesMade = 0;
-    dzElapsedTime = 0;
-    dzIsGuessing = false;
-    
-    document.getElementById("drawzee-prompt-word").innerText = dzWord;
-    document.getElementById("drawzee-timer").innerText = "00:00.0";
-    
-    const bubbleText = document.getElementById("drawzee-live-guess");
-    if (bubbleText) {
-        bubbleText.innerText = `"Start drawing, and I'll start guessing..."`;
-        bubbleText.style.color = "#ffffff";
-    }
-    
-    updateDrawzeeBestDisplay();
-
-    dzCanvas = document.getElementById("drawzee-canvas");
-    dzCanvas.width = 400;
-    dzCanvas.height = 400;
-    dzCtx = dzCanvas.getContext("2d");
-    dzCtx.lineCap = "round";
-    dzCtx.lineJoin = "round";
-    
-    clearDrawzeeCanvas();
-    
-    if (!dzEventsBound) {
-        dzCanvas.addEventListener("mousedown", dzStart);
-        dzCanvas.addEventListener("mousemove", dzDraw);
-        dzCanvas.addEventListener("mouseup", dzStop);
-        dzCanvas.addEventListener("mouseleave", dzStop);
-        
-        dzCanvas.addEventListener("touchstart", dzStart, { passive: false });
-        dzCanvas.addEventListener("touchmove", dzDraw, { passive: false });
-        dzCanvas.addEventListener("touchend", dzStop);
-        dzEventsBound = true;
-    }
-
-    // Independent background auto-guessing interval (polls every 2 seconds)
-    dzGuessInterval = setInterval(() => {
-        if (!dzGameOver && dzStrokesMade > 2 && !dzIsGuessing) {
-            dzPerformGuess();
-        }
-    }, 2000);
-}
-
-function dzStopGame() {
-    if (dzTimerInterval) { clearInterval(dzTimerInterval); dzTimerInterval = null; }
-    if (dzGuessInterval) { clearInterval(dzGuessInterval); dzGuessInterval = null; }
-}
-
-function dzGetPos(e) {
-    const rect = dzCanvas.getBoundingClientRect();
-    let clientX, clientY;
-    
-    if (e.touches && e.touches.length > 0) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-    }
-    
-    const scaleX = dzCanvas.width / rect.width;
-    const scaleY = dzCanvas.height / rect.height;
-    return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY
-    };
-}
-
-function dzStart(e) {
-    e.preventDefault();
-    if (dzGameOver) return;
-    
-    // Start stopwatch upon first stroke
-    if (!dzTimerInterval && dzStrokesMade === 0) {
-        dzStartTime = Date.now();
-        dzTimerInterval = setInterval(() => {
-            dzElapsedTime = (Date.now() - dzStartTime) / 1000;
-            const mins = String(Math.floor(dzElapsedTime / 60)).padStart(2, '0');
-            const secs = String(Math.floor(dzElapsedTime % 60)).padStart(2, '0');
-            const tenths = Math.floor((dzElapsedTime % 1) * 10);
-            document.getElementById("drawzee-timer").innerText = `${mins}:${secs}.${tenths}`;
-        }, 100);
-    }
-    
-    dzIsDrawing = true;
-    dzStrokesMade++;
-    const pos = dzGetPos(e);
-    dzCtx.beginPath();
-    dzCtx.moveTo(pos.x, pos.y);
-}
-
-function dzDraw(e) {
-    if (!dzIsDrawing || dzGameOver) return;
-    e.preventDefault();
-    const pos = dzGetPos(e);
-    dzCtx.lineTo(pos.x, pos.y);
-    dzCtx.strokeStyle = dzColor;
-    dzCtx.lineWidth = dzSize;
-    dzCtx.stroke();
-}
-
-function dzStop(e) {
-    if (dzIsDrawing) {
-        dzIsDrawing = false;
-        dzCtx.closePath();
-    }
-}
-
-function setDrawzeeColor(color, btn) {
-    dzColor = color;
-    document.querySelectorAll(".drawzee-color-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-}
-
-function setDrawzeeSize(size, btn) {
-    dzSize = size;
-    document.querySelectorAll(".drawzee-size-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-}
-
-function clearDrawzeeCanvas() {
-    dzCtx.fillStyle = "#ffffff";
-    dzCtx.fillRect(0, 0, dzCanvas.width, dzCanvas.height);
-}
-
-async function dzPerformGuess() {
-    if (dzIsGuessing || dzGameOver || dzStrokesMade === 0) return;
-    dzIsGuessing = true;
-    
-    const bubbleText = document.getElementById("drawzee-live-guess");
-
-    const dataUrl = dzCanvas.toDataURL("image/jpeg", 0.7);
-    const b64 = dataUrl.split(",")[1];
-
-    const payload = {
-        message: `Look at this user's drawing sketch. What single object or concept is being drawn? YOU MUST OUTPUT EXACTLY ONE WORD. NO PUNCTUATION. NO CONVERSATION. JUST THE RAW NOUN.`,
-        history: [],
-        image_b64: b64,
-        image_mime: "image/jpeg",
-        api_key: customApiKey,
-        user_time: new Date().toLocaleTimeString(),
-        user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        client_time: "Drawzee Live"
-    };
-
-    try {
-        const response = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            if (bubbleText) {
-                bubbleText.innerText = `"Enter a valid API key in Settings!"`;
-                bubbleText.style.color = "#ef4444";
-            }
-            dzIsGuessing = false;
-            return;
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullResponse = "";
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            fullResponse += decoder.decode(value, { stream: true });
-        }
-
-        if (!dzGameOver) {
-            let rawUpper = fullResponse.toUpperCase();
-            let words = rawUpper.replace(/[^A-Z\s]/g, '').trim().split(/\s+/);
-            let displayGuess = words[0] || "...";
-
-            if (bubbleText) {
-                bubbleText.innerText = `"${displayGuess}"`;
-            }
-
-            // Win condition checks extracted word array
-            if (words.includes(dzWord) || displayGuess === dzWord) {
-                dzGameOver = true;
-                dzStopGame();
-
-                const finalTime = dzElapsedTime;
-                if (bubbleText) {
-                    bubbleText.innerText = `"${dzWord}" - BINGO! Solved in ${finalTime.toFixed(1)}s! 🎉`;
-                    bubbleText.style.color = "#84cc16";
-                }
-
-                if (finalTime < drawzeeBestTime) {
-                    drawzeeBestTime = finalTime;
-                    localStorage.setItem("drawzee_best_time", drawzeeBestTime.toString());
-                    updateDrawzeeBestDisplay();
-                    saveSessionData();
-                }
-            } else {
-                if (bubbleText) bubbleText.style.color = "#ffffff";
-            }
-        }
-
-    } catch (err) {
-        if (bubbleText && !dzGameOver) {
-            bubbleText.innerText = `"..."`;
-            bubbleText.style.color = "#aaaaaa";
-        }
-    } finally {
-        dzIsGuessing = false;
     }
 }
 
