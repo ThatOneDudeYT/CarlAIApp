@@ -1475,12 +1475,12 @@ function initDrawzee() {
         dzEventsBound = true;
     }
 
-    // Independent background auto-guessing interval (polls every 3 seconds)
+    // Independent background auto-guessing interval (polls every 2 seconds)
     dzGuessInterval = setInterval(() => {
         if (!dzGameOver && dzStrokesMade > 2 && !dzIsGuessing) {
             dzPerformGuess();
         }
-    }, 3000);
+    }, 2000);
 }
 
 function dzStopGame() {

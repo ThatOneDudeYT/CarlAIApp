@@ -631,6 +631,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     flex-direction: column; 
     align-items: center; 
     position: relative; 
+    margin-top: auto;
 }
 
 .drag-drop-overlay {
