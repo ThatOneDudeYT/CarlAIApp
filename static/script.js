@@ -1153,7 +1153,7 @@ function startCall() {
         callTimerInterval = setInterval(() => {
             callSeconds++;
             const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
-            const secs = String(callSeconds % 60).padStart(2, '0');
+            const secs = String(Math.floor(callSeconds % 60)).padStart(2, '0');
             document.getElementById("call-timer").innerText = `${mins}:${secs}`;
         }, 1000);
 
@@ -2396,7 +2396,9 @@ function initBattleship() {
 function bsToggleRotate() {
     bsIsHorizontal = !bsIsHorizontal;
     const btn = document.querySelector("#bs-placement-controls .bs-action-btn");
-    if (btn) btn.innerText = `Rotate: ${bsIsHorizontal ? "Horizontal" : "Vertical"}`;
+    if (btn) {
+        btn.innerText = `Rotate: ${bsIsHorizontal ? "Horizontal" : "Vertical"}`;
+    }
 
     if (bsPreviewOrigin) {
         bsPreviewCoords = bsCalculatePreview(bsPreviewOrigin.r, bsPreviewOrigin.c);
@@ -3004,7 +3006,6 @@ function chsTileClick(r, c) {
         let move = chsValidMoves.find(m => m.r === r && m.c === c);
         if (move) {
             chsExecuteMove(chsSelected.r, chsSelected.c, move.r, move.c);
-            
             if (chsGameOver) { chsRenderBoard(); return; }
 
             chsSelected = null;
