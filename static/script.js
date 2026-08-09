@@ -666,7 +666,6 @@ function deleteChat(chatId) {
 // =========================================================================
 
 function processFile(file) {
-    // If the dropped file is an image, mount it to the chat input UI
     if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(event) {
@@ -683,7 +682,6 @@ function processFile(file) {
         };
         reader.readAsDataURL(file);
     } 
-    // If it's a script/text file, append the raw text immediately to the input
     else {
         const reader = new FileReader();
         reader.onload = function(event) {
@@ -698,25 +696,21 @@ function processFile(file) {
     }
 }
 
-// Attach listeners for manual upload clicking
 const filePicker = document.getElementById('native-file-picker');
 if (filePicker) {
     filePicker.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         processFile(file);
-        // Reset picker so the exact same file can be clicked again
         filePicker.value = ""; 
     });
 }
 
-// Global window Drag and Drop Listeners
 let dragCounter = 0;
 const dragOverlay = document.getElementById('drag-drop-overlay');
 const dragChatView = document.getElementById('view-chat');
 
 if (dragChatView && dragOverlay) {
-    // Prevent default browser behavior across the whole window
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         window.addEventListener(eventName, preventDefaults, false);
     });
@@ -726,7 +720,6 @@ if (dragChatView && dragOverlay) {
         e.stopPropagation();
     }
 
-    // Trigger overlay when dragging enters window
     window.addEventListener('dragenter', (e) => {
         if (dragChatView.classList.contains('active')) {
             dragCounter++;
@@ -734,7 +727,6 @@ if (dragChatView && dragOverlay) {
         }
     });
 
-    // Remove overlay when dragging leaves window boundaries
     window.addEventListener('dragleave', (e) => {
         if (dragChatView.classList.contains('active')) {
             dragCounter--;
@@ -745,7 +737,6 @@ if (dragChatView && dragOverlay) {
         }
     });
 
-    // Handle payload on drop
     window.addEventListener('drop', (e) => {
         dragCounter = 0;
         dragOverlay.classList.remove('active');
@@ -799,13 +790,11 @@ function showCopyToast() {
 function formatMessage(text) {
     let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     
-    // Format large markdown code blocks (```lang ... ```)
     const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
     safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
         const displayLang = (lang || "CODE").toUpperCase();
         const encodedCode = encodeURIComponent(code);
         
-        // Highlight strings in green
         let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
         
         return `
@@ -820,10 +809,7 @@ function formatMessage(text) {
         </div>`;
     });
 
-    // Format bold text
     safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Format small inline code snippets
     safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
 
     return safeText;
@@ -835,7 +821,6 @@ async function sendMessage() {
     const text = input.value.trim();
     
     if (!text && !pendingImageBase64) return;
-    
     if (!checkDailyMessageLimit()) return;
 
     appendMessage(text, "user", pendingImageSrc);
@@ -1420,7 +1405,10 @@ function selectGame(element, gameName) {
 }
 
 function launchGame() {
-    if (selectedGame === "Tic Tac Toe") {
+    if (selectedGame === "Drawzee") {
+        switchView("view-drawzee");
+        initDrawzee();
+    } else if (selectedGame === "Tic Tac Toe") {
         switchView("view-tictactoe");
         initTicTacToe();
     } else if (selectedGame === "Rock Paper Scissors") {
@@ -1446,6 +1434,159 @@ function launchGame() {
         initChess();
     } else {
         alert(`Starting ${selectedGame}...`);
+    }
+}
+
+// --- GAME: DRAWZEE ---
+const dzWords = ["APPLE", "HOUSE", "TREE", "CAR", "CAT", "DOG", "SUN", "SWORD", "GUITAR", "SNAKE", "ROBOT", "CLOUD", "MOUNTAIN"];
+let dzWord = "";
+let dzCanvas, dzCtx;
+let dzIsDrawing = false;
+let dzColor = "#000000";
+let dzSize = 5;
+let dzEventsBound = false;
+
+function initDrawzee() {
+    dzWord = dzWords[Math.floor(Math.random() * dzWords.length)];
+    document.getElementById("drawzee-status").innerText = `Draw: ${dzWord}`;
+    document.getElementById("drawzee-status").style.color = "#fff";
+    
+    dzCanvas = document.getElementById("drawzee-canvas");
+    dzCanvas.width = 350;
+    dzCanvas.height = 350;
+    dzCtx = dzCanvas.getContext("2d");
+    dzCtx.lineCap = "round";
+    dzCtx.lineJoin = "round";
+    clearDrawzeeCanvas();
+    
+    if (!dzEventsBound) {
+        dzCanvas.addEventListener("mousedown", dzStart);
+        dzCanvas.addEventListener("mousemove", dzDraw);
+        dzCanvas.addEventListener("mouseup", dzStop);
+        dzCanvas.addEventListener("mouseout", dzStop);
+        
+        dzCanvas.addEventListener("touchstart", dzStart, {passive: false});
+        dzCanvas.addEventListener("touchmove", dzDraw, {passive: false});
+        dzCanvas.addEventListener("touchend", dzStop);
+        dzEventsBound = true;
+    }
+}
+
+function dzGetPos(e) {
+    const rect = dzCanvas.getBoundingClientRect();
+    let x, y;
+    if (e.touches && e.touches.length > 0) {
+        x = e.touches[0].clientX - rect.left;
+        y = e.touches[0].clientY - rect.top;
+    } else {
+        x = e.clientX - rect.left;
+        y = e.clientY - rect.top;
+    }
+    const scaleX = dzCanvas.width / rect.width;
+    const scaleY = dzCanvas.height / rect.height;
+    return { x: x * scaleX, y: y * scaleY };
+}
+
+function dzStart(e) {
+    e.preventDefault();
+    dzIsDrawing = true;
+    const pos = dzGetPos(e);
+    dzCtx.beginPath();
+    dzCtx.moveTo(pos.x, pos.y);
+}
+
+function dzDraw(e) {
+    if (!dzIsDrawing) return;
+    e.preventDefault();
+    const pos = dzGetPos(e);
+    dzCtx.lineTo(pos.x, pos.y);
+    dzCtx.strokeStyle = dzColor;
+    dzCtx.lineWidth = dzSize;
+    dzCtx.stroke();
+}
+
+function dzStop(e) {
+    if (dzIsDrawing) {
+        dzIsDrawing = false;
+        dzCtx.closePath();
+    }
+}
+
+function setDrawzeeColor(color, btn) {
+    dzColor = color;
+    document.querySelectorAll(".drawzee-color-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
+
+function setDrawzeeSize(size, btn) {
+    dzSize = size;
+    document.querySelectorAll(".drawzee-size-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
+
+function clearDrawzeeCanvas() {
+    dzCtx.fillStyle = "#ffffff";
+    dzCtx.fillRect(0, 0, dzCanvas.width, dzCanvas.height);
+}
+
+async function submitDrawzeeGuess() {
+    if (!hasValidApiKey()) {
+        alert("Playing Drawzee requires a valid Gemini API Key for vision logic! Please enter your key in Settings.");
+        switchView('view-settings');
+        return;
+    }
+
+    document.getElementById("drawzee-status").innerText = "Carl is looking...";
+    document.getElementById("drawzee-status").style.color = "#eccc68";
+    
+    const dataUrl = dzCanvas.toDataURL("image/jpeg", 0.7);
+    const b64 = dataUrl.split(",")[1];
+    
+    const payload = {
+        message: `I drew a picture. Try to guess what it is in EXACTLY ONE WORD! Do not say anything else. Just the one word guess.`,
+        history: [],
+        image_b64: b64,
+        image_mime: "image/jpeg",
+        api_key: customApiKey,
+        user_time: new Date().toLocaleTimeString(),
+        user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        client_time: "Drawzee API"
+    };
+    
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            document.getElementById("drawzee-status").innerText = "API Error! Check Key.";
+            document.getElementById("drawzee-status").style.color = "#ef4444";
+            return;
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = "";
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fullResponse += decoder.decode(value, { stream: true });
+        }
+        
+        const cleanGuess = fullResponse.replace(/Carl:/i, '').replace(/[^a-zA-Z]/g, '').toUpperCase();
+        
+        if (cleanGuess.includes(dzWord) || dzWord.includes(cleanGuess) && cleanGuess.length > 2) {
+            document.getElementById("drawzee-status").innerText = `Carl Guessed: ${cleanGuess} - YOU WIN!`;
+            document.getElementById("drawzee-status").style.color = "#84cc16";
+        } else {
+            document.getElementById("drawzee-status").innerText = `Carl Guessed: ${cleanGuess} - Wrong! (It was ${dzWord})`;
+            document.getElementById("drawzee-status").style.color = "#ef4444";
+        }
+        
+    } catch (err) {
+        document.getElementById("drawzee-status").innerText = "Network Error.";
     }
 }
 
