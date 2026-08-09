@@ -657,6 +657,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     flex-direction: column; 
     align-items: center; 
     position: relative; 
+    flex-shrink: 0;
 }
 
 .drag-drop-overlay {
@@ -771,7 +772,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 
 #view-chat { padding-bottom: 20px; position: relative; }
 
-.copyright { text-align: center; color: var(--text-sub); font-size: 13px; letter-spacing: 0.5px; margin-top: auto; padding-top: 10px;}
+.copyright { text-align: center; color: var(--text-sub); font-size: 13px; letter-spacing: 0.5px; margin-top: 10px; padding-top: 10px; flex-shrink: 0;}
 
 /* --- CALL VIEW --- */
 #view-call { padding: 24px 20px 12px 20px; display: flex; flex-direction: column; height: 100%; position: relative; }
@@ -934,9 +935,9 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     .settings-icon-img { width: 24px; height: 24px; }
     .desktop-sidebar.collapsed .sidebar-footer { justify-content: center; }
 
-    #view-chat { padding-bottom: 15px; }
-    .chat-log { max-width: 800px; margin: 0 auto; width: 100%; flex: 1; height: 100%; min-height: 0; overflow-y: auto; }
-    #view-chat .copyright { margin-top: 0 !important; }
+    #view-chat { padding-bottom: 15px; display: flex; flex-direction: column; justify-content: flex-start; }
+    .chat-log { max-width: 800px; margin: 0 auto; width: 100%; flex: 1; height: auto; min-height: 0; overflow-y: auto; }
+    #view-chat .copyright { margin-top: 10px !important; }
     
     .games-scroll-box { 
         max-width: 100%; 
