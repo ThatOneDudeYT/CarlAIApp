@@ -31,7 +31,6 @@
 
             <div class="auth-divider"><span>OR</span></div>
 
-            <!-- Custom Google Sign-In Button -->
             <button type="button" class="google-auth-btn" onclick="signInWithGoogle()">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
                 Continue with Google
@@ -122,31 +121,6 @@
                     <input type="file" id="native-file-picker" style="display: none;" accept="image/*, .pdf, .txt, .doc, .docx, .py, .lua, .cs, .js, .json" />
                 </div>
 
-                <!-- Mobile Bottom Nav -->
-                <div class="bottom-nav mobile-only">
-                    <div class="nav-buttons-container">
-                        <div class="nav-item" id="mobile-nav-upload" onclick="document.getElementById('native-file-picker').click();">
-                            <img src="/static/icons/UploadFile.png" alt="Upload" />
-                        </div>
-                        <div class="nav-divider"></div>
-                        <div class="nav-item" id="mobile-nav-games" onclick="switchView('view-games')">
-                            <img src="/static/icons/GamesButtonIcon.png" alt="Games" />
-                        </div>
-                        <div class="nav-divider"></div>
-                        <div class="nav-item" id="mobile-nav-call" onclick="startCall()">
-                            <img src="/static/icons/CallButtonIcon.png" alt="Call" />
-                        </div>
-                        <div class="nav-divider"></div>
-                        <div class="nav-item" id="mobile-nav-chat" onclick="startNewChat()">
-                            <img src="/static/icons/NewChat.png" alt="New Chat" />
-                        </div>
-                        <div class="nav-divider"></div>
-                        <div class="nav-item" id="mobile-nav-settings" onclick="switchView('view-settings')">
-                            <img src="/static/icons/SettingsMobile.png" alt="Settings" />
-                        </div>
-                    </div>
-                </div>
-                
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
@@ -157,7 +131,6 @@
                 </div>
 
                 <div class="settings-content-grid">
-                    <!-- Theme Row -->
                     <div class="settings-row">
                         <label class="settings-label">Theme</label>
                         <div class="toggle-switch-wrapper">
@@ -168,7 +141,6 @@
                         </div>
                     </div>
 
-                    <!-- API Key Row -->
                     <div class="settings-row vertical-on-mobile">
                         <label class="settings-label" for="user-api-key">API Key</label>
                         <div class="input-with-help">
@@ -177,7 +149,6 @@
                         </div>
                     </div>
 
-                    <!-- Collapsible Help Box -->
                     <div id="api-key-help-box" class="api-help-box hidden">
                         <p class="setting-hint">
                             <strong>How to get a Gemini API Key:</strong><br>
@@ -188,13 +159,11 @@
                         </p>
                     </div>
 
-                    <!-- Username Row -->
                     <div class="settings-row vertical-on-mobile">
                         <label class="settings-label" for="settings-username-input">Username</label>
                         <input type="text" id="settings-username-input" placeholder="Your Username (3–20 Characters)" maxlength="20" onchange="updateUsernameFromSettings()">
                     </div>
 
-                    <!-- Password Row -->
                     <div class="settings-row vertical-on-mobile">
                         <label class="settings-label">Password</label>
                         <div class="password-inputs">
@@ -203,14 +172,12 @@
                         </div>
                     </div>
 
-                    <!-- Profile Picture Row -->
                     <div class="settings-row">
                         <label class="settings-label">Profile Picture</label>
                         <button class="settings-upload-btn" onclick="document.getElementById('avatar-file-picker').click();">Upload Profile</button>
                         <input type="file" id="avatar-file-picker" style="display: none;" accept="image/*" onchange="handleAvatarUpload(event)">
                     </div>
 
-                    <!-- Sign Out Button Row -->
                     <div class="settings-row">
                         <button class="settings-signout-btn" onclick="handleSignOut()">Sign Out</button>
                     </div>
@@ -228,12 +195,10 @@
                 </div>
 
                 <div class="call-controls">
-                    <!-- Row 1: Speaker and Mute -->
                     <div class="call-option-row">
                         <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" />
                         <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" />
                     </div>
-                    <!-- Row 2: Facetime and End Call -->
                     <div class="call-option-row">
                         <img src="/static/icons/Facetime.png" id="facetime-btn" alt="Facetime" class="call-img-btn" onclick="toggleFacetime()" style="opacity: 0.4;" />
                         <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn" onclick="endCall()" />
@@ -260,7 +225,6 @@
 
                 <div class="games-scroll-box">
                     <div class="games-grid">
-                        <!-- New Drawzee Button Added Here -->
                         <img src="Drawzee.png" class="game-card-img" onclick="selectGame(this, 'Drawzee')" alt="Drawzee" />
                         <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" alt="Tic Tac Toe" />
                         <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" alt="Chess" />
@@ -285,7 +249,26 @@
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
                     <h1>Drawzee</h1>
                 </div>
-                <div id="drawzee-status" class="game-status">Prompt: Loading...</div>
+
+                <div class="drawzee-scoreboard">
+                    <div class="drawzee-stat-badge">
+                        <span class="stat-label">Prompt</span>
+                        <span id="drawzee-prompt-word" class="stat-value highlight">Loading...</span>
+                    </div>
+                    <div class="drawzee-stat-badge">
+                        <span class="stat-label">Time</span>
+                        <span id="drawzee-timer" class="stat-value">00:00.0</span>
+                    </div>
+                    <div class="drawzee-stat-badge">
+                        <span class="stat-label">Best Record</span>
+                        <span id="drawzee-best-time" class="stat-value">--.-s</span>
+                    </div>
+                </div>
+
+                <div class="drawzee-carl-bubble" id="drawzee-carl-bubble">
+                    <span class="carl-tag">Carl thinks:</span>
+                    <span id="drawzee-live-guess" class="carl-guess-text">"Start drawing and I'll start guessing..."</span>
+                </div>
                 
                 <div class="drawzee-container">
                     <canvas id="drawzee-canvas"></canvas>
@@ -297,19 +280,19 @@
                             <button class="drawzee-color-btn" style="background: #3b82f6;" onclick="setDrawzeeColor('#3b82f6', this)"></button>
                             <button class="drawzee-color-btn" style="background: #22c55e;" onclick="setDrawzeeColor('#22c55e', this)"></button>
                             <button class="drawzee-color-btn" style="background: #eab308;" onclick="setDrawzeeColor('#eab308', this)"></button>
-                            <button class="drawzee-color-btn" style="background: #ffffff; border: 1px solid #ccc;" onclick="setDrawzeeColor('#ffffff', this)"></button>
+                            <button class="drawzee-color-btn" style="background: #ffffff; border: 1px solid #666;" onclick="setDrawzeeColor('#ffffff', this)"></button>
                         </div>
                         <div class="drawzee-sizes">
-                            <button class="drawzee-size-btn" onclick="setDrawzeeSize(2, this)"><div style="width: 4px; height: 4px;"></div></button>
-                            <button class="drawzee-size-btn active" onclick="setDrawzeeSize(5, this)"><div style="width: 8px; height: 8px;"></div></button>
-                            <button class="drawzee-size-btn" onclick="setDrawzeeSize(10, this)"><div style="width: 14px; height: 14px;"></div></button>
+                            <button class="drawzee-size-btn" onclick="setDrawzeeSize(3, this)"><div style="width: 4px; height: 4px;"></div></button>
+                            <button class="drawzee-size-btn active" onclick="setDrawzeeSize(7, this)"><div style="width: 8px; height: 8px;"></div></button>
+                            <button class="drawzee-size-btn" onclick="setDrawzeeSize(14, this)"><div style="width: 14px; height: 14px;"></div></button>
                         </div>
                     </div>
                     
                     <div class="drawzee-actions">
                         <button class="bs-action-btn" onclick="initDrawzee()">Next Word</button>
-                        <button class="bs-action-btn" onclick="clearDrawzeeCanvas()">Clear</button>
-                        <button class="bs-action-btn confirm" onclick="submitDrawzeeGuess()">Guess!</button>
+                        <button class="bs-action-btn" onclick="clearDrawzeeCanvas()">Clear Canvas</button>
+                        <button class="bs-action-btn confirm" onclick="triggerImmediateGuess()">Force Guess</button>
                     </div>
                 </div>
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
