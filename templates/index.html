@@ -225,7 +225,7 @@
 
                 <div class="games-scroll-box">
                     <div class="games-grid">
-                        <img src="Drawzee.png" class="game-card-img" onclick="selectGame(this, 'Drawzee')" alt="Drawzee" />
+                        <img src="/static/icons/Drawzee.png" onerror="this.src='Drawzee.png'" class="game-card-img" onclick="selectGame(this, 'Drawzee')" alt="Drawzee" />
                         <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" alt="Tic Tac Toe" />
                         <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" alt="Chess" />
                         <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" alt="Hangman" />
@@ -267,7 +267,7 @@
 
                 <div class="drawzee-carl-bubble" id="drawzee-carl-bubble">
                     <span class="carl-tag">Carl thinks:</span>
-                    <span id="drawzee-live-guess" class="carl-guess-text">"Start drawing and I'll start guessing..."</span>
+                    <span id="drawzee-live-guess" class="carl-guess-text">"Start drawing, and I'll start guessing..."</span>
                 </div>
                 
                 <div class="drawzee-container">
@@ -292,7 +292,6 @@
                     <div class="drawzee-actions">
                         <button class="bs-action-btn" onclick="initDrawzee()">Next Word</button>
                         <button class="bs-action-btn" onclick="clearDrawzeeCanvas()">Clear Canvas</button>
-                        <button class="bs-action-btn confirm" onclick="triggerImmediateGuess()">Force Guess</button>
                     </div>
                 </div>
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
