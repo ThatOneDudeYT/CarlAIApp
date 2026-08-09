@@ -31,6 +31,94 @@ let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
+// =========================================================================
+// --- START-UP SCREEN TYPING ANIMATION ---
+// =========================================================================
+
+const normalPhrases = [
+    "Ready When You Are", 
+    "What Time Is It?", 
+    "I Need Help With Math", 
+    "The Floor Is Yours!"
+];
+
+const rarePhrases = [
+    "Mmmm Burgers", 
+    "HELP HELP ME", 
+    "67"
+];
+
+let typingTimeout = null;
+
+function initTypingAnimation() {
+    const titleEl = document.getElementById("startup-title");
+    if (!titleEl) return;
+    
+    if (typingTimeout) clearTimeout(typingTimeout);
+
+    let isDeleting = false;
+    let currentText = "Ask Away!"; 
+    let charIndex = currentText.length; 
+    
+    titleEl.innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
+
+    // Pause for 2 seconds on initial text before starting animation loop
+    typingTimeout = setTimeout(() => {
+        isDeleting = true;
+        typeLoop(titleEl, currentText, charIndex, isDeleting);
+    }, 2000);
+}
+
+function typeLoop(titleEl, currentText, charIndex, isDeleting) {
+    let typingSpeed = isDeleting ? 45 : 65 + Math.random() * 40; 
+    
+    if (isDeleting) {
+        charIndex--;
+    } else {
+        charIndex++;
+    }
+    
+    titleEl.innerHTML = currentText.substring(0, charIndex) + '<span class="typing-cursor"></span>';
+    
+    if (!isDeleting && charIndex === currentText.length) {
+        typingSpeed = 2400; // Pause once word is completely typed
+        isDeleting = true;
+    } else if (isDeleting && charIndex === 0) {
+        isDeleting = false;
+        
+        // 10% chance for a rare easter egg phrase to show up
+        const useRare = Math.random() < 0.10;
+        const pool = useRare ? rarePhrases : normalPhrases;
+        
+        let newPhrase = currentText;
+        while (newPhrase === currentText) {
+            newPhrase = pool[Math.floor(Math.random() * pool.length)];
+        }
+        currentText = newPhrase;
+        typingSpeed = 400;
+    }
+    
+    typingTimeout = setTimeout(() => typeLoop(titleEl, currentText, charIndex, isDeleting), typingSpeed);
+}
+
+function hideStartupScreen() {
+    const startupScreen = document.getElementById("startup-screen");
+    if (startupScreen) {
+        startupScreen.classList.add("hidden");
+    }
+    if (typingTimeout) {
+        clearTimeout(typingTimeout);
+    }
+}
+
+function showStartupScreen() {
+    const startupScreen = document.getElementById("startup-screen");
+    if (startupScreen) {
+        startupScreen.classList.remove("hidden");
+        initTypingAnimation();
+    }
+}
+
 // API Key Validation Helper
 function hasValidApiKey() {
     return customApiKey && customApiKey.trim().length > 20;
@@ -39,6 +127,7 @@ function hasValidApiKey() {
 // Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons();
+    initTypingAnimation();
     
     const oldNav = document.querySelector('.bottom-nav');
     if (oldNav) oldNav.style.display = 'none';
@@ -123,6 +212,7 @@ function handleSignOut() {
         updateProfileUI();
         renderChatHistorySidebar();
         switchView('view-chat');
+        showStartupScreen();
     });
 }
 
@@ -499,12 +589,13 @@ function startNewChat() {
     chatHistory = [];
     
     const log = document.getElementById("chat-log");
-    if (log) log.innerHTML = '<div class="system-msg">Started a fresh session.</div>';
+    if (log) log.innerHTML = '';
     
     const input = document.getElementById("user-input");
     if (input) input.value = "";
     
     clearPendingImage();
+    showStartupScreen();
     
     saveSessionData();
     switchView('view-chat');
@@ -518,6 +609,13 @@ function loadChat(chatId) {
         const log = document.getElementById("chat-log");
         if (log) log.innerHTML = target.html;
         chatHistory = [...target.apiHistory];
+        
+        if (chatHistory.length > 0) {
+            hideStartupScreen();
+        } else {
+            showStartupScreen();
+        }
+        
         saveSessionData();
         switchView('view-chat');
     }
@@ -799,6 +897,7 @@ async function sendMessage() {
     if (!text && !pendingImageBase64) return;
     if (!checkDailyMessageLimit()) return;
 
+    hideStartupScreen();
     appendMessage(text, "user", pendingImageSrc);
     
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
