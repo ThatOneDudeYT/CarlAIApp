@@ -661,12 +661,13 @@ function deleteChat(chatId) {
     }
 }
 
-const filePicker = document.getElementById('native-file-picker');
-if (filePicker) {
-    filePicker.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+// =========================================================================
+// --- FILE HANDLING & DRAG AND DROP SYSTEM ---
+// =========================================================================
 
+function processFile(file) {
+    // If the dropped file is an image, mount it to the chat input UI
+    if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(event) {
             pendingImageSrc = event.target.result;
@@ -681,6 +682,81 @@ if (filePicker) {
             }
         };
         reader.readAsDataURL(file);
+    } 
+    // If it's a script/text file, append the raw text immediately to the input
+    else {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const text = event.target.result;
+            const input = document.getElementById("user-input");
+            if (input) {
+                const ext = file.name.split('.').pop() || '';
+                input.value += `\n\`\`\`${ext}\n${text}\n\`\`\`\n`;
+            }
+        };
+        reader.readAsText(file);
+    }
+}
+
+// Attach listeners for manual upload clicking
+const filePicker = document.getElementById('native-file-picker');
+if (filePicker) {
+    filePicker.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        processFile(file);
+        // Reset picker so the exact same file can be clicked again
+        filePicker.value = ""; 
+    });
+}
+
+// Global window Drag and Drop Listeners
+let dragCounter = 0;
+const dragOverlay = document.getElementById('drag-drop-overlay');
+const dragChatView = document.getElementById('view-chat');
+
+if (dragChatView && dragOverlay) {
+    // Prevent default browser behavior across the whole window
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        window.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Trigger overlay when dragging enters window
+    window.addEventListener('dragenter', (e) => {
+        if (dragChatView.classList.contains('active')) {
+            dragCounter++;
+            dragOverlay.classList.add('active');
+        }
+    });
+
+    // Remove overlay when dragging leaves window boundaries
+    window.addEventListener('dragleave', (e) => {
+        if (dragChatView.classList.contains('active')) {
+            dragCounter--;
+            if (dragCounter <= 0) {
+                dragCounter = 0;
+                dragOverlay.classList.remove('active');
+            }
+        }
+    });
+
+    // Handle payload on drop
+    window.addEventListener('drop', (e) => {
+        dragCounter = 0;
+        dragOverlay.classList.remove('active');
+        
+        if (dragChatView.classList.contains('active')) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
     });
 }
 
