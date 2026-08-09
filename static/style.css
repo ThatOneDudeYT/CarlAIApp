@@ -657,6 +657,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     flex-direction: column; 
     align-items: center; 
     position: relative; 
+    margin-top: auto;
 }
 
 .drag-drop-overlay {
@@ -935,7 +936,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     .desktop-sidebar.collapsed .sidebar-footer { justify-content: center; }
 
     #view-chat { justify-content: flex-end; padding-bottom: 15px; }
-    .chat-log { max-width: 800px; margin: 0 auto; width: 100%; flex: none; height: calc(100% - 70px); overflow-y: auto; }
+    .chat-log { max-width: 800px; margin: 0 auto; width: 100%; flex: 1; min-height: 0; overflow-y: auto; }
     
     .games-scroll-box { 
         max-width: 100%; 
