@@ -12,7 +12,6 @@ const firebaseConfig = {
     measurementId: "G-G4H60BZHT3"
 };
 
-// Initialize Firebase Compat
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -31,12 +30,10 @@ let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
-// API Key Validation Helper
 function hasValidApiKey() {
     return customApiKey && customApiKey.trim().length > 20;
 }
 
-// Initialize layout on startup
 window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons();
     
@@ -73,6 +70,13 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+// GLOBAL BUTTON CLICK SOUND LISTENER
+document.addEventListener('click', function(e) {
+    if (e.target.closest('button') || e.target.closest('.mobile-nav-btn') || e.target.closest('.pc-nav-btn')) {
+        playClickSound();
+    }
+});
+
 function toggleMobileSidebar() {
     const sidebar = document.querySelector('.desktop-sidebar');
     const overlay = document.getElementById('sidebar-overlay');
@@ -80,7 +84,6 @@ function toggleMobileSidebar() {
     if (overlay) overlay.classList.toggle('active');
 }
 
-// --- AUTHENTICATION LISTENER ---
 auth.onAuthStateChanged(async (user) => {
     const overlay = document.getElementById('auth-overlay');
     if (user) {
@@ -135,7 +138,6 @@ function handleSignOut() {
     });
 }
 
-// --- CLOUD DATABASE FUNCTIONS ---
 async function loadUserDataFromCloud() {
     if (!firebaseUserId) return;
     
@@ -440,6 +442,124 @@ function initMobileNavIcons() {
 }
 
 // =========================================================================
+// --- WEB AUDIO API & SYNTHESIZER SOUND EFFECTS ---
+// =========================================================================
+
+let audioCtx = null;
+
+function getAudioContext() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
+
+function playToneBurst(freq1, freq2, duration) {
+    try {
+        const ctx = getAudioContext();
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.frequency.value = freq1;
+        osc2.frequency.value = freq2;
+
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05);
+        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(ctx.currentTime);
+        osc2.start(ctx.currentTime);
+        osc1.stop(ctx.currentTime + duration);
+        osc2.stop(ctx.currentTime + duration);
+    } catch (e) {}
+}
+
+function playClickSound() {
+    try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+    } catch(e) {}
+}
+
+function playMoveSound() {
+    try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+    } catch(e) {}
+}
+
+function playWinSound() {
+    try {
+        const ctx = getAudioContext();
+        const t = ctx.currentTime;
+        const notes = [440, 554.37, 659.25, 880]; 
+        notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, t + i * 0.1);
+            gain.gain.linearRampToValueAtTime(0.1, t + i * 0.1 + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + i * 0.1 + 0.3);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t + i * 0.1);
+            osc.stop(t + i * 0.1 + 0.3);
+        });
+    } catch(e) {}
+}
+
+function playLoseSound() {
+    try {
+        const ctx = getAudioContext();
+        const t = ctx.currentTime;
+        const notes = [300, 280, 250, 200];
+        notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, t + i * 0.2);
+            gain.gain.linearRampToValueAtTime(0.1, t + i * 0.2 + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + i * 0.2 + 0.4);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t + i * 0.2);
+            osc.stop(t + i * 0.2 + 0.4);
+        });
+    } catch(e) {}
+}
+
+// =========================================================================
 // --- CHAT SESSION ARCHIVING & REAL API KEY LIMIT CHECK ---
 // =========================================================================
 
@@ -537,7 +657,6 @@ function renderChatHistorySidebar() {
     if (!container) return;
     container.innerHTML = "";
     
-    // Sort chats so pinned ones stay at the top
     const sortedChats = [...chatsHistory].sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
@@ -548,7 +667,6 @@ function renderChatHistorySidebar() {
         const item = document.createElement("div");
         item.className = "saved-chat-item";
         
-        // --- 1. Chat Title & Pin Icon ---
         const titleContainer = document.createElement("div");
         titleContainer.className = "chat-title-text";
         
@@ -566,12 +684,10 @@ function renderChatHistorySidebar() {
         
         titleContainer.onclick = () => loadChat(chat.id);
 
-        // 2. Three Dots Button
         const optionsBtn = document.createElement("button");
         optionsBtn.className = "chat-options-btn";
         optionsBtn.innerText = "⋮";
         
-        // 3. Dropdown Menu
         const dropdown = document.createElement("div");
         dropdown.className = "chat-dropdown-menu";
         
@@ -621,14 +737,12 @@ function renderChatHistorySidebar() {
     });
 }
 
-// Global click listener to close dropdowns when clicking outside
 document.addEventListener("click", () => {
     document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => {
         menu.classList.remove('active');
     });
 });
 
-// --- MENU HELPER FUNCTIONS ---
 function editChatTitle(chatId) {
     const chat = chatsHistory.find(c => c.id === chatId);
     if (!chat) return;
@@ -723,13 +837,10 @@ function showCopyToast() {
 function formatMessage(text) {
     let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     
-    // Format large markdown code blocks (```lang ... ```)
     const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
     safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
         const displayLang = (lang || "CODE").toUpperCase();
         const encodedCode = encodeURIComponent(code);
-        
-        // Highlight strings in green
         let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
         
         return `
@@ -744,10 +855,7 @@ function formatMessage(text) {
         </div>`;
     });
 
-    // Format bold text
     safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Format small inline code snippets
     safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
 
     return safeText;
@@ -894,7 +1002,6 @@ let callTimerInterval = null;
 let callSeconds = 0;
 let ringTimeout = null;
 let ringInterval = null;
-let audioCtx = null;
 
 let recognition = null;
 let callAbortController = null;
@@ -921,42 +1028,6 @@ function loadCarlVoice() {
 if ('speechSynthesis' in window) {
     window.speechSynthesis.onvoiceschanged = loadCarlVoice;
     loadCarlVoice();
-}
-
-function getAudioContext() {
-    if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContext();
-    }
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-    return audioCtx;
-}
-
-function playToneBurst(freq1, freq2, duration) {
-    try {
-        const ctx = getAudioContext();
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc1.frequency.value = freq1;
-        osc2.frequency.value = freq2;
-
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05);
-        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc1.start(ctx.currentTime);
-        osc2.start(ctx.currentTime);
-        osc1.stop(ctx.currentTime + duration);
-        osc2.stop(ctx.currentTime + duration);
-    } catch (e) { console.error("Web Audio error", e); }
 }
 
 function startRingingSound() {
@@ -1429,12 +1500,15 @@ function initBlackjack() {
     if (dealerScore === 21 && playerScore === 21) {
         bjGameOver = true;
         bjResults[0] = "Push (Tie)";
+        playMoveSound();
     } else if (dealerScore === 21) {
         bjGameOver = true;
         bjResults[0] = "Carl Blackjack!";
+        playLoseSound();
     } else if (playerScore === 21) {
         bjGameOver = true;
         bjResults[0] = "Blackjack! You Win!";
+        playWinSound();
     }
 
     renderBj();
@@ -1527,10 +1601,12 @@ function bjHit() {
     if (bjGameOver) return;
     let hand = bjPlayerHands[bjActiveHand];
     hand.push(bjDeck.pop());
+    playMoveSound();
 
     let score = getBjScore(hand);
     if (score > 21) {
         bjResults[bjActiveHand] = "Bust";
+        playLoseSound();
         bjNextHand();
     } else if (score === 21) {
         bjNextHand();
@@ -1541,6 +1617,7 @@ function bjHit() {
 
 function bjStand() {
     if (bjGameOver) return;
+    playMoveSound();
     bjNextHand();
 }
 
@@ -1550,8 +1627,11 @@ function bjDouble() {
     if (hand.length !== 2) return;
 
     hand.push(bjDeck.pop());
+    playMoveSound();
+
     if (getBjScore(hand) > 21) {
         bjResults[bjActiveHand] = "Bust";
+        playLoseSound();
     } else {
         bjResults[bjActiveHand] = "Doubled";
     }
@@ -1567,6 +1647,7 @@ function bjSplit() {
     let newHand = [splitCard, bjDeck.pop()];
     hand.push(bjDeck.pop());
     
+    playMoveSound();
     bjPlayerHands.splice(bjActiveHand + 1, 0, newHand);
     renderBj();
 }
@@ -1583,23 +1664,35 @@ function bjNextHand() {
 
 function bjDealerTurn() {
     let allBusted = bjPlayerHands.every((_, i) => bjResults[i] === "Bust");
+    let hasPlayerWon = false;
+    let hasPlayerLost = false;
 
     const playDealer = () => {
         let score = getBjScore(bjCarlHand);
         if (score < 17 && !allBusted) {
             bjCarlHand.push(bjDeck.pop());
+            playMoveSound();
             renderBj();
             setTimeout(playDealer, 800);
         } else {
             for (let i = 0; i < bjPlayerHands.length; i++) {
-                if (bjResults[i] === "Bust" || bjResults[i] === "Blackjack! You Win!" || bjResults[i] === "Carl Blackjack!" || bjResults[i] === "Push (Tie)") continue;
+                if (bjResults[i] === "Bust" || bjResults[i] === "Blackjack! You Win!" || bjResults[i] === "Carl Blackjack!" || bjResults[i] === "Push (Tie)") {
+                    if (bjResults[i] === "Blackjack! You Win!") hasPlayerWon = true;
+                    if (bjResults[i] === "Bust" || bjResults[i] === "Carl Blackjack!") hasPlayerLost = true;
+                    continue;
+                }
                 
                 let pScore = getBjScore(bjPlayerHands[i]);
-                if (score > 21) bjResults[i] = "Win (Carl Busts)";
-                else if (pScore > score) bjResults[i] = "Win";
-                else if (score > pScore) bjResults[i] = "Lose";
-                else bjResults[i] = "Push";
+                if (score > 21) { bjResults[i] = "Win (Carl Busts)"; hasPlayerWon = true; }
+                else if (pScore > score) { bjResults[i] = "Win"; hasPlayerWon = true; }
+                else if (score > pScore) { bjResults[i] = "Lose"; hasPlayerLost = true; }
+                else { bjResults[i] = "Push"; }
             }
+            
+            if (hasPlayerWon && !hasPlayerLost) playWinSound();
+            else if (hasPlayerLost && !hasPlayerWon) playLoseSound();
+            else playMoveSound(); // Mixed results or tie
+
             renderBj();
         }
     };
@@ -1642,6 +1735,7 @@ function initRps() {
 function playRps(playerChoice) {
     if (rpsPlaying) return;
     rpsPlaying = true;
+    playMoveSound();
 
     const choices = ['rock', 'paper', 'scissors'];
     
@@ -1670,6 +1764,7 @@ function playRps(playerChoice) {
         if (playerChoice === carlChoice) {
             document.getElementById("rps-status").innerText = `It's a Tie! (${rpsScore.player} - ${rpsScore.carl})`;
             document.getElementById("rps-status").style.color = "#fff";
+            playMoveSound();
         } else if (
             (playerChoice === 'rock' && carlChoice === 'scissors') ||
             (playerChoice === 'paper' && carlChoice === 'rock') ||
@@ -1678,10 +1773,12 @@ function playRps(playerChoice) {
             rpsScore.player++;
             document.getElementById("rps-status").innerText = `You Win! (${rpsScore.player} - ${rpsScore.carl})`;
             document.getElementById("rps-status").style.color = "#84cc16";
+            playWinSound();
         } else {
             rpsScore.carl++;
             document.getElementById("rps-status").innerText = `Carl Wins! (${rpsScore.player} - ${rpsScore.carl})`;
             document.getElementById("rps-status").style.color = "#ef4444";
+            playLoseSound();
         }
 
         rpsPlaying = false;
@@ -1712,14 +1809,17 @@ function makeMove(index) {
     if (board[index] === "" && playerTurn) {
         board[index] = "X";
         updateCell(index, "X");
+        playMoveSound();
 
         if (checkWin("X")) {
             document.getElementById("ttt-status").innerText = "You Win!";
             document.getElementById("ttt-status").style.color = "#84cc16";
+            playWinSound();
             playerTurn = false;
             return;
         } else if (!board.includes("")) {
             document.getElementById("ttt-status").innerText = "It's a Draw!";
+            playerTurn = false;
             return;
         }
 
@@ -1754,10 +1854,12 @@ function carlMove() {
 
     board[bestMove] = "O";
     updateCell(bestMove, "O");
+    playMoveSound();
 
     if (checkWin("O")) {
         document.getElementById("ttt-status").innerText = "Carl Wins!";
         document.getElementById("ttt-status").style.color = "#ef4444";
+        playLoseSound();
     } else if (!board.includes("")) {
         document.getElementById("ttt-status").innerText = "It's a Draw!";
     } else {
@@ -1842,11 +1944,13 @@ function hmGuess(letter) {
     if (hmWord.includes(letter)) {
         if (btn) btn.classList.add("correct");
         updateHmWordDisplay();
+        playMoveSound();
         
         if (hmWord.split('').every(c => hmGuessed.has(c))) {
             hmGameOver = true;
             document.getElementById("hm-status").innerText = hmPlayerTurn ? "You Win!" : "Carl Wins!";
             document.getElementById("hm-status").style.color = "#84cc16";
+            if (hmPlayerTurn) playWinSound(); else playLoseSound();
             return;
         }
         if (!hmPlayerTurn) {
@@ -1856,6 +1960,8 @@ function hmGuess(letter) {
     } else {
         if (btn) btn.classList.add("wrong");
         hmMistakes++;
+        playClickSound(); // Error style click
+
         const part = document.getElementById(`hm-part-${hmMistakes}`);
         if (part) part.style.display = "block";
         
@@ -1864,6 +1970,7 @@ function hmGuess(letter) {
             document.getElementById("hm-status").innerText = "Game Over!";
             document.getElementById("hm-status").style.color = "#ef4444";
             document.getElementById("hm-word").innerText = hmWord.split('').join(' ');
+            if (hmPlayerTurn) playLoseSound(); else playWinSound();
             return;
         }
 
@@ -1941,10 +2048,12 @@ function c4HandleClick(col) {
     let row = c4DropPiece(col, 1);
     if (row !== -1) {
         c4UpdateBoardUI();
+        playMoveSound();
         if (c4CheckWin(1)) {
             c4GameOver = true;
             document.getElementById("c4-status").innerText = "You Win!";
             document.getElementById("c4-status").style.color = "#ff4757";
+            playWinSound();
             return;
         } else if (c4IsBoardFull()) {
             c4GameOver = true;
@@ -2047,11 +2156,13 @@ function c4CarlMove() {
 
     c4DropPiece(chosenCol, 2);
     c4UpdateBoardUI();
+    playMoveSound();
 
     if (c4CheckWin(2)) {
         c4GameOver = true;
         document.getElementById("c4-status").innerText = "Carl Wins!";
         document.getElementById("c4-status").style.color = "#eccc68";
+        playLoseSound();
     } else if (c4IsBoardFull()) {
         c4GameOver = true;
         document.getElementById("c4-status").innerText = "It's a Draw!";
@@ -2186,6 +2297,7 @@ function bsCellClick(r, c) {
             bsPreviewOrigin = null;
             bsPreviewCoords = [];
         }
+        playMoveSound();
         bsUpdateBoardsUI();
     }
 }
@@ -2230,10 +2342,12 @@ function bsFire(r, c) {
         bsEnemyGrid[r][c] = 3;
         document.getElementById("bs-status").innerText = "Direct Hit! Fire Again!";
         document.getElementById("bs-status").style.color = "#84cc16";
+        playClickSound(); // Short hit crack
     } else {
         bsEnemyGrid[r][c] = 2;
         document.getElementById("bs-status").innerText = "Miss!";
         document.getElementById("bs-status").style.color = "#ef4444";
+        playMoveSound(); // Miss sound
     }
 
     bsUpdateBoardsUI();
@@ -2245,6 +2359,7 @@ function bsFire(r, c) {
         bsGameOver = true;
         document.getElementById("bs-status").innerText = "You Destroyed Carl's Fleet!";
         document.getElementById("bs-status").style.color = "#84cc16";
+        playWinSound();
         return;
     }
 
@@ -2272,10 +2387,12 @@ function bsCarlTurn() {
             bsPlayerGrid[r][c] = 3;
             document.getElementById("bs-status").innerText = "Carl hit your ship and fires again!";
             document.getElementById("bs-status").style.color = "#ef4444";
+            playClickSound(); 
         } else {
             bsPlayerGrid[r][c] = 2;
             document.getElementById("bs-status").innerText = "Carl missed! Your Turn - Fire!";
             document.getElementById("bs-status").style.color = "#fff";
+            playMoveSound();
         }
 
         bsUpdateBoardsUI();
@@ -2291,6 +2408,7 @@ function bsCarlTurn() {
             bsGameOver = true;
             document.getElementById("bs-status").innerText = "Carl Destroyed Your Fleet!";
             document.getElementById("bs-status").style.color = "#ef4444";
+            playLoseSound();
         } else if (isHit) {
             setTimeout(bsCarlTurn, 800);
         } else {
@@ -2438,11 +2556,13 @@ function chkTileClick(r, c) {
             chkSelected = null;
             chkValidMoves = [];
             chkRenderBoard();
+            playMoveSound();
 
             if (chkCheckWin(1)) {
                 chkGameOver = true;
                 document.getElementById("chk-status").innerText = "You Win!";
                 document.getElementById("chk-status").style.color = "#84cc16";
+                playWinSound();
                 return;
             }
 
@@ -2527,6 +2647,7 @@ function chkCarlTurn() {
         chkGameOver = true;
         document.getElementById("chk-status").innerText = "Carl Has No Moves! You Win!";
         document.getElementById("chk-status").style.color = "#84cc16";
+        playWinSound();
         return;
     }
 
@@ -2556,11 +2677,13 @@ function chkCarlTurn() {
 
     chkExecuteMove(chosenMove);
     chkRenderBoard();
+    playMoveSound();
 
     if (chkCheckWin(2)) {
         chkGameOver = true;
         document.getElementById("chk-status").innerText = "Carl Wins!";
         document.getElementById("chk-status").style.color = "#ef4444";
+        playLoseSound();
         return;
     }
 
@@ -2756,6 +2879,7 @@ function chsTileClick(r, c) {
         let move = chsValidMoves.find(m => m.r === r && m.c === c);
         if (move) {
             chsExecuteMove(chsSelected.r, chsSelected.c, move.r, move.c);
+            playMoveSound();
             
             if (chsGameOver) { chsRenderBoard(); return; }
 
@@ -2783,10 +2907,12 @@ function chsExecuteMove(fromR, fromC, toR, toC) {
         chsGameOver = true;
         document.getElementById("chs-status").innerText = "Checkmate! You Win!";
         document.getElementById("chs-status").style.color = "#84cc16";
+        playWinSound();
     } else if (target === 'K') {
         chsGameOver = true;
         document.getElementById("chs-status").innerText = "Checkmate! Carl Wins!";
         document.getElementById("chs-status").style.color = "#ef4444";
+        playLoseSound();
     }
 
     if (piece === 'P' && toR === 0) piece = 'Q';
@@ -2843,8 +2969,9 @@ function chsCarlTurn() {
 
     chsExecuteMove(chosenMove.fr, chosenMove.fc, chosenMove.tr, chosenMove.tc);
     chsRenderBoard();
-
+    
     if (!chsGameOver) {
+        playMoveSound();
         chsPlayerTurn = true;
         document.getElementById("chs-status").innerText = "Your Turn (White)";
         document.getElementById("chs-status").style.color = "#fff";
