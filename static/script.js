@@ -1153,7 +1153,7 @@ function startCall() {
         callTimerInterval = setInterval(() => {
             callSeconds++;
             const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
-            const secs = String(callSeconds % 60).padStart(2, '0');
+            const secs = String(Math.floor(callSeconds % 60)).padStart(2, '0');
             document.getElementById("call-timer").innerText = `${mins}:${secs}`;
         }, 1000);
 
@@ -1445,8 +1445,12 @@ function initDrawzee() {
     
     document.getElementById("drawzee-prompt-word").innerText = dzWord;
     document.getElementById("drawzee-timer").innerText = "00:00.0";
-    document.getElementById("drawzee-live-guess").innerText = `"Start drawing, and I'll start guessing!"`;
-    document.getElementById("drawzee-live-guess").style.color = "#ffffff";
+    
+    const bubbleText = document.getElementById("drawzee-live-guess");
+    if (bubbleText) {
+        bubbleText.innerText = `"Start drawing, and I'll start guessing..."`;
+        bubbleText.style.color = "#ffffff";
+    }
     
     updateDrawzeeBestDisplay();
 
@@ -1471,12 +1475,12 @@ function initDrawzee() {
         dzEventsBound = true;
     }
 
-    // Real-time automatic background guessing loop (every 2.5 seconds)
+    // Independent background auto-guessing interval (polls every 3 seconds)
     dzGuessInterval = setInterval(() => {
         if (!dzGameOver && dzStrokesMade > 2 && !dzIsGuessing) {
             dzPerformGuess();
         }
-    }, 2500);
+    }, 3000);
 }
 
 function dzStopGame() {
@@ -1561,26 +1565,17 @@ function clearDrawzeeCanvas() {
     dzCtx.fillRect(0, 0, dzCanvas.width, dzCanvas.height);
 }
 
-function triggerImmediateGuess() {
-    if (dzGameOver) return;
-    dzPerformGuess();
-}
-
 async function dzPerformGuess() {
     if (dzIsGuessing || dzGameOver || dzStrokesMade === 0) return;
     dzIsGuessing = true;
     
     const bubbleText = document.getElementById("drawzee-live-guess");
-    if (bubbleText) {
-        bubbleText.innerText = `"Analyzing your sketch..."`;
-        bubbleText.style.color = "#eccc68";
-    }
 
-    const dataUrl = dzCanvas.toDataURL("image/jpeg", 0.7);
+    const dataUrl = dzCanvas.toDataURL("image/jpeg", 0.6);
     const b64 = dataUrl.split(",")[1];
 
     const payload = {
-        message: `Look at this user's drawing sketch. What single object or concept is being drawn? Return ONLY a 1 or 2 word guess in plain text naming what it looks like (e.g. 'HOUSE', 'CAR', 'APPLE', 'TREE'). Do not output markdown, formatting, or punctuation.`,
+        message: `Look at this user's drawing sketch. What single object or concept is being drawn? YOU MUST OUTPUT EXACTLY ONE WORD. NO PUNCTUATION. NO CONVERSATION. JUST THE RAW NOUN.`,
         history: [],
         image_b64: b64,
         image_mime: "image/jpeg",
@@ -1599,7 +1594,7 @@ async function dzPerformGuess() {
 
         if (!response.ok) {
             if (bubbleText) {
-                bubbleText.innerText = `"I need a valid API key in Settings to guess your drawings!"`;
+                bubbleText.innerText = `"Enter a valid API key in Settings!"`;
                 bubbleText.style.color = "#ef4444";
             }
             dzIsGuessing = false;
@@ -1616,39 +1611,40 @@ async function dzPerformGuess() {
             fullResponse += decoder.decode(value, { stream: true });
         }
 
-        let guess = fullResponse.replace(/Carl:/i, '').replace(/Assistant:/i, '').replace(/[^a-zA-Z\s]/g, '').trim().toUpperCase();
+        if (!dzGameOver) {
+            let rawUpper = fullResponse.toUpperCase();
+            let words = rawUpper.replace(/[^A-Z\s]/g, '').trim().split(/\s+/);
+            let displayGuess = words[0] || "...";
 
-        if (guess.length > 20) {
-            guess = guess.substring(0, 20);
-        }
-
-        if (bubbleText) {
-            bubbleText.innerText = `"${guess}"`;
-        }
-
-        // Check if Carl guessed correctly!
-        if (guess.includes(dzWord) || dzWord.includes(guess) && guess.length > 2) {
-            dzGameOver = true;
-            dzStopGame();
-
-            const finalTime = dzElapsedTime;
-            bubbleText.innerText = `"${guess}!" - BINGO! Solved in ${finalTime.toFixed(1)}s! 🎉`;
-            bubbleText.style.color = "#84cc16";
-
-            // Save fastest record
-            if (finalTime < drawzeeBestTime) {
-                drawzeeBestTime = finalTime;
-                localStorage.setItem("drawzee_best_time", drawzeeBestTime.toString());
-                updateDrawzeeBestDisplay();
-                saveSessionData();
+            if (bubbleText) {
+                bubbleText.innerText = `"${displayGuess}"`;
             }
-        } else {
-            bubbleText.style.color = "#ffffff";
+
+            // Win condition checks extracted word array
+            if (words.includes(dzWord) || displayGuess === dzWord) {
+                dzGameOver = true;
+                dzStopGame();
+
+                const finalTime = dzElapsedTime;
+                if (bubbleText) {
+                    bubbleText.innerText = `"${dzWord}" - BINGO! Solved in ${finalTime.toFixed(1)}s! 🎉`;
+                    bubbleText.style.color = "#84cc16";
+                }
+
+                if (finalTime < drawzeeBestTime) {
+                    drawzeeBestTime = finalTime;
+                    localStorage.setItem("drawzee_best_time", drawzeeBestTime.toString());
+                    updateDrawzeeBestDisplay();
+                    saveSessionData();
+                }
+            } else {
+                if (bubbleText) bubbleText.style.color = "#ffffff";
+            }
         }
 
     } catch (err) {
-        if (bubbleText) {
-            bubbleText.innerText = `"Hmm, keep drawing..."`;
+        if (bubbleText && !dzGameOver) {
+            bubbleText.innerText = `"..."`;
             bubbleText.style.color = "#aaaaaa";
         }
     } finally {

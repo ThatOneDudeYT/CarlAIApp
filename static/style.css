@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Lilita+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lilita One&display=swap');
 
 * {
     box-sizing: border-box;
@@ -518,13 +518,14 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 }
 
 .chat-log {
-    flex: 1 1 auto;
+    flex: 1 1 0;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 12px;
     padding-top: 50px;
-    padding-bottom: 16px;
+    padding-bottom: 20px;
     max-width: 800px;
     width: 100%;
     margin: 0 auto;
@@ -624,12 +625,12 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 
 /* --- INPUT CONTAINER --- */
 .input-wrapper { 
+    flex: 0 0 auto;
     width: 100%; 
     display: flex; 
     flex-direction: column; 
     align-items: center; 
     position: relative; 
-    flex-shrink: 0;
 }
 
 .drag-drop-overlay {
