@@ -65,12 +65,34 @@ body {
     overflow: hidden;
 }
 
-/* --- START-UP SCREEN & GLOW EFFECT --- */
+/* --- MASSIVE GLOWING BACKGROUND EFFECT --- */
+#view-chat::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw; 
+    max-width: 1200px;
+    height: 100vh;
+    max-height: 1200px;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 60%);
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+}
+
+#view-chat.startup-active::before {
+    opacity: 1;
+}
+
+/* --- START-UP SCREEN TEXT & POSITIONING --- */
 .startup-screen {
     position: absolute;
-    top: 38%; /* Kept slightly high to make room for input bar */
+    top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -100px); /* Hangs just above the centered input bar */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -79,35 +101,21 @@ body {
     max-width: 700px;
     z-index: 5;
     pointer-events: none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-/* Massive Glowing Background */
-.startup-screen::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 1200px;
-    height: 1000px;
-    background: radial-gradient(circle, rgba(147, 51, 234, 0.25) 0%, rgba(17, 17, 17, 0) 50%);
-    transform: translate(-50%, -50%);
-    z-index: -1;
-    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.6s cubic-bezier(0.25, 1, 0.3, 1);
 }
 
 .startup-screen.hidden {
     opacity: 0;
-    transform: translate(-50%, -45%);
+    transform: translate(-50%, -130px); /* floats up while fading out */
     pointer-events: none;
 }
 
 #startup-title {
     font-size: 72px;
-    color: #c084fc;
+    color: #d8b4fe;
     text-align: center;
     letter-spacing: 1px;
-    text-shadow: 0 0 30px rgba(147, 51, 234, 0.3);
+    text-shadow: 0 0 40px rgba(168, 85, 247, 0.6);
     white-space: nowrap;
 }
 
@@ -126,7 +134,6 @@ body {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
 }
-
 
 /* --- TOP RIGHT PROFILE BAR --- */
 .top-profile-bar {
@@ -573,8 +580,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 
 /* --- FIXED CHAT VIEW & LOG SCROLLING --- */
 #view-chat {
-    padding: 20px 20px 10px 20px;
-    justify-content: space-between;
+    padding: 0; /* Removing normal padding because of absolute positioning map */
     overflow: hidden;
     position: relative;
 }
@@ -587,21 +593,23 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding-top: 50px;
-    padding-bottom: 20px;
+    padding-top: 20px;
+    padding-bottom: 120px; /* Big bottom padding protects messages from resting under the absolute input bar */
+    padding-left: 20px;
+    padding-right: 20px;
     max-width: 800px;
     width: 100%;
     margin: 0 auto;
     z-index: 6;
     opacity: 1;
-    transition: opacity 0.4s ease 0.2s; /* Delayed fade in when typing starts */
+    transition: opacity 0.4s ease 0.2s; /* Delayed fade in so it doesn't pop in abruptly */
 }
 
-/* Hide the chat log when startup is active */
+/* Hide chat bubbles while startup text is glowing */
 #view-chat.startup-active .chat-log {
     opacity: 0;
     pointer-events: none;
-    transition: none; /* instant fade out on reset */
+    transition: none; 
 }
 
 .system-msg { color: var(--text-sub); font-style: italic; font-size: 15px; }
@@ -614,21 +622,25 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .chat-bubble.carl { color: var(--text-main); align-self: flex-start; white-space: pre-wrap; }
 .chat-image { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
 
-/* --- INPUT CONTAINER & DRAG DROP --- */
+/* --- ABSOLUTE SLIDING INPUT WRAPPER --- */
 .input-wrapper { 
-    flex-shrink: 0;
-    width: 100%; 
+    position: absolute;
+    bottom: 10px; /* Default rest position */
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 40px);
+    max-width: 800px; /* Aligns visually with the log container */
     display: flex; 
     flex-direction: column; 
     align-items: center; 
-    position: relative; 
     z-index: 10;
-    transition: transform 0.6s cubic-bezier(0.25, 1, 0.3, 1);
+    transition: bottom 0.6s cubic-bezier(0.25, 1, 0.3, 1), transform 0.6s cubic-bezier(0.25, 1, 0.3, 1);
 }
 
-/* This slides the bar up to the center! */
+/* Slide it directly up to the center! */
 #view-chat.startup-active .input-wrapper {
-    transform: translateY(-35vh);
+    bottom: 50%;
+    transform: translate(-50%, 50%);
 }
 
 .drag-drop-overlay {
@@ -703,7 +715,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     cursor: pointer; display: flex; justify-content: center; align-items: center;
 }
 
-.copyright { text-align: center; color: var(--text-sub); font-size: 13px; letter-spacing: 0.5px; margin-top: 6px; padding-top: 6px; flex-shrink: 0; }
+.copyright { text-align: center; color: var(--text-sub); font-size: 13px; letter-spacing: 0.5px; margin-top: 6px; flex-shrink: 0; }
 
 /* --- CALL VIEW --- */
 #view-call { padding: 24px 20px 12px 20px; display: flex; flex-direction: column; height: 100%; position: relative; }
@@ -859,8 +871,8 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     .desktop-sidebar.collapsed .sidebar-footer { justify-content: center; }
 
     /* Desktop View overrides */
-    #view-chat { padding-bottom: 15px; }
-    .chat-log { max-width: 800px; margin: 0 auto; width: 100%; flex-grow: 1; height: 100%; min-height: 0; overflow-y: auto; }
+    .input-wrapper { width: calc(100% - 40px); max-width: 800px; left: 50%; transform: translateX(-50%); }
+    .chat-log { max-width: 800px; margin: 0 auto; width: 100%; }
     
     .games-scroll-box { max-width: 100%; width: 100%; padding: 10px 30px; margin: 15px 0; }
     .games-grid { 
