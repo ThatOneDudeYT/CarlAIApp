@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Carl AI</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <!-- Cache-buster ?v=2 forces your browser to load the fixed code block CSS -->
+    <link rel="stylesheet" href="/static/style.css?v=2">
     
     <link rel="apple-touch-icon" href="/static/icons/CarlAILogo.png">
     <link rel="icon" type="image/png" href="/static/icons/CarlAILogo.png">
@@ -15,6 +16,7 @@
 </head>
 <body class="dark-mode">
 
+    <!-- AUTH / SIGN-IN OVERLAY -->
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">
             <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo">
@@ -35,8 +37,10 @@
         </div>
     </div>
 
+    <!-- MAIN APP CONTAINER -->
     <div class="app-container">
         
+        <!-- DESKTOP SIDEBAR -->
         <aside class="desktop-sidebar expanded" id="desktop-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
@@ -63,8 +67,7 @@
 
             <div class="sidebar-chats">
                 <h3 class="chats-header">Chats</h3>
-                <div id="saved-chats-list">
-                    </div>
+                <div id="saved-chats-list"></div>
             </div>
             
             <div class="sidebar-footer">
@@ -72,6 +75,7 @@
             </div>
         </aside>
 
+        <!-- MAIN CONTENT AREA -->
         <main class="main-content">
             
             <div class="top-profile-bar" id="top-profile-bar">
@@ -79,8 +83,8 @@
                 <span id="header-user-name" class="top-profile-name">Guest</span>
             </div>
 
+            <!-- CHAT VIEW -->
             <div id="view-chat" class="view active startup-active">
-
                 <div id="glow-bg" class="glow-bg"></div>
 
                 <div id="startup-screen" class="startup-screen">
@@ -94,8 +98,7 @@
                     </div>
                 </div>
 
-                <div id="chat-log" class="chat-log">
-                    </div>
+                <div id="chat-log" class="chat-log"></div>
                 
                 <div class="input-wrapper">
                     <div id="image-preview-box" class="image-preview-box">
@@ -116,6 +119,7 @@
                 </div>
             </div>
 
+            <!-- SETTINGS VIEW TAB -->
             <div id="view-settings" class="view">
                 <div class="settings-header">
                     <h1>Settings</h1>
@@ -169,16 +173,11 @@
                         <input type="file" id="avatar-file-picker" style="display: none;" accept="image/*" onchange="handleAvatarUpload(event)">
                     </div>
 
-                    <div class="settings-row vertical-on-mobile usage-limit-row">
-                        <div class="usage-container">
-                            <div class="usage-header">
-                                <span class="usage-title">Usage Limit</span>
-                                <span class="usage-text" id="usage-text">0%</span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill" id="usage-fill"></div>
-                            </div>
-                            <p class="usage-desc" id="usage-desc">0 / 10 Free Prompts Used</p>
+                    <div class="settings-row">
+                        <label class="settings-label">Usage</label>
+                        <div class="usage-bar-container">
+                            <div class="usage-bar-fill" id="usage-fill"></div>
+                            <div class="usage-bar-text" id="usage-text">0/10</div>
                         </div>
                     </div>
 
@@ -190,6 +189,7 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
+            <!-- CALL VIEW -->
             <div id="view-call" class="view">
                 <div class="call-header">
                     <h1>Carl AI</h1>
@@ -210,6 +210,7 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
+            <!-- GAMES VIEW -->
             <div id="view-games" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
@@ -244,6 +245,7 @@
                 </div>
             </div>
 
+            <!-- MINIGAMES OVERLAYS -->
             <div id="view-blackjack" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
