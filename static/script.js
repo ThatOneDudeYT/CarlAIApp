@@ -136,6 +136,7 @@ function hasValidApiKey() {
 window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons();
     initTypingAnimation();
+    updateUsageUI();
     
     const oldNav = document.querySelector('.bottom-nav');
     if (oldNav) oldNav.style.display = 'none';
@@ -221,6 +222,7 @@ function handleSignOut() {
         renderChatHistorySidebar();
         switchView('view-chat');
         showStartupScreen();
+        updateUsageUI();
     });
 }
 
@@ -251,6 +253,7 @@ async function loadUserDataFromCloud() {
         if (usernameInput) usernameInput.value = currentUser;
         
         renderChatHistorySidebar();
+        updateUsageUI();
         
         if (activeChatId && chatsHistory.some(c => c.id === activeChatId)) {
             loadChat(activeChatId);
@@ -364,6 +367,7 @@ function saveSettings() {
     }
     
     saveSessionData();
+    updateUsageUI();
 }
 
 function toggleApiKeyHelp() {
@@ -752,6 +756,31 @@ function deleteChat(chatId) {
     }
 }
 
+function updateUsageUI() {
+    const fillEl = document.getElementById("usage-fill");
+    const textEl = document.getElementById("usage-text");
+    if (!fillEl || !textEl) return;
+
+    if (hasValidApiKey()) {
+        fillEl.style.width = "100%";
+        textEl.innerText = "Unlimited";
+    } else {
+        const today = new Date().toISOString().split('T')[0];
+        let lastDate = localStorage.getItem("carl_last_msg_date");
+        let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+
+        if (lastDate !== today) {
+            count = 0; // Ensures visual reset if it's a new day
+        }
+
+        let percent = (count / 10) * 100;
+        if (percent > 100) percent = 100;
+
+        fillEl.style.width = `${percent}%`;
+        textEl.innerText = `${count}/10`;
+    }
+}
+
 // =========================================================================
 // --- FILE HANDLING & DRAG AND DROP SYSTEM ---
 // =========================================================================
@@ -959,6 +988,7 @@ async function sendMessage() {
             let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + 1;
             localStorage.setItem("carl_last_msg_date", today);
             localStorage.setItem("carl_msg_count", count.toString());
+            updateUsageUI();
         }
 
         const reader = response.body.getReader();
