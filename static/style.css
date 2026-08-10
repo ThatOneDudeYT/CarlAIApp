@@ -518,7 +518,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     position: absolute;
     top: 0; left: 0;
     overflow: hidden;
-    display: block; /* Disables flexbox layout entirely in this view */
+    display: block;
 }
 
 /* Massive Glowing Background Effect */
@@ -546,7 +546,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     position: absolute;
     bottom: 50%; 
     left: 50%;
-    transform: translate(-50%, -30px); /* Hangs just above the centered input bar */
+    transform: translate(-50%, -80px); /* Lifted high above the centered message bar */
     z-index: 5;
     transition: opacity 0.4s ease, transform 0.6s cubic-bezier(0.25, 1, 0.3, 1);
     pointer-events: none;
@@ -554,7 +554,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 }
 .startup-screen.hidden {
     opacity: 0;
-    transform: translate(-50%, -60px); 
+    transform: translate(-50%, -110px); 
 }
 
 #startup-title {
@@ -590,7 +590,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     width: 100%;
     height: 100%;
     max-width: 800px;
-    padding: 80px 20px 130px 20px; /* 130px bottom padding protects messages from hiding behind the input bar */
+    padding: 80px 20px 130px 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -601,7 +601,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 }
 #view-chat.startup-active .chat-log {
     opacity: 0;
-    visibility: hidden; /* Added extra lock to prevent ghost interactions */
+    visibility: hidden;
     pointer-events: none;
     transition: none;
 }
@@ -616,11 +616,10 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .chat-bubble.carl { color: var(--text-main); align-self: flex-start; white-space: pre-wrap; }
 .chat-image { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
 
-
 /* --- THE ABSOLUTE SLIDING INPUT WRAPPER --- */
 .input-wrapper {
     position: absolute;
-    bottom: 20px; /* Absolutely pins to the bottom of the page */
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -633,10 +632,10 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     align-items: center;
 }
 
-/* Slide it directly up to the center! */
+/* Slide it directly up to the center during startup! */
 #view-chat.startup-active .input-wrapper {
     bottom: 50%;
-    transform: translate(-50%, 50%); /* Adjusts perfectly to exact middle */
+    transform: translate(-50%, 50%);
 }
 
 /* --- INNER UI ELEMENTS --- */
