@@ -888,6 +888,124 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .chs-piece { width: 85%; height: 85%; object-fit: contain; user-select: none; z-index: 2; pointer-events: none; }
 
 /* ========================================================================= */
+/* --- CHAT CODE BLOCK & TOAST STYLING --- */
+/* ========================================================================= */
+
+.code-block-wrapper {
+    background-color: #212121;
+    border-radius: 12px;
+    margin: 16px 0;
+    overflow: hidden;
+    border: 1px solid #333333;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    max-width: 100%;
+}
+
+.code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1a1a1a;
+    padding: 10px 16px;
+    border-bottom: 1px solid #333333;
+}
+
+.code-language {
+    font-size: 16px;
+    color: #ffffff;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.copy-code-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.copy-code-btn:hover { 
+    background-color: rgba(255, 255, 255, 0.1); 
+}
+
+.copy-code-btn img { 
+    width: 22px; 
+    height: 22px; 
+    object-fit: contain; 
+    opacity: 0.5; 
+    transition: opacity 0.2s; 
+}
+
+.copy-code-btn:active img { 
+    opacity: 0.8; 
+}
+
+.code-block-body {
+    padding: 16px;
+    color: #e5e5e5; 
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 15px;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.5;
+    text-align: left;
+}
+
+.inline-code {
+    background-color: #262626;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-family: monospace;
+    color: #a855f7;
+    border: 1px solid #333333;
+}
+
+/* --- COPY NOTIFICATION TOAST --- */
+.copy-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background-color: #262626;
+    border: 2px solid #333333;
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10000;
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.copy-toast.show { 
+    opacity: 1; 
+    transform: translateY(0); 
+}
+
+.copy-toast img { 
+    width: 28px; 
+    height: 28px; 
+    object-fit: contain; 
+    opacity: 0.5; 
+}
+
+.copy-toast span { 
+    color: #ffffff; 
+    font-family: 'Lilita One', cursive, sans-serif; 
+    font-size: 26px; 
+    letter-spacing: 1px; 
+}
+
+/* ========================================================================= */
 /* --- DESKTOP UI OVERRIDES --- */
 /* ========================================================================= */
 @media (min-width: 768px) {
