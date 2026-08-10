@@ -6,18 +6,15 @@
     <title>Carl AI</title>
     <link rel="stylesheet" href="/static/style.css">
     
-    <!-- iPhone Home Screen App Icon & Favicon -->
     <link rel="apple-touch-icon" href="/static/icons/CarlAILogo.png">
     <link rel="icon" type="image/png" href="/static/icons/CarlAILogo.png">
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body class="dark-mode">
 
-    <!-- AUTH / SIGN-IN OVERLAY -->
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">
             <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo">
@@ -38,10 +35,8 @@
         </div>
     </div>
 
-    <!-- MAIN APP CONTAINER -->
     <div class="app-container">
         
-        <!-- DESKTOP SIDEBAR -->
         <aside class="desktop-sidebar expanded" id="desktop-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
@@ -51,7 +46,6 @@
             </div>
             
             <div class="sidebar-nav">
-                <!-- Expanded PC Buttons -->
                 <div class="full-nav-items">
                     <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat">
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search">
@@ -59,7 +53,6 @@
                     <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call">
                 </div>
                 
-                <!-- Collapsed PC Buttons -->
                 <div class="mini-nav-items">
                     <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat">
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search">
@@ -71,8 +64,7 @@
             <div class="sidebar-chats">
                 <h3 class="chats-header">Chats</h3>
                 <div id="saved-chats-list">
-                    <!-- Saved chat history loaded dynamically -->
-                </div>
+                    </div>
             </div>
             
             <div class="sidebar-footer">
@@ -80,27 +72,21 @@
             </div>
         </aside>
 
-        <!-- MAIN CONTENT AREA -->
         <main class="main-content">
             
-            <!-- TOP-RIGHT PROFILE WIDGET -->
             <div class="top-profile-bar" id="top-profile-bar">
                 <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar">
                 <span id="header-user-name" class="top-profile-name">Guest</span>
             </div>
 
-            <!-- CHAT VIEW (Starts with startup-active class) -->
             <div id="view-chat" class="view active startup-active">
 
-                <!-- HUGE GLOWING BACKGROUND -->
                 <div id="glow-bg" class="glow-bg"></div>
 
-                <!-- START-UP SCREEN TYPING ANIMATION -->
                 <div id="startup-screen" class="startup-screen">
                     <h1 id="startup-title">Ask Away!<span class="typing-cursor"></span></h1>
                 </div>
                 
-                <!-- DRAG AND DROP OVERLAY -->
                 <div id="drag-drop-overlay" class="drag-drop-overlay">
                     <div class="drag-drop-content">
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.8m8.7-1.6V21"/><path d="M16 16l-4-4-4 4"/></svg>
@@ -109,12 +95,9 @@
                 </div>
 
                 <div id="chat-log" class="chat-log">
-                    <!-- Messages will populate here -->
-                </div>
+                    </div>
                 
-                <!-- INPUT WRAPPER (Auto anchors to the bottom) -->
                 <div class="input-wrapper">
-                    <!-- Floating Image Preview Box -->
                     <div id="image-preview-box" class="image-preview-box">
                         <img id="image-preview-img" class="image-preview-thumb" src="" alt="Preview">
                         <button id="image-preview-close" class="image-preview-close" type="button" onclick="clearPendingImage()">✕</button>
@@ -133,7 +116,6 @@
                 </div>
             </div>
 
-            <!-- SETTINGS VIEW TAB -->
             <div id="view-settings" class="view">
                 <div class="settings-header">
                     <h1>Settings</h1>
@@ -187,6 +169,19 @@
                         <input type="file" id="avatar-file-picker" style="display: none;" accept="image/*" onchange="handleAvatarUpload(event)">
                     </div>
 
+                    <div class="settings-row vertical-on-mobile usage-limit-row">
+                        <div class="usage-container">
+                            <div class="usage-header">
+                                <span class="usage-title">Usage Limit</span>
+                                <span class="usage-text" id="usage-text">0%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" id="usage-fill"></div>
+                            </div>
+                            <p class="usage-desc" id="usage-desc">0 / 10 Free Prompts Used</p>
+                        </div>
+                    </div>
+
                     <div class="settings-row">
                         <button class="settings-signout-btn" onclick="handleSignOut()">Sign Out</button>
                     </div>
@@ -195,7 +190,6 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- CALL VIEW -->
             <div id="view-call" class="view">
                 <div class="call-header">
                     <h1>Carl AI</h1>
@@ -216,7 +210,6 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- GAMES VIEW -->
             <div id="view-games" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
@@ -251,7 +244,6 @@
                 </div>
             </div>
 
-            <!-- BLACKJACK VIEW -->
             <div id="view-blackjack" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
@@ -286,7 +278,6 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- ROCK PAPER SCISSORS VIEW -->
             <div id="view-rps" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
@@ -329,7 +320,6 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- TIC TAC TOE VIEW -->
             <div id="view-tictactoe" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
@@ -351,7 +341,6 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- HANGMAN VIEW -->
             <div id="view-hangman" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
@@ -411,7 +400,6 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- CONNECT FOUR VIEW -->
             <div id="view-connectfour" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
@@ -434,7 +422,6 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- BATTLESHIP VIEW -->
             <div id="view-battleship" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
@@ -459,7 +446,6 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- CHECKERS VIEW -->
             <div id="view-checkers" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
@@ -475,7 +461,6 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- CHESS VIEW -->
             <div id="view-chess" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
