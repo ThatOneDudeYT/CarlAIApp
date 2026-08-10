@@ -92,6 +92,9 @@
             <!-- CHAT VIEW (Starts with startup-active class) -->
             <div id="view-chat" class="view active startup-active">
 
+                <!-- HUGE GLOWING BACKGROUND -->
+                <div id="glow-bg" class="glow-bg"></div>
+
                 <!-- START-UP SCREEN TYPING ANIMATION -->
                 <div id="startup-screen" class="startup-screen">
                     <h1 id="startup-title">Ask Away!<span class="typing-cursor"></span></h1>
@@ -106,9 +109,10 @@
                 </div>
 
                 <div id="chat-log" class="chat-log">
-                    <!-- Left empty initially so the startup text shines -->
+                    <!-- Messages will populate here -->
                 </div>
                 
+                <!-- INPUT WRAPPER (Auto anchors to the bottom) -->
                 <div class="input-wrapper">
                     <!-- Floating Image Preview Box -->
                     <div id="image-preview-box" class="image-preview-box">
