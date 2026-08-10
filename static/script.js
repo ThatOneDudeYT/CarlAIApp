@@ -39,7 +39,8 @@ const normalPhrases = [
     "Ready When You Are", 
     "What Time Is It?", 
     "I Need Help With Math", 
-    "The Floor Is Yours!"
+    "The Floor Is Yours!",
+     "I weigh 700 pounds"
 ];
 
 const rarePhrases = [
