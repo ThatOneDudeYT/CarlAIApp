@@ -83,7 +83,6 @@ function initTypingAnimation() {
     
     titleEl.innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
 
-    // Pause for 2 seconds on initial text before starting animation loop
     typingTimeout = setTimeout(() => {
         isDeleting = true;
         typeLoop(titleEl, currentText, charIndex, isDeleting);
@@ -102,12 +101,11 @@ function typeLoop(titleEl, currentText, charIndex, isDeleting) {
     titleEl.innerHTML = currentText.substring(0, charIndex) + '<span class="typing-cursor"></span>';
     
     if (!isDeleting && charIndex === currentText.length) {
-        typingSpeed = 2400; // Pause once word is completely typed
+        typingSpeed = 2400; 
         isDeleting = true;
     } else if (isDeleting && charIndex === 0) {
         isDeleting = false;
         
-        // 10% chance for a rare easter egg phrase to show up
         const useRare = Math.random() < 0.10;
         const pool = useRare ? rarePhrases : normalPhrases;
         
@@ -386,7 +384,9 @@ function handleAvatarUpload(event) {
 
 function saveSettings() {
     const keyInput = document.getElementById('user-api-key');
-    customApiKey = keyInput ? keyInput.value.trim() : "";
+    if (keyInput) {
+        customApiKey = keyInput.value.trim();
+    }
     
     const newPass = document.getElementById('settings-new-pass').value;
     const confirmPass = document.getElementById('settings-confirm-pass').value;
@@ -446,6 +446,10 @@ function switchView(viewId) {
     }
     if (overlay && overlay.classList.contains('active')) {
         overlay.classList.remove('active');
+    }
+
+    if (viewId === 'view-games') {
+        updateDifficultyPickerVisibility();
     }
 }
 
@@ -807,7 +811,7 @@ function updateUsageUI() {
         let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
 
         if (lastDate !== today) {
-            count = 0; // Ensures visual reset if it's a new day
+            count = 0;
         }
 
         let percent = (count / 10) * 100;
@@ -1556,10 +1560,24 @@ async function processCallUserMessage(userText) {
 // --- MINI-GAMES LAUNCHER & LOGIC ---
 // =========================================================================
 
+const gamesWithDifficulty = ["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
+
 function selectGame(element, gameName) {
     document.querySelectorAll('.game-card-img').forEach(card => card.classList.remove('selected'));
     element.classList.add('selected');
     selectedGame = gameName;
+    updateDifficultyPickerVisibility();
+}
+
+function updateDifficultyPickerVisibility() {
+    const diffPicker = document.getElementById("difficulty-picker");
+    if (diffPicker) {
+        if (gamesWithDifficulty.includes(selectedGame)) {
+            diffPicker.style.display = "flex";
+        } else {
+            diffPicker.style.display = "none";
+        }
+    }
 }
 
 function launchGame() {
@@ -1677,9 +1695,11 @@ function getCardWeight(val) {
 }
 
 function getBjScore(hand) {
+    if (!hand || !Array.isArray(hand)) return 0;
     let score = 0;
     let aces = 0;
     for (let card of hand) {
+        if (!card) continue;
         if (['J', 'Q', 'K'].includes(card.value)) score += 10;
         else if (card.value === 'A') { score += 11; aces += 1; }
         else score += parseInt(card.value);
@@ -1735,7 +1755,7 @@ function initBlackjack() {
     bjPayoutsDone = false;
     
     const resetBtn = document.querySelector("#view-blackjack .reset-btn");
-    if (resetBtn) resetBtn.innerText = "Deal";
+    if (resetBtn) resetBtn.innerText = "Deal Again";
     
     document.getElementById("bj-controls").style.display = "flex";
     
@@ -1783,65 +1803,26 @@ function processBjPayouts() {
 
 function renderBj() {
     const cCards = document.getElementById("bj-carl-cards");
-    cCards.innerHTML = "";
-    bjCarlHand.forEach((card, index) => {
-        let el = document.createElement("div");
-        if (!bjGameOver && index === 1) {
-            el.className = "bj-card hidden";
-            el.innerText = "";
-        } else {
-            el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
-            el.innerText = `${card.value}${card.suit}`;
-        }
-        cCards.appendChild(el);
-    });
+    if (cCards) {
+        cCards.innerHTML = "";
+        bjCarlHand.forEach((card, index) => {
+            if (!card) return;
+            let el = document.createElement("div");
+            if (!bjGameOver && index === 1) {
+                el.className = "bj-card hidden";
+                el.innerText = "";
+            } else {
+                el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
+                el.innerText = `${card.value}${card.suit}`;
+            }
+            cCards.appendChild(el);
+        });
+    }
 
     if (bjGameOver) {
         document.getElementById("bj-carl-score").innerText = getBjScore(bjCarlHand);
-    } else {
-        let firstVal = bjCarlHand[0].value;
-        let val = ['J', 'Q', 'K'].includes(firstVal) ? 10 : (firstVal === 'A' ? 11 : parseInt(firstVal));
-        document.getElementById("bj-carl-score").innerText = val;
-    }
-
-    const pHandsContainer = document.getElementById("bj-player-hands-container");
-    pHandsContainer.innerHTML = "";
-
-    bjPlayerHands.forEach((hand, index) => {
-        let handDiv = document.createElement("div");
-        handDiv.className = `bj-single-hand ${index === bjActiveHand && !bjGameOver ? 'active' : ''}`;
-
-        let scoreDiv = document.createElement("div");
-        scoreDiv.className = "bj-hand-score";
-        scoreDiv.innerText = `Score: ${getBjScore(hand)}`;
-        handDiv.appendChild(scoreDiv);
-
-        let cardsContainer = document.createElement("div");
-        cardsContainer.className = "bj-cards";
-        hand.forEach(card => {
-            let el = document.createElement("div");
-            el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
-            el.innerText = `${card.value}${card.suit}`;
-            cardsContainer.appendChild(el);
-        });
-        handDiv.appendChild(cardsContainer);
-
-        if (bjResults[index] && bjResults[index] !== "Doubled") {
-            let resDiv = document.createElement("div");
-            resDiv.className = "bj-hand-result";
-            let txt = bjResults[index];
-            if (txt.includes("Win") || txt.includes("Blackjack")) resDiv.classList.add("win");
-            else if (txt.includes("Lose") || txt.includes("Bust")) resDiv.classList.add("lose");
-            else resDiv.classList.add("push");
-            resDiv.innerText = txt;
-            handDiv.appendChild(resDiv);
-        }
-
-        pHandsContainer.appendChild(handDiv);
-    });
-
-    if (bjGameOver) {
         document.getElementById("bj-controls").style.display = "none";
+        
         if (!document.getElementById("bj-status").innerText.includes("Place your bet")) {
             document.getElementById("bj-status").innerText = "Round Over";
             document.getElementById("bj-status").style.color = "#aaa";
@@ -1856,27 +1837,71 @@ function renderBj() {
         }
         
     } else {
-        document.getElementById("bj-controls").style.display = "flex";
         let currentHand = bjPlayerHands[bjActiveHand];
+        if (currentHand) {
+            document.getElementById("bj-controls").style.display = "flex";
+            document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
+            let canSplit = currentHand.length === 2 && 
+                           getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && 
+                           bjPlayerHands.length < 4;
+            document.getElementById("bj-btn-split").disabled = !canSplit;
 
-        document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
-        let canSplit = currentHand.length === 2 && 
-                       getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && 
-                       bjPlayerHands.length < 4;
-        document.getElementById("bj-btn-split").disabled = !canSplit;
-
-        if (bjPlayerHands.length > 1) {
-            document.getElementById("bj-status").innerText = `Playing Hand ${bjActiveHand + 1}...`;
+            if (bjPlayerHands.length > 1) {
+                document.getElementById("bj-status").innerText = `Playing Hand ${bjActiveHand + 1}...`;
+            } else {
+                document.getElementById("bj-status").innerText = `Your Turn!`;
+            }
+            document.getElementById("bj-status").style.color = "#fff";
         } else {
-            document.getElementById("bj-status").innerText = `Your Turn!`;
+            document.getElementById("bj-controls").style.display = "none";
         }
-        document.getElementById("bj-status").style.color = "#fff";
+    }
+
+    const pHandsContainer = document.getElementById("bj-player-hands-container");
+    if (pHandsContainer) {
+        pHandsContainer.innerHTML = "";
+        bjPlayerHands.forEach((hand, index) => {
+            let handDiv = document.createElement("div");
+            handDiv.className = `bj-single-hand ${index === bjActiveHand && !bjGameOver ? 'active' : ''}`;
+
+            let scoreDiv = document.createElement("div");
+            scoreDiv.className = "bj-hand-score";
+            scoreDiv.innerText = `Score: ${getBjScore(hand)}`;
+            handDiv.appendChild(scoreDiv);
+
+            let cardsContainer = document.createElement("div");
+            cardsContainer.className = "bj-cards";
+            hand.forEach(card => {
+                if (!card) return;
+                let el = document.createElement("div");
+                el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
+                el.innerText = `${card.value}${card.suit}`;
+                cardsContainer.appendChild(el);
+            });
+            handDiv.appendChild(cardsContainer);
+
+            if (bjResults[index] && bjResults[index] !== "Doubled") {
+                let resDiv = document.createElement("div");
+                resDiv.className = "bj-hand-result";
+                let txt = bjResults[index];
+                if (txt.includes("Win") || txt.includes("Blackjack")) resDiv.classList.add("win");
+                else if (txt.includes("Lose") || txt.includes("Bust")) resDiv.classList.add("lose");
+                else resDiv.classList.add("push");
+                resDiv.innerText = txt;
+                handDiv.appendChild(resDiv);
+            }
+
+            pHandsContainer.appendChild(handDiv);
+        });
     }
 }
 
 function bjHit() {
     if (bjGameOver) return;
     let hand = bjPlayerHands[bjActiveHand];
+    if (!hand) return;
+    
+    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
     hand.push(bjDeck.pop());
 
     let score = getBjScore(hand);
@@ -1898,7 +1923,7 @@ function bjStand() {
 function bjDouble() {
     if (bjGameOver) return;
     let hand = bjPlayerHands[bjActiveHand];
-    if (hand.length !== 2) return;
+    if (!hand || hand.length !== 2) return;
     
     let currentBet = bjBets[bjActiveHand];
     if (userBurgers < currentBet) {
@@ -1909,7 +1934,9 @@ function bjDouble() {
     updateBurgerUI();
     bjBets[bjActiveHand] *= 2;
 
+    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
     hand.push(bjDeck.pop());
+    
     if (getBjScore(hand) > 21) {
         bjResults[bjActiveHand] = "Bust";
     } else {
@@ -1921,7 +1948,7 @@ function bjDouble() {
 function bjSplit() {
     if (bjGameOver) return;
     let hand = bjPlayerHands[bjActiveHand];
-    if (hand.length !== 2 || getCardWeight(hand[0].value) !== getCardWeight(hand[1].value)) return;
+    if (!hand || hand.length !== 2 || getCardWeight(hand[0].value) !== getCardWeight(hand[1].value)) return;
     
     let currentBet = bjBets[bjActiveHand];
     if (userBurgers < currentBet) {
@@ -1931,6 +1958,7 @@ function bjSplit() {
     userBurgers -= currentBet;
     updateBurgerUI();
 
+    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
     let splitCard = hand.pop();
     let newHand = [splitCard, bjDeck.pop()];
     hand.push(bjDeck.pop());
@@ -1951,36 +1979,45 @@ function bjNextHand() {
 }
 
 function bjDealerTurn() {
-    let allBusted = bjPlayerHands.every((_, i) => bjResults[i] === "Bust");
+    try {
+        let allBusted = bjPlayerHands.every((_, i) => bjResults[i] === "Bust");
 
-    const playDealer = () => {
-        let score = getBjScore(bjCarlHand);
-        if (score < 17 && !allBusted) {
-            bjCarlHand.push(bjDeck.pop());
-            renderBj();
-            setTimeout(playDealer, 800);
-        } else {
-            for (let i = 0; i < bjPlayerHands.length; i++) {
-                if (bjResults[i] === "Bust" || bjResults[i] === "Blackjack! You Win!" || bjResults[i] === "Carl Blackjack!" || bjResults[i] === "Push (Tie)") continue;
-                
-                let pScore = getBjScore(bjPlayerHands[i]);
-                if (score > 21) bjResults[i] = "Win (Carl Busts)";
-                else if (pScore > score) bjResults[i] = "Win";
-                else if (score > pScore) bjResults[i] = "Lose";
-                else bjResults[i] = "Push";
+        const playDealer = () => {
+            try {
+                let score = getBjScore(bjCarlHand);
+                if (score < 17 && !allBusted) {
+                    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
+                    let card = bjDeck.pop();
+                    if (card) bjCarlHand.push(card);
+                    renderBj();
+                    setTimeout(playDealer, 800);
+                } else {
+                    for (let i = 0; i < bjPlayerHands.length; i++) {
+                        if (bjResults[i] === "Bust") continue;
+
+                        let pScore = getBjScore(bjPlayerHands[i]);
+                        if (score > 21) bjResults[i] = "Win (Carl Busts)";
+                        else if (pScore > score) bjResults[i] = "Win";
+                        else if (score > pScore) bjResults[i] = "Lose";
+                        else bjResults[i] = "Push";
+                    }
+                    bjGameOver = true;
+                    renderBj();
+                }
+            } catch (err) {
+                console.error("Blackjack dealer turn error:", err);
+                bjGameOver = true;
+                renderBj();
             }
-            bjGameOver = true;
-            renderBj();
-        }
-    };
+        };
 
-    if (allBusted) {
-        playDealer();
-    } else {
         document.getElementById("bj-status").innerText = "Carl is dealing...";
         document.getElementById("bj-status").style.color = "#eccc68";
+        setTimeout(playDealer, 600);
+    } catch (err) {
+        console.error("Blackjack turn error:", err);
+        bjGameOver = true;
         renderBj();
-        setTimeout(playDealer, 800);
     }
 }
 
