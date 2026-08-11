@@ -101,11 +101,12 @@ function typeLoop(titleEl, currentText, charIndex, isDeleting) {
     titleEl.innerHTML = currentText.substring(0, charIndex) + '<span class="typing-cursor"></span>';
     
     if (!isDeleting && charIndex === currentText.length) {
-        typingSpeed = 2400; 
+        typingSpeed = 2400; // Pause once word is completely typed
         isDeleting = true;
     } else if (isDeleting && charIndex === 0) {
         isDeleting = false;
         
+        // 10% chance for a rare easter egg phrase to show up
         const useRare = Math.random() < 0.10;
         const pool = useRare ? rarePhrases : normalPhrases;
         
@@ -811,7 +812,7 @@ function updateUsageUI() {
         let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
 
         if (lastDate !== today) {
-            count = 0;
+            count = 0; 
         }
 
         let percent = (count / 10) * 100;
@@ -973,6 +974,26 @@ async function sendMessage() {
     const text = input.value.trim();
     
     if (!text && !pendingImageBase64) return;
+
+    // --- CHEAT COMMAND: /burgers <number> ---
+    if (text.toLowerCase().startsWith("/burgers")) {
+        const parts = text.split(" ");
+        const amount = parseInt(parts[1], 10);
+        hideStartupScreen();
+        if (!isNaN(amount)) {
+            userBurgers += amount;
+            if (userBurgers < 0) userBurgers = 0;
+            updateBurgerUI();
+            saveSessionData();
+            appendMessage(`Added ${amount} Burgers! 🍔 Current balance: ${userBurgers}`, "carl");
+        } else {
+            appendMessage("Invalid command format. Use: /burgers <amount> (e.g. /burgers 500)", "carl");
+        }
+        input.value = "";
+        clearPendingImage();
+        return;
+    }
+
     if (!checkDailyMessageLimit()) return;
 
     hideStartupScreen();
