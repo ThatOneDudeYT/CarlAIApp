@@ -101,12 +101,11 @@ function typeLoop(titleEl, currentText, charIndex, isDeleting) {
     titleEl.innerHTML = currentText.substring(0, charIndex) + '<span class="typing-cursor"></span>';
     
     if (!isDeleting && charIndex === currentText.length) {
-        typingSpeed = 2400; // Pause once word is completely typed
+        typingSpeed = 2400; 
         isDeleting = true;
     } else if (isDeleting && charIndex === 0) {
         isDeleting = false;
         
-        // 10% chance for a rare easter egg phrase to show up
         const useRare = Math.random() < 0.10;
         const pool = useRare ? rarePhrases : normalPhrases;
         
@@ -239,7 +238,6 @@ function handleSignOut() {
         chatHistory = [];
         activeChatId = null;
         
-        // Reset local economy safely
         userBurgers = 100;
         clickerBurgers = 0;
         autoChefs = 0;
@@ -812,7 +810,7 @@ function updateUsageUI() {
         let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
 
         if (lastDate !== today) {
-            count = 0; 
+            count = 0;
         }
 
         let percent = (count / 10) * 100;
@@ -1801,21 +1799,16 @@ function processBjPayouts() {
     if (bjPayoutsDone) return;
     bjPayoutsDone = true;
     
-    let diff = getDifficulty();
-    let mult = 1.2;
-    if (diff === "medium") mult = 1.3;
-    if (diff === "hard") mult = 1.5;
-
     for (let i = 0; i < bjPlayerHands.length; i++) {
         let res = bjResults[i] || "";
         let bet = bjBets[i] || 0;
         
         if (res.includes("Blackjack! You Win!")) {
-            userBurgers += bet + Math.ceil(bet * (mult + 0.5)); 
+            userBurgers += Math.ceil(bet * 2.5); 
         } else if (res.includes("Win")) {
-            userBurgers += bet + Math.ceil(bet * mult);
+            userBurgers += Math.ceil(bet * 2);
         } else if (res.includes("Push")) {
-            userBurgers += bet; 
+            userBurgers += Math.ceil(bet); 
         }
     }
     updateBurgerUI();
@@ -1926,18 +1919,24 @@ function bjHit() {
     hand.push(bjDeck.pop());
 
     let score = getBjScore(hand);
+    
+    if (score >= 21) {
+        document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
+    }
+    
+    renderBj();
+
     if (score > 21) {
         bjResults[bjActiveHand] = "Bust";
-        bjNextHand();
+        setTimeout(() => bjNextHand(), 800);
     } else if (score === 21) {
-        bjNextHand();
-    } else {
-        renderBj();
+        setTimeout(() => bjNextHand(), 800);
     }
 }
 
 function bjStand() {
     if (bjGameOver) return;
+    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
     bjNextHand();
 }
 
@@ -1958,12 +1957,15 @@ function bjDouble() {
     if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
     hand.push(bjDeck.pop());
     
+    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
+    renderBj();
+    
     if (getBjScore(hand) > 21) {
         bjResults[bjActiveHand] = "Bust";
     } else {
         bjResults[bjActiveHand] = "Doubled";
     }
-    bjNextHand();
+    setTimeout(() => bjNextHand(), 800);
 }
 
 function bjSplit() {
