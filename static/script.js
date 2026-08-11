@@ -807,7 +807,7 @@ function updateUsageUI() {
         let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
 
         if (lastDate !== today) {
-            count = 0; 
+            count = 0; // Ensures visual reset if it's a new day
         }
 
         let percent = (count / 10) * 100;
@@ -1574,7 +1574,7 @@ function launchGame() {
         initRps();
     } else if (selectedGame === "Blackjack") {
         switchView("view-blackjack");
-        initBlackjack();
+        prepBlackjack();
     } else if (selectedGame === "Hangman") {
         switchView("view-hangman");
         initHangman();
@@ -1650,6 +1650,7 @@ let bjPlayerHands = [];
 let bjCarlHand = [];
 let bjActiveHand = 0;
 let bjGameOver = false;
+let bjGameActive = false;
 let bjResults = []; 
 let bjBet = 10;
 let bjBets = [];
@@ -1687,6 +1688,24 @@ function getBjScore(hand) {
     return score;
 }
 
+function prepBlackjack() {
+    bjGameActive = false;
+    bjGameOver = true; 
+    
+    document.getElementById("bj-status").innerText = "Place your bet and Deal!";
+    document.getElementById("bj-status").style.color = "#fff";
+    document.getElementById("bj-carl-cards").innerHTML = "";
+    document.getElementById("bj-player-hands-container").innerHTML = "";
+    document.getElementById("bj-carl-score").innerText = "?";
+    
+    document.getElementById("bj-controls").style.display = "none";
+    const betInput = document.getElementById("bj-bet-input");
+    if (betInput) betInput.disabled = false;
+    
+    const resetBtn = document.querySelector("#view-blackjack .reset-btn");
+    if (resetBtn) resetBtn.innerText = "Deal";
+}
+
 function initBlackjack() {
     const betInput = document.getElementById("bj-bet-input");
     if (betInput) {
@@ -1708,10 +1727,15 @@ function initBlackjack() {
     bjPlayerHands = [ [bjDeck.pop(), bjDeck.pop()] ];
     bjCarlHand = [bjDeck.pop(), bjDeck.pop()];
     bjActiveHand = 0;
+    
+    bjGameActive = true;
     bjGameOver = false;
     bjResults = [];
     bjBets = [bjBet];
     bjPayoutsDone = false;
+    
+    const resetBtn = document.querySelector("#view-blackjack .reset-btn");
+    if (resetBtn) resetBtn.innerText = "Deal";
     
     document.getElementById("bj-controls").style.display = "flex";
     
@@ -1818,12 +1842,18 @@ function renderBj() {
 
     if (bjGameOver) {
         document.getElementById("bj-controls").style.display = "none";
-        document.getElementById("bj-status").innerText = "Round Over";
-        document.getElementById("bj-status").style.color = "#aaa";
+        if (!document.getElementById("bj-status").innerText.includes("Place your bet")) {
+            document.getElementById("bj-status").innerText = "Round Over";
+            document.getElementById("bj-status").style.color = "#aaa";
+        }
         
         const betInput = document.getElementById("bj-bet-input");
         if (betInput) betInput.disabled = false;
-        processBjPayouts();
+        
+        if (bjGameActive) {
+            processBjPayouts();
+            bjGameActive = false;
+        }
         
     } else {
         document.getElementById("bj-controls").style.display = "flex";
@@ -1913,7 +1943,7 @@ function bjSplit() {
 function bjNextHand() {
     bjActiveHand++;
     if (bjActiveHand >= bjPlayerHands.length) {
-        bjGameOver = true;
+        document.getElementById("bj-controls").style.display = "none";
         bjDealerTurn();
     } else {
         renderBj();
@@ -1939,6 +1969,7 @@ function bjDealerTurn() {
                 else if (score > pScore) bjResults[i] = "Lose";
                 else bjResults[i] = "Push";
             }
+            bjGameOver = true;
             renderBj();
         }
     };
@@ -2136,7 +2167,7 @@ const safeDictionary = [
     "SURVIVAL", "MULTIPLAYER", "SERVER", "BEDROCK", "ARENA", "ISLAND",
     "ORAVON", "SCRAPWAGON", "HAVOC", "CARLAI", "DESKTOP", "COMPANION",
     "ELEPHANT", "GIRAFFE", "KANGAROO", "DOLPHIN", "PENGUIN", "CHEETAH",
-    "VOLCANO", "Tornado", "AVALANCHE", "GALAXY", "ASTEROID", "UNIVERSE",
+    "VOLCANO", "TORNADO", "AVALANCHE", "GALAXY", "ASTEROID", "UNIVERSE",
     "BACKPACK", "TELESCOPE", "MICROSCOPE", "COMPASS", "TREASURE", "PYRAMID",
     "GUITAR", "PIANO", "BICYCLE", "SKATEBOARD", "HELICOPTER", "SPACESHIP"
 ];
