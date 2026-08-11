@@ -245,7 +245,8 @@
 
                 <div class="games-scroll-box">
                     <div class="games-grid">
-                        <img src="/static/icons/CarlAILogo.png" class="game-card-img" onclick="selectGame(this, 'Burger Clicker')" alt="Burger Clicker" title="Burger Clicker" />
+                        <!-- Updated to use the BurgerClicker.png -->
+                        <img src="/static/icons/BurgerClicker.png" class="game-card-img" onclick="selectGame(this, 'Burger Clicker')" alt="Burger Clicker" title="Burger Clicker" />
                         <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" alt="Tic Tac Toe" />
                         <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" alt="Chess" />
                         <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" alt="Hangman" />
@@ -271,14 +272,17 @@
                 </div>
                 
                 <div class="clicker-arena">
-                    <div class="clicker-score">Burgers: <span id="clicker-score-text">0</span></div>
-                    <div class="carl-clicker-btn" id="carl-clicker-btn" onclick="clickCarl()">
-                        <img src="/static/icons/CarlAILogo.png" alt="Carl">
+                    <div class="clicker-score">Clicker Burgers: <span id="clicker-score-text">0</span></div>
+                    <div class="carl-clicker-btn" id="carl-clicker-btn" onclick="clickBurger()">
+                        <img src="/static/icons/BurgerIcon.png" alt="Burger">
                     </div>
                     <div class="clicker-upgrades">
                         <button class="upgrade-btn" onclick="buyAutoChef()">
                             Buy Auto-Chef (Costs <span id="auto-chef-cost">50</span> 🍔)
                             <div class="upgrade-desc">Generates 1 🍔 per second</div>
+                        </button>
+                        <button class="exchange-btn" onclick="exchangeBurgers()">
+                            Trade 10,000 🍔 for 1 Real 🍔
                         </button>
                         <div class="auto-chef-stats">Active Auto-Chefs: <span id="auto-chef-count">0</span></div>
                     </div>
