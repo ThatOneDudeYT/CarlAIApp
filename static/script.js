@@ -31,6 +31,26 @@ let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
+// --- BURGER ECONOMY STATE ---
+let userBurgers = 100;
+let autoChefs = 0;
+
+function updateBurgerUI() {
+    const headerCount = document.getElementById("burger-count");
+    if(headerCount) headerCount.innerText = Math.floor(userBurgers);
+    
+    const clickerCount = document.getElementById("clicker-score-text");
+    if(clickerCount) clickerCount.innerText = Math.floor(userBurgers);
+}
+
+// Auto-Chef Loop
+setInterval(() => {
+    if (autoChefs > 0) {
+        userBurgers += autoChefs;
+        updateBurgerUI();
+    }
+}, 1000);
+
 // =========================================================================
 // --- START-UP SCREEN TYPING ANIMATION ---
 // =========================================================================
@@ -62,7 +82,6 @@ function initTypingAnimation() {
     
     titleEl.innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
 
-    // Pause for 2 seconds on initial text before starting animation loop
     typingTimeout = setTimeout(() => {
         isDeleting = true;
         typeLoop(titleEl, currentText, charIndex, isDeleting);
@@ -81,12 +100,11 @@ function typeLoop(titleEl, currentText, charIndex, isDeleting) {
     titleEl.innerHTML = currentText.substring(0, charIndex) + '<span class="typing-cursor"></span>';
     
     if (!isDeleting && charIndex === currentText.length) {
-        typingSpeed = 2400; // Pause once word is completely typed
+        typingSpeed = 2400; 
         isDeleting = true;
     } else if (isDeleting && charIndex === 0) {
         isDeleting = false;
         
-        // 10% chance for a rare easter egg phrase to show up
         const useRare = Math.random() < 0.10;
         const pool = useRare ? rarePhrases : normalPhrases;
         
@@ -137,6 +155,7 @@ window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons();
     initTypingAnimation();
     updateUsageUI();
+    updateBurgerUI();
     
     const oldNav = document.querySelector('.bottom-nav');
     if (oldNav) oldNav.style.display = 'none';
@@ -218,6 +237,11 @@ function handleSignOut() {
         chatHistory = [];
         activeChatId = null;
         
+        // Reset local economy safely
+        userBurgers = 100;
+        autoChefs = 0;
+        updateBurgerUI();
+        
         updateProfileUI();
         renderChatHistorySidebar();
         switchView('view-chat');
@@ -240,6 +264,11 @@ async function loadUserDataFromCloud() {
             chatsHistory = data.chats || [];
             activeChatId = data.activeChatId || null;
             applyTheme(data.theme || "dark");
+            
+            userBurgers = data.burgers !== undefined ? data.burgers : 100;
+            autoChefs = data.autoChefs || 0;
+            updateBurgerUI();
+            
             if (data.avatar) currentUserAvatar = data.avatar;
             if (data.username) currentUser = data.username;
         } else {
@@ -274,7 +303,9 @@ function saveSessionData() {
         activeChatId: activeChatId,
         theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
         avatar: currentUserAvatar,
-        username: currentUser
+        username: currentUser,
+        burgers: userBurgers,
+        autoChefs: autoChefs
     }, { merge: true }).catch(e => console.error("Error saving data:", e));
 }
 
@@ -993,24 +1024,51 @@ async function sendMessage() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        
         let fullResponse = "";
+        let displayBuffer = "";
+        let streamFinished = false;
+        let isTypingStream = false;
+
+        function renderTypewriter() {
+            if (displayBuffer.length < fullResponse.length) {
+                let diff = fullResponse.length - displayBuffer.length;
+                let charsToAdd = diff > 20 ? 4 : (diff > 5 ? 2 : 1);
+                displayBuffer += fullResponse.substring(displayBuffer.length, displayBuffer.length + charsToAdd);
+                
+                textNode.innerHTML = formatMessage(displayBuffer) + '<span class="typing-cursor"></span>';
+                log.scrollTop = log.scrollHeight;
+                setTimeout(renderTypewriter, 15); 
+            } else if (!streamFinished) {
+                setTimeout(renderTypewriter, 15);
+            } else {
+                textNode.innerHTML = formatMessage(fullResponse);
+                log.scrollTop = log.scrollHeight;
+                isTypingStream = false;
+            }
+        }
 
         while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+                streamFinished = true;
+                break;
+            }
 
             const chunk = decoder.decode(value, { stream: true });
             fullResponse += chunk;
             
-            let cleanedResponse = fullResponse;
             for (let bad_prefix of ["Carl:", "carl:", "Carl - ", "Assistant:"]) {
-                if (cleanedResponse.startsWith(bad_prefix)) {
-                    cleanedResponse = cleanedResponse.substring(bad_prefix.length).trim();
+                if (fullResponse.startsWith(bad_prefix)) {
+                    fullResponse = fullResponse.substring(bad_prefix.length).trimStart();
+                    displayBuffer = ""; 
                 }
             }
 
-            textNode.innerHTML = formatMessage(cleanedResponse);
-            log.scrollTop = log.scrollHeight;
+            if (!isTypingStream) {
+                isTypingStream = true;
+                renderTypewriter();
+            }
         }
 
         chatHistory.push({ role: "user", content: text || "Look at this image." });
@@ -1499,7 +1557,10 @@ function selectGame(element, gameName) {
 }
 
 function launchGame() {
-    if (selectedGame === "Tic Tac Toe") {
+    if (selectedGame === "Burger Clicker") {
+        switchView("view-burgerclicker");
+        updateAutoChefUI();
+    } else if (selectedGame === "Tic Tac Toe") {
         switchView("view-tictactoe");
         initTicTacToe();
     } else if (selectedGame === "Rock Paper Scissors") {
@@ -1528,6 +1589,44 @@ function launchGame() {
     }
 }
 
+// --- GAME 0: BURGER CLICKER ---
+function clickCarl() {
+    userBurgers++;
+    updateBurgerUI();
+    
+    const btn = document.getElementById("carl-clicker-btn");
+    const floater = document.createElement("div");
+    floater.className = "floating-number";
+    floater.innerText = "+1";
+    floater.style.left = (Math.random() * 80 + 10) + "%";
+    floater.style.top = (Math.random() * 80 + 10) + "%";
+    btn.appendChild(floater);
+    
+    setTimeout(() => floater.remove(), 1000);
+}
+
+function buyAutoChef() {
+    let cost = Math.floor(50 * Math.pow(1.15, autoChefs));
+    if (userBurgers >= cost) {
+        userBurgers -= cost;
+        autoChefs++;
+        updateBurgerUI();
+        updateAutoChefUI();
+        saveSessionData();
+    } else {
+        alert("Not enough Burgers! You need " + cost);
+    }
+}
+
+function updateAutoChefUI() {
+    let cost = Math.floor(50 * Math.pow(1.15, autoChefs));
+    let costEl = document.getElementById("auto-chef-cost");
+    if(costEl) costEl.innerText = cost;
+    
+    let countEl = document.getElementById("auto-chef-count");
+    if(countEl) countEl.innerText = autoChefs;
+}
+
 // --- GAME 1: BLACKJACK ---
 let bjDeck = [];
 let bjPlayerHands = [];
@@ -1535,6 +1634,9 @@ let bjCarlHand = [];
 let bjActiveHand = 0;
 let bjGameOver = false;
 let bjResults = []; 
+let bjBet = 10;
+let bjBets = [];
+let bjPayoutsDone = false;
 
 function buildDeck() {
     const suits = ['♠', '♥', '♦', '♣'];
@@ -1569,12 +1671,26 @@ function getBjScore(hand) {
 }
 
 function initBlackjack() {
+    const betInput = document.getElementById("bj-bet-input");
+    if (betInput) {
+        bjBet = parseInt(betInput.value) || 10;
+        if (userBurgers < bjBet) {
+            alert("Not enough Burgers! Play Burger Clicker to earn more.");
+            return;
+        }
+        userBurgers -= bjBet;
+        updateBurgerUI();
+        betInput.disabled = true;
+    }
+
     bjDeck = buildDeck();
     bjPlayerHands = [ [bjDeck.pop(), bjDeck.pop()] ];
     bjCarlHand = [bjDeck.pop(), bjDeck.pop()];
     bjActiveHand = 0;
     bjGameOver = false;
     bjResults = [];
+    bjBets = [bjBet];
+    bjPayoutsDone = false;
     
     document.getElementById("bj-controls").style.display = "flex";
     
@@ -1593,6 +1709,26 @@ function initBlackjack() {
     }
 
     renderBj();
+}
+
+function processBjPayouts() {
+    if (bjPayoutsDone) return;
+    bjPayoutsDone = true;
+    
+    for (let i = 0; i < bjPlayerHands.length; i++) {
+        let res = bjResults[i] || "";
+        let bet = bjBets[i] || 0;
+        
+        if (res.includes("Blackjack! You Win!")) {
+            userBurgers += bet * 2.5; 
+        } else if (res.includes("Win")) {
+            userBurgers += bet * 2;
+        } else if (res.includes("Push")) {
+            userBurgers += bet;
+        }
+    }
+    updateBurgerUI();
+    saveSessionData();
 }
 
 function renderBj() {
@@ -1658,6 +1794,11 @@ function renderBj() {
         document.getElementById("bj-controls").style.display = "none";
         document.getElementById("bj-status").innerText = "Round Over";
         document.getElementById("bj-status").style.color = "#aaa";
+        
+        const betInput = document.getElementById("bj-bet-input");
+        if (betInput) betInput.disabled = false;
+        processBjPayouts();
+        
     } else {
         document.getElementById("bj-controls").style.display = "flex";
         let currentHand = bjPlayerHands[bjActiveHand];
@@ -1702,6 +1843,15 @@ function bjDouble() {
     if (bjGameOver) return;
     let hand = bjPlayerHands[bjActiveHand];
     if (hand.length !== 2) return;
+    
+    let currentBet = bjBets[bjActiveHand];
+    if (userBurgers < currentBet) {
+        alert("Not enough Burgers to double down!");
+        return;
+    }
+    userBurgers -= currentBet;
+    updateBurgerUI();
+    bjBets[bjActiveHand] *= 2;
 
     hand.push(bjDeck.pop());
     if (getBjScore(hand) > 21) {
@@ -1716,12 +1866,21 @@ function bjSplit() {
     if (bjGameOver) return;
     let hand = bjPlayerHands[bjActiveHand];
     if (hand.length !== 2 || getCardWeight(hand[0].value) !== getCardWeight(hand[1].value)) return;
+    
+    let currentBet = bjBets[bjActiveHand];
+    if (userBurgers < currentBet) {
+        alert("Not enough Burgers to split!");
+        return;
+    }
+    userBurgers -= currentBet;
+    updateBurgerUI();
 
     let splitCard = hand.pop();
     let newHand = [splitCard, bjDeck.pop()];
     hand.push(bjDeck.pop());
     
     bjPlayerHands.splice(bjActiveHand + 1, 0, newHand);
+    bjBets.splice(bjActiveHand + 1, 0, currentBet);
     renderBj();
 }
 
