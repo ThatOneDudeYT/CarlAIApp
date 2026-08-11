@@ -32,7 +32,8 @@ let pendingImageMime = null;
 let pendingImageSrc = null;
 
 // --- BURGER ECONOMY STATE ---
-let userBurgers = 100;
+let userBurgers = 100;     // Real Burgers for Blackjack
+let clickerBurgers = 0;    // Fake Burgers for the clicker game
 let autoChefs = 0;
 
 function updateBurgerUI() {
@@ -40,13 +41,13 @@ function updateBurgerUI() {
     if(headerCount) headerCount.innerText = Math.floor(userBurgers);
     
     const clickerCount = document.getElementById("clicker-score-text");
-    if(clickerCount) clickerCount.innerText = Math.floor(userBurgers);
+    if(clickerCount) clickerCount.innerText = Math.floor(clickerBurgers);
 }
 
 // Auto-Chef Loop
 setInterval(() => {
     if (autoChefs > 0) {
-        userBurgers += autoChefs;
+        clickerBurgers += autoChefs;
         updateBurgerUI();
     }
 }, 1000);
@@ -82,6 +83,7 @@ function initTypingAnimation() {
     
     titleEl.innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
 
+    // Pause for 2 seconds on initial text before starting animation loop
     typingTimeout = setTimeout(() => {
         isDeleting = true;
         typeLoop(titleEl, currentText, charIndex, isDeleting);
@@ -100,11 +102,12 @@ function typeLoop(titleEl, currentText, charIndex, isDeleting) {
     titleEl.innerHTML = currentText.substring(0, charIndex) + '<span class="typing-cursor"></span>';
     
     if (!isDeleting && charIndex === currentText.length) {
-        typingSpeed = 2400; 
+        typingSpeed = 2400; // Pause once word is completely typed
         isDeleting = true;
     } else if (isDeleting && charIndex === 0) {
         isDeleting = false;
         
+        // 10% chance for a rare easter egg phrase to show up
         const useRare = Math.random() < 0.10;
         const pool = useRare ? rarePhrases : normalPhrases;
         
@@ -239,6 +242,7 @@ function handleSignOut() {
         
         // Reset local economy safely
         userBurgers = 100;
+        clickerBurgers = 0;
         autoChefs = 0;
         updateBurgerUI();
         
@@ -266,6 +270,7 @@ async function loadUserDataFromCloud() {
             applyTheme(data.theme || "dark");
             
             userBurgers = data.burgers !== undefined ? data.burgers : 100;
+            clickerBurgers = data.clickerBurgers || 0;
             autoChefs = data.autoChefs || 0;
             updateBurgerUI();
             
@@ -305,6 +310,7 @@ function saveSessionData() {
         avatar: currentUserAvatar,
         username: currentUser,
         burgers: userBurgers,
+        clickerBurgers: clickerBurgers,
         autoChefs: autoChefs
     }, { merge: true }).catch(e => console.error("Error saving data:", e));
 }
@@ -1590,8 +1596,8 @@ function launchGame() {
 }
 
 // --- GAME 0: BURGER CLICKER ---
-function clickCarl() {
-    userBurgers++;
+function clickBurger() {
+    clickerBurgers++;
     updateBurgerUI();
     
     const btn = document.getElementById("carl-clicker-btn");
@@ -1607,14 +1613,26 @@ function clickCarl() {
 
 function buyAutoChef() {
     let cost = Math.floor(50 * Math.pow(1.15, autoChefs));
-    if (userBurgers >= cost) {
-        userBurgers -= cost;
+    if (clickerBurgers >= cost) {
+        clickerBurgers -= cost;
         autoChefs++;
         updateBurgerUI();
         updateAutoChefUI();
         saveSessionData();
     } else {
-        alert("Not enough Burgers! You need " + cost);
+        alert("Not enough Clicker Burgers! You need " + cost);
+    }
+}
+
+function exchangeBurgers() {
+    if (clickerBurgers >= 10000) {
+        clickerBurgers -= 10000;
+        userBurgers += 1;
+        updateBurgerUI();
+        saveSessionData();
+        alert("Success! You traded 10,000 Clicker Burgers for 1 Real Burger!");
+    } else {
+        alert("You need 10,000 Clicker Burgers to make a trade!");
     }
 }
 
