@@ -807,7 +807,7 @@ function updateUsageUI() {
         let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
 
         if (lastDate !== today) {
-            count = 0; // Ensures visual reset if it's a new day
+            count = 0; 
         }
 
         let percent = (count / 10) * 100;
@@ -1630,7 +1630,6 @@ function exchangeBurgers() {
         userBurgers += 1;
         updateBurgerUI();
         saveSessionData();
-        alert("Success! You traded 10,000 Clicker Burgers for 1 Real Burger!");
     } else {
         alert("You need 10,000 Clicker Burgers to make a trade!");
     }
@@ -1692,6 +1691,10 @@ function initBlackjack() {
     const betInput = document.getElementById("bj-bet-input");
     if (betInput) {
         bjBet = parseInt(betInput.value) || 10;
+        if (bjBet < 10) {
+            bjBet = 10;
+            betInput.value = 10;
+        }
         if (userBurgers < bjBet) {
             alert("Not enough Burgers! Play Burger Clicker to earn more.");
             return;
@@ -1733,16 +1736,21 @@ function processBjPayouts() {
     if (bjPayoutsDone) return;
     bjPayoutsDone = true;
     
+    let diff = getDifficulty();
+    let mult = 1.2;
+    if (diff === "medium") mult = 1.3;
+    if (diff === "hard") mult = 1.5;
+
     for (let i = 0; i < bjPlayerHands.length; i++) {
         let res = bjResults[i] || "";
         let bet = bjBets[i] || 0;
         
         if (res.includes("Blackjack! You Win!")) {
-            userBurgers += bet * 2.5; 
+            userBurgers += bet + Math.ceil(bet * (mult + 0.5)); 
         } else if (res.includes("Win")) {
-            userBurgers += bet * 2;
+            userBurgers += bet + Math.ceil(bet * mult);
         } else if (res.includes("Push")) {
-            userBurgers += bet;
+            userBurgers += bet; 
         }
     }
     updateBurgerUI();
@@ -2128,7 +2136,7 @@ const safeDictionary = [
     "SURVIVAL", "MULTIPLAYER", "SERVER", "BEDROCK", "ARENA", "ISLAND",
     "ORAVON", "SCRAPWAGON", "HAVOC", "CARLAI", "DESKTOP", "COMPANION",
     "ELEPHANT", "GIRAFFE", "KANGAROO", "DOLPHIN", "PENGUIN", "CHEETAH",
-    "VOLCANO", "TORNADO", "AVALANCHE", "GALAXY", "ASTEROID", "UNIVERSE",
+    "VOLCANO", "Tornado", "AVALANCHE", "GALAXY", "ASTEROID", "UNIVERSE",
     "BACKPACK", "TELESCOPE", "MICROSCOPE", "COMPASS", "TREASURE", "PYRAMID",
     "GUITAR", "PIANO", "BICYCLE", "SKATEBOARD", "HELICOPTER", "SPACESHIP"
 ];
