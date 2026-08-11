@@ -115,7 +115,7 @@
                     <!-- Messages will populate here -->
                 </div>
                 
-                <!-- INPUT WRAPPER (Auto anchors to the absolute bottom) -->
+                <!-- INPUT WRAPPER -->
                 <div class="input-wrapper">
                     <!-- Floating Image Preview Box -->
                     <div id="image-preview-box" class="image-preview-box">
@@ -156,7 +156,8 @@
                     <div class="settings-row vertical-on-mobile">
                         <label class="settings-label" for="user-api-key">API Key</label>
                         <div class="input-with-help">
-                            <input type="password" id="user-api-key" placeholder="Paste API Key Here" autocomplete="off" onchange="saveSettings()">
+                            <!-- Prevents password manager autofill -->
+                            <input type="password" id="user-api-key" name="user_api_key_field" placeholder="Paste API Key Here" autocomplete="new-password" onchange="saveSettings()">
                             <button type="button" class="help-btn-inline" onclick="toggleApiKeyHelp()">Need Help?</button>
                         </div>
                     </div>
@@ -179,8 +180,8 @@
                     <div class="settings-row vertical-on-mobile">
                         <label class="settings-label">Password</label>
                         <div class="password-inputs">
-                            <input type="password" id="settings-new-pass" placeholder="New Password">
-                            <input type="password" id="settings-confirm-pass" placeholder="Confirm Password">
+                            <input type="password" id="settings-new-pass" placeholder="New Password" autocomplete="new-password">
+                            <input type="password" id="settings-confirm-pass" placeholder="Confirm Password" autocomplete="new-password">
                         </div>
                     </div>
 
@@ -234,7 +235,8 @@
                     <h1>Games</h1>
                 </div>
 
-                <div class="difficulty-picker">
+                <!-- Dynamic Difficulty Picker (Hidden for unsupported games) -->
+                <div class="difficulty-picker" id="difficulty-picker" style="display: none;">
                     <label for="difficulty-select">AI Difficulty</label>
                     <select id="difficulty-select" class="difficulty-dropdown">
                         <option value="easy">Easy</option>
@@ -296,7 +298,7 @@
                     <button class="back-btn" onclick="switchView('view-games')">←</button>
                     <h1>Blackjack</h1>
                 </div>
-                <div id="bj-status" class="game-status">Dealing...</div>
+                <div id="bj-status" class="game-status">Place your bet and Deal!</div>
                 
                 <div id="bj-bet-area" class="bj-bet-area">
                     <label>Bet (🍔): </label>
@@ -315,7 +317,7 @@
                     </div>
                 </div>
 
-                <div class="bj-controls" id="bj-controls">
+                <div class="bj-controls" id="bj-controls" style="display:none;">
                     <div class="bj-controls-row">
                         <button class="bj-btn hit" onclick="bjHit()">Hit</button>
                         <button class="bj-btn stand" onclick="bjStand()">Stand</button>
@@ -326,7 +328,7 @@
                     </div>
                 </div>
 
-                <button class="reset-btn" onclick="initBlackjack()">Deal Again</button>
+                <button class="reset-btn" onclick="initBlackjack()">Deal</button>
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
