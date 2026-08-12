@@ -20,7 +20,7 @@
     <!-- AUTH / SIGN-IN OVERLAY -->
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">
-            <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo">
+            <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo" draggable="false">
             <h2>Welcome Back</h2>
             <p>Sign in to start chatting with Carl</p>
             <form id="login-form" onsubmit="handleLogin(event)">
@@ -32,7 +32,7 @@
             <div class="auth-divider"><span>OR</span></div>
 
             <button type="button" class="google-auth-btn" onclick="signInWithGoogle()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" draggable="false">
                 Continue with Google
             </button>
         </div>
@@ -45,7 +45,7 @@
         <aside class="desktop-sidebar expanded" id="desktop-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
-                    <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="sidebar-logo-watermark">
+                    <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="sidebar-logo-watermark" draggable="false">
                 </div>
                 <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn">❮</button>
             </div>
@@ -53,20 +53,20 @@
             <div class="sidebar-nav">
                 <!-- Expanded PC Buttons -->
                 <div class="full-nav-items">
-                    <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat">
-                    <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search">
-                    <img src="/static/icons/Friends.png" class="pc-nav-btn" onclick="switchView('view-friends')" alt="Friends">
-                    <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games">
-                    <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call">
+                    <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat" draggable="false">
+                    <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
+                    <img src="/static/icons/Friends.png" class="pc-nav-btn" onclick="switchView('view-friends')" alt="Friends" draggable="false">
+                    <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
+                    <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call" draggable="false">
                 </div>
                 
                 <!-- Collapsed PC Buttons -->
                 <div class="mini-nav-items">
-                    <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat">
-                    <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search">
-                    <img src="/static/icons/FriendsIcon.png" class="mini-nav-btn" onclick="switchView('view-friends')" alt="Friends" title="Friends">
-                    <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games">
-                    <img src="/static/icons/CallIcon.png" class="mini-nav-btn" onclick="startCall()" alt="Call" title="Call">
+                    <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat" draggable="false">
+                    <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search" draggable="false">
+                    <img src="/static/icons/FriendsIcon.png" class="mini-nav-btn" onclick="switchView('view-friends')" alt="Friends" title="Friends" draggable="false">
+                    <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games" draggable="false">
+                    <img src="/static/icons/CallIcon.png" class="mini-nav-btn" onclick="startCall()" alt="Call" title="Call" draggable="false">
                 </div>
             </div>
 
@@ -78,7 +78,7 @@
             </div>
             
             <div class="sidebar-footer">
-                <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="switchView('view-settings')">
+                <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="switchView('view-settings')" draggable="false">
             </div>
         </aside>
 
@@ -90,7 +90,7 @@
                 <div class="burger-wallet">
                     🍔 <span id="burger-count">100</span>
                 </div>
-                <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar">
+                <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar" draggable="false">
                 <span id="header-user-name" class="top-profile-name">Guest</span>
             </div>
 
@@ -120,7 +120,7 @@
                 <!-- INPUT WRAPPER -->
                 <div class="input-wrapper">
                     <div id="image-preview-box" class="image-preview-box">
-                        <img id="image-preview-img" class="image-preview-thumb" src="" alt="Preview">
+                        <img id="image-preview-img" class="image-preview-thumb" src="" alt="Preview" draggable="false">
                         <button id="image-preview-close" class="image-preview-close" type="button" onclick="clearPendingImage()">✕</button>
                     </div>
 
@@ -231,15 +231,15 @@
                 <div class="social-footer">
                     <h2>Find Us At</h2>
                     <div class="social-link">
-                        <img src="/static/icons/MailIcon.png" alt="Email" onerror="this.src='/static/icons/CarlAILogo.png'"> 
+                        <img src="/static/icons/MailIcon.png" alt="Email" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> 
                         carlaisupport@gmail.com
                     </div>
                     <div class="social-link">
-                        <img src="/static/icons/YouTubeIcon.png" alt="YouTube" onerror="this.src='/static/icons/CarlAILogo.png'"> 
+                        <img src="/static/icons/YouTubeIcon.png" alt="YouTube" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> 
                         @CarlAIApp
                     </div>
                     <div class="social-link">
-                        <img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'"> 
+                        <img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> 
                         https://discord.gg/kkq7gPPqMB
                     </div>
                 </div>
@@ -257,12 +257,12 @@
 
                 <div class="call-controls">
                     <div class="call-option-row">
-                        <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" />
-                        <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" />
+                        <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" draggable="false" />
+                        <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" draggable="false" />
                     </div>
                     <div class="call-option-row">
-                        <img src="/static/icons/Facetime.png" id="facetime-btn" alt="Facetime" class="call-img-btn" onclick="toggleFacetime()" style="opacity: 0.4;" />
-                        <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn" onclick="endCall()" />
+                        <img src="/static/icons/Facetime.png" id="facetime-btn" alt="Facetime" class="call-img-btn" onclick="toggleFacetime()" style="opacity: 0.4;" draggable="false" />
+                        <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn" onclick="endCall()" draggable="false" />
                     </div>
                 </div>
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
@@ -286,15 +286,15 @@
 
                 <div class="games-scroll-box">
                     <div class="games-grid">
-                        <img src="/static/icons/BurgerClicker.png" class="game-card-img" onclick="selectGame(this, 'Burger Clicker')" alt="Burger Clicker" title="Burger Clicker" />
-                        <img src="/static/icons/TicTacToe.png" class="game-card-img selected" onclick="selectGame(this, 'Tic Tac Toe')" alt="Tic Tac Toe" />
-                        <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" alt="Chess" />
-                        <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" alt="Hangman" />
-                        <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" alt="Connect Four" />
-                        <img src="/static/icons/Checkers.png" class="game-card-img" onclick="selectGame(this, 'Checkers')" alt="Checkers" />
-                        <img src="/static/icons/Battleship.png" class="game-card-img" onclick="selectGame(this, 'Battleship')" alt="Battleship" />
-                        <img src="/static/icons/RockPaperScissors.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" alt="Rock Paper Scissors" />
-                        <img src="/static/icons/BlackJack.png" class="game-card-img" onclick="selectGame(this, 'Blackjack')" alt="Blackjack" />
+                        <img src="/static/icons/BurgerClicker.png" class="game-card-img selected" onclick="selectGame(this, 'Burger Clicker')" alt="Burger Clicker" title="Burger Clicker" draggable="false" />
+                        <img src="/static/icons/TicTacToe.png" class="game-card-img" onclick="selectGame(this, 'Tic Tac Toe')" alt="Tic Tac Toe" draggable="false" />
+                        <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" alt="Chess" draggable="false" />
+                        <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" alt="Hangman" draggable="false" />
+                        <img src="/static/icons/ConnectFour.png" class="game-card-img" onclick="selectGame(this, 'Connect Four')" alt="Connect Four" draggable="false" />
+                        <img src="/static/icons/Checkers.png" class="game-card-img" onclick="selectGame(this, 'Checkers')" alt="Checkers" draggable="false" />
+                        <img src="/static/icons/Battleship.png" class="game-card-img" onclick="selectGame(this, 'Battleship')" alt="Battleship" draggable="false" />
+                        <img src="/static/icons/RockPaperScissors.png" class="game-card-img" onclick="selectGame(this, 'Rock Paper Scissors')" alt="Rock Paper Scissors" draggable="false" />
+                        <img src="/static/icons/BlackJack.png" class="game-card-img" onclick="selectGame(this, 'Blackjack')" alt="Blackjack" draggable="false" />
                     </div>
                 </div>
 
@@ -322,7 +322,7 @@
                         <div class="clicker-score">Burgers: <br><span id="clicker-score-text">0</span></div>
                         
                         <div class="carl-clicker-btn" id="carl-clicker-btn" onclick="clickBurger()">
-                            <img src="/static/icons/BurgerIcon.png" alt="Burger" class="rotating-burger">
+                            <img src="/static/icons/BurgerIcon.png" alt="Burger" class="rotating-burger" draggable="false">
                         </div>
                     </div>
                     
@@ -414,29 +414,29 @@
                     <div class="rps-fighter">
                         <span class="rps-label">Carl</span>
                         <div class="rps-img-wrapper">
-                            <img id="rps-carl-hand" src="/static/icons/CarlRock.png" alt="Carl Hand" class="rps-hand-img" />
+                            <img id="rps-carl-hand" src="/static/icons/CarlRock.png" alt="Carl Hand" class="rps-hand-img" draggable="false" />
                         </div>
                     </div>
                     <div class="rps-vs">VS</div>
                     <div class="rps-fighter">
                         <span class="rps-label">You</span>
                         <div class="rps-img-wrapper">
-                            <img id="rps-player-hand" src="/static/icons/Rock.png" alt="Player Hand" class="rps-hand-img" />
+                            <img id="rps-player-hand" src="/static/icons/Rock.png" alt="Player Hand" class="rps-hand-img" draggable="false" />
                         </div>
                     </div>
                 </div>
 
                 <div class="rps-controls">
                     <button class="rps-choice-btn" onclick="playRps('rock')">
-                        <img src="/static/icons/Rock.png" alt="Rock" />
+                        <img src="/static/icons/Rock.png" alt="Rock" draggable="false" />
                         <span>Rock</span>
                     </button>
                     <button class="rps-choice-btn" onclick="playRps('paper')">
-                        <img src="/static/icons/Paper.png" alt="Paper" />
+                        <img src="/static/icons/Paper.png" alt="Paper" draggable="false" />
                         <span>Paper</span>
                     </button>
                     <button class="rps-choice-btn" onclick="playRps('scissors')">
-                        <img src="/static/icons/Scissors.png" alt="Scissors" />
+                        <img src="/static/icons/Scissors.png" alt="Scissors" draggable="false" />
                         <span>Scissors</span>
                     </button>
                 </div>
