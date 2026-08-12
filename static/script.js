@@ -449,7 +449,106 @@ function switchView(viewId) {
 
     if (viewId === 'view-games') {
         updateDifficultyPickerVisibility();
+    } else if (viewId === 'view-friends') {
+        fetchAllUsers();
     }
+}
+
+// =========================================================================
+// --- FRIENDS & CONTACTS SYSTEM ---
+// =========================================================================
+
+let allUsersCache = [];
+
+async function fetchAllUsers() {
+    const list = document.getElementById("friends-list");
+    if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading friends...</p>";
+
+    // Set Defaults to match the mockups
+    allUsersCache = [
+        { id: "carl_ai", username: "CarlAI", avatar: "/static/icons/CarlAILogo.png" },
+        { id: "white_horse", username: "White Horse", avatar: "/static/icons/HorseWhite.png" },
+        { id: "black_rook", username: "Black Rook", avatar: "/static/icons/RookBlack.png" }
+    ];
+
+    try {
+        if (firebaseUserId && db) {
+            const snapshot = await db.collection("users").get();
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (doc.id !== firebaseUserId && data.username) {
+                    if (!allUsersCache.some(u => u.username === data.username)) {
+                        allUsersCache.push({
+                            id: doc.id,
+                            username: data.username,
+                            avatar: data.avatar || "/static/icons/default-avatar.png"
+                        });
+                    }
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Error fetching real users, falling back to defaults.", err);
+    }
+    
+    renderFriends(allUsersCache);
+}
+
+function searchFriends() {
+    const query = document.getElementById("friend-search-input").value.toLowerCase().trim();
+    if (!query) {
+        renderFriends(allUsersCache);
+        return;
+    }
+    const filtered = allUsersCache.filter(u => u.username.toLowerCase().includes(query));
+    renderFriends(filtered);
+}
+
+function renderFriends(usersList) {
+    const list = document.getElementById("friends-list");
+    if (!list) return;
+    list.innerHTML = "";
+    
+    if (usersList.length === 0) {
+        list.innerHTML = "<p style='color: var(--text-sub);'>No users found.</p>";
+        return;
+    }
+    
+    usersList.forEach(user => {
+        const item = document.createElement("div");
+        item.className = "friend-item";
+        
+        const info = document.createElement("div");
+        info.className = "friend-info";
+        
+        const img = document.createElement("img");
+        img.className = "friend-avatar";
+        img.src = user.avatar;
+        
+        const name = document.createElement("span");
+        name.className = "friend-name";
+        name.innerText = user.username;
+        
+        info.appendChild(img);
+        info.appendChild(name);
+        
+        const btn = document.createElement("button");
+        btn.className = "friend-msg-btn";
+        btn.innerText = "Message";
+        btn.onclick = () => openDirectMessage(user);
+        
+        item.appendChild(info);
+        item.appendChild(btn);
+        list.appendChild(item);
+    });
+}
+
+function openDirectMessage(user) {
+    if (user.id === "carl_ai") {
+        startNewChat();
+        return;
+    }
+    alert(`Direct messaging with ${user.username} is currently in development!`);
 }
 
 function searchChats() {
@@ -1762,7 +1861,7 @@ function initBlackjack() {
         betInput.disabled = true;
     }
 
-    // Force unlock buttons on new game start
+    // Unlocks all buttons instantly upon dealing
     document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
 
     bjDeck = buildDeck();
@@ -1806,12 +1905,10 @@ function processBjPayouts() {
         let res = bjResults[i] || "";
         let bet = bjBets[i] || 0;
         
-        if (res.includes("Blackjack! You Win!")) {
-            userBurgers += Math.floor(bet * 2.5); // Casino 3:2 payout for a natural blackjack
-        } else if (res.includes("Win")) {
-            userBurgers += bet * 2; // Double money back on standard win
+        if (res.includes("Blackjack! You Win!") || res.includes("Win")) {
+            userBurgers += Math.floor(bet * 2); 
         } else if (res.includes("Push")) {
-            userBurgers += bet; // Refund money on push
+            userBurgers += Math.floor(bet); 
         }
     }
     updateBurgerUI();
@@ -1854,15 +1951,11 @@ function renderBj() {
         }
         
     } else {
-        // Calculate Carl's visible score dynamically to prevent ghost phantom scores
         document.getElementById("bj-carl-score").innerText = getBjScore([bjCarlHand[0]]);
 
         let currentHand = bjPlayerHands[bjActiveHand];
         if (currentHand) {
             document.getElementById("bj-controls").style.display = "flex";
-            
-            // Re-enable hit and stand buttons explicitly when the hand is rendered
-            document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
             
             document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
             let canSplit = currentHand.length === 2 && 
@@ -1934,6 +2027,7 @@ function bjHit() {
         document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
     }
     
+    // Instantly show the card to the user BEFORE evaluating bust
     renderBj();
 
     if (score > 21) {
@@ -1968,6 +2062,8 @@ function bjDouble() {
     hand.push(bjDeck.pop());
     
     document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
+    
+    // Instantly display the doubled card before evaluating
     renderBj();
     
     if (getBjScore(hand) > 21) {
@@ -2007,6 +2103,8 @@ function bjNextHand() {
         document.getElementById("bj-controls").style.display = "none";
         bjDealerTurn();
     } else {
+        // Safe unlock for playing the next split hand
+        document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
         renderBj();
     }
 }
