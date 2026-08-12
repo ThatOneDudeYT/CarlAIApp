@@ -8,6 +8,14 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+/* --- PREVENT IMAGE DRAGGING GLOBALLY --- */
+img {
+    -webkit-user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+}
+
 /* --- CUSTOM SLEEK SCROLLBAR (PC) --- */
 ::-webkit-scrollbar {
     width: 8px;
@@ -954,10 +962,13 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* Fix for mobile so it scrolls instead of cutting off */
     flex: 1;
-    gap: 30px;
+    gap: 20px;
     padding-top: 10px;
+    padding-bottom: 20px;
+    overflow-y: auto; /* Allows scrolling on small screens */
+    width: 100%;
 }
 
 .clicker-left {
@@ -974,6 +985,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     gap: 15px;
     width: 100%;
     max-width: 320px;
+    margin-bottom: 20px;
 }
 
 .clicker-stats-row {
@@ -1044,6 +1056,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     display: flex;
     flex-direction: column;
     gap: 10px;
+    width: 100%;
 }
 
 .upgrade-btn {
@@ -1323,6 +1336,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
         display: flex;
         flex-direction: column;
         gap: 15px;
+        margin-bottom: 0;
     }
 
     /* Move "Find Us At" to the absolute bottom-right corner */
