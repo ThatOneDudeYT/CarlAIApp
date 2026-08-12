@@ -595,7 +595,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     position: absolute;
     bottom: 50%; 
     left: 50%;
-    transform: translate(-50%, -80px); /* Lifted high above the centered message bar */
+    transform: translate(-50%, -80px);
     z-index: 5;
     transition: opacity 0.4s ease, transform 0.6s cubic-bezier(0.25, 1, 0.3, 1);
     pointer-events: none;
@@ -681,7 +681,6 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     align-items: center;
 }
 
-/* Slide it directly up to the center during startup! */
 #view-chat.startup-active .input-wrapper {
     bottom: 50%;
     transform: translate(-50%, 50%);
@@ -1019,6 +1018,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     transform: scale(0.97);
 }
 
+
 /* --- OTHER MINIGAMES CSS --- */
 .bj-arena { display: flex; flex-direction: column; gap: 20px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px 10px; margin: auto 0; }
 .bj-area { display: flex; flex-direction: column; align-items: center; gap: 8px; }
@@ -1037,7 +1037,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .bj-controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
 .bj-controls-row { display: flex; gap: 10px; width: 100%; }
 .bj-btn { flex: 1; border: none; border-radius: 12px; padding: 12px; font-size: 20px; cursor: pointer; color: #fff; }
-.bj-btn:disabled { opacity: 0.3; pointer-events: none; }
+.bj-btn:disabled { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
 .bj-btn.hit { background-color: #84cc16; color: #111; } .bj-btn.stand { background-color: #ef4444; } .bj-btn.double { background-color: #3b82f6; } .bj-btn.split { background-color: #9333ea; }
 .bj-bet-area { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
 .bj-bet-area label { color: var(--text-main); font-size: 18px; }
@@ -1101,6 +1101,74 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .chs-tile.target-capture::after { content: ""; position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; background-color: #84cc16; border-radius: 50%; z-index: 4; }
 .chs-piece { width: 85%; height: 85%; object-fit: contain; user-select: none; z-index: 2; pointer-events: none; }
 
+/* --- FRIENDS VIEW --- */
+.friends-search-container {
+    margin: 20px 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+.friends-search-container input {
+    width: 100%;
+    background-color: var(--bg-input);
+    border: 2px solid var(--border-color);
+    border-radius: 20px;
+    padding: 12px 20px;
+    color: var(--text-main);
+    font-size: 18px;
+    outline: none;
+}
+.friends-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    overflow-y: auto;
+    flex: 1;
+    padding-top: 10px;
+}
+.friend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px;
+    border-radius: 16px;
+    transition: background-color 0.2s;
+}
+.friend-item:hover {
+    background-color: var(--bg-input);
+}
+.friend-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.friend-avatar {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+.friend-name {
+    font-size: 22px;
+    color: var(--text-main);
+}
+.friend-msg-btn {
+    background-color: transparent;
+    color: var(--text-main);
+    border: 2px solid var(--border-color);
+    border-radius: 20px;
+    padding: 6px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+.friend-msg-btn:hover {
+    border-color: #a855f7;
+}
+
+
 /* ========================================================================= */
 /* --- DESKTOP UI OVERRIDES --- */
 /* ========================================================================= */
@@ -1154,4 +1222,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     #view-call { justify-content: center; padding-bottom: 40px; }
     .call-controls { margin-top: 60px; }
     .settings-row.vertical-on-mobile { flex-direction: row; align-items: center; }
+    
+    #startup-title { font-size: 80px; }
+    .friend-item { max-width: 500px; }
 }
