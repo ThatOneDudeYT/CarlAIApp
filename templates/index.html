@@ -94,7 +94,7 @@
                 <span id="header-user-name" class="top-profile-name">Guest</span>
             </div>
 
-            <!-- CHAT VIEW -->
+            <!-- CHAT VIEW (For Carl AI) -->
             <div id="view-chat" class="view active startup-active">
 
                 <!-- HUGE GLOWING BACKGROUND -->
@@ -135,6 +135,24 @@
                     
                     <div class="copyright">@Dalted Copyright Issued 2026</div>
                 </div>
+            </div>
+
+            <!-- DIRECT MESSAGING VIEW (For Friends) -->
+            <div id="view-dm" class="view">
+                <div class="dm-header">
+                    <button class="back-btn" onclick="switchView('view-friends')">←</button>
+                    <div id="dm-header-avatar" class="dm-header-avatar-container"></div>
+                    <h1 id="dm-header-name">Friend</h1>
+                </div>
+                
+                <div id="dm-chat-log" class="dm-chat-log">
+                    <!-- DM Messages populate here -->
+                </div>
+                
+                <div class="dm-input-wrapper">
+                    <input type="text" id="dm-input" placeholder="Message..." autocomplete="off">
+                </div>
+                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
             <!-- FRIENDS VIEW -->
