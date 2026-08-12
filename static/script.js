@@ -26,7 +26,7 @@ let chatsHistory = [];
 let activeChatId = null;
 let chatHistory = [];  
 
-let selectedGame = "Tic Tac Toe";
+let selectedGame = "Burger Clicker";
 let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
@@ -569,6 +569,7 @@ function renderFriends(usersList) {
         const img = document.createElement("img");
         img.className = "friend-avatar";
         img.src = user.avatar;
+        img.draggable = false;
         
         const name = document.createElement("span");
         name.className = "friend-name";
@@ -840,6 +841,7 @@ function renderChatHistorySidebar() {
             pinIcon.className = "pinned-icon-img";
             pinIcon.src = "/static/icons/PinIcon.png"; 
             pinIcon.alt = "Pinned";
+            pinIcon.draggable = false;
             titleContainer.appendChild(pinIcon);
         }
         
@@ -1117,20 +1119,11 @@ async function sendMessage() {
     
     if (!text && !pendingImageBase64) return;
 
-    // --- CHEAT COMMAND: /burgers <number> ---
-    if (text.toLowerCase().startsWith("/burgers")) {
-        const parts = text.split(" ");
-        const amount = parseInt(parts[1], 10);
+    // --- CHEAT COMMAND: /whomadeyou ---
+    if (text.toLowerCase().trim() === "/whomadeyou") {
         hideStartupScreen();
-        if (!isNaN(amount)) {
-            userBurgers += amount;
-            if (userBurgers < 0) userBurgers = 0;
-            updateBurgerUI();
-            saveSessionData();
-            appendMessage(`Added ${amount} Burgers! 🍔 Current balance: ${userBurgers}`, "carl");
-        } else {
-            appendMessage("Invalid command format. Use: /burgers <amount> (e.g. /burgers 500)", "carl");
-        }
+        appendMessage(text, "user", pendingImageSrc);
+        appendMessage("Emmett Breen", "carl");
         input.value = "";
         clearPendingImage();
         return;
@@ -1249,7 +1242,9 @@ async function sendMessage() {
         saveSessionData();
 
     } catch (err) {
-        textNode.innerText = "Network error.";
+        if (err.name !== 'AbortError') {
+            console.error("Call response error:", err);
+        }
     }
 }
 
@@ -1269,6 +1264,7 @@ function appendMessage(msg, sender, imgSrc = null) {
         const img = document.createElement("img");
         img.src = imgSrc;
         img.className = "chat-image";
+        img.draggable = false;
         bubble.appendChild(img);
     }
     
@@ -3255,6 +3251,7 @@ function chsRenderBoard() {
                 const piece = document.createElement("img");
                 piece.className = "chs-piece";
                 piece.src = chsIcons[p];
+                piece.draggable = false;
                 tile.appendChild(piece);
             }
 
