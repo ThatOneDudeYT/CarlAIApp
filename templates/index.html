@@ -139,20 +139,31 @@
 
             <!-- FRIENDS VIEW -->
             <div id="view-friends" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-chat')">←</button>
-                    <h1>Friends</h1>
-                </div>
-                
                 <div class="friends-search-container">
-                    <input type="text" id="friend-search-input" placeholder="Search Usernames" autocomplete="off" oninput="searchFriends()">
+                    <input type="text" id="friend-search-input" placeholder="Make Friends" autocomplete="off" oninput="searchFriends()">
                 </div>
                 
-                <div class="friends-list-container" id="friends-list">
-                    <!-- Friends will be dynamically loaded here -->
+                <div class="friends-split-view">
+                    <!-- Left Column: Search & Add -->
+                    <div class="friends-column">
+                        <h2 class="friends-col-title">Find People</h2>
+                        <div id="find-people-list" class="friends-list-container">
+                            <!-- Populated Dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="friends-divider"></div>
+                    
+                    <!-- Right Column: Current Friends -->
+                    <div class="friends-column">
+                        <h2 class="friends-col-title">Friends</h2>
+                        <div id="my-friends-list" class="friends-list-container">
+                            <!-- Populated Dynamically -->
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
+                <div class="copyright" style="margin-top: auto;">@Dalted Copyright Issued 2026</div>
             </div>
 
             <!-- SETTINGS VIEW TAB -->
@@ -335,15 +346,15 @@
                             </button>
                             <button class="upgrade-btn" onclick="buyUpgrade('chef')">
                                 Buy Auto-Chef (Costs <span id="chef-cost">50</span> 🍔)
-                                <div class="upgrade-desc">Generates 1 🍔/sec | Owned: <span id="chef-count">0</span></div>
+                                <div class="upgrade-desc">Generates Base 1 🍔/sec | Owned: <span id="chef-count">0</span></div>
                             </button>
                             <button class="upgrade-btn" onclick="buyUpgrade('stand')">
                                 Buy Burger Stand (Costs <span id="stand-cost">500</span> 🍔)
-                                <div class="upgrade-desc">Generates 10 🍔/sec | Owned: <span id="stand-count">0</span></div>
+                                <div class="upgrade-desc">Generates Base 10 🍔/sec | Owned: <span id="stand-count">0</span></div>
                             </button>
                             <button class="upgrade-btn" onclick="buyUpgrade('factory')">
                                 Buy Burger Factory (Costs <span id="factory-cost">5000</span> 🍔)
-                                <div class="upgrade-desc">Generates 100 🍔/sec | Owned: <span id="factory-count">0</span></div>
+                                <div class="upgrade-desc">Generates Base 100 🍔/sec | Owned: <span id="factory-count">0</span></div>
                             </button>
                         </div>
 
@@ -359,7 +370,7 @@
                     </div>
                 </div>
 
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
+                <div class="copyright" style="margin-top: auto;">@Dalted Copyright Issued 2026</div>
             </div>
 
             <!-- BLACKJACK VIEW -->
