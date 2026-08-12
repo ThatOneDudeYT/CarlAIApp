@@ -1762,6 +1762,9 @@ function initBlackjack() {
         betInput.disabled = true;
     }
 
+    // Force unlock buttons on new game start
+    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
+
     bjDeck = buildDeck();
     bjPlayerHands = [ [bjDeck.pop(), bjDeck.pop()] ];
     bjCarlHand = [bjDeck.pop(), bjDeck.pop()];
@@ -1804,11 +1807,11 @@ function processBjPayouts() {
         let bet = bjBets[i] || 0;
         
         if (res.includes("Blackjack! You Win!")) {
-            userBurgers += Math.ceil(bet * 2.5); 
+            userBurgers += Math.floor(bet * 2.5); // Casino 3:2 payout for a natural blackjack
         } else if (res.includes("Win")) {
-            userBurgers += Math.ceil(bet * 2);
+            userBurgers += bet * 2; // Double money back on standard win
         } else if (res.includes("Push")) {
-            userBurgers += Math.ceil(bet); 
+            userBurgers += bet; // Refund money on push
         }
     }
     updateBurgerUI();
@@ -1851,9 +1854,16 @@ function renderBj() {
         }
         
     } else {
+        // Calculate Carl's visible score dynamically to prevent ghost phantom scores
+        document.getElementById("bj-carl-score").innerText = getBjScore([bjCarlHand[0]]);
+
         let currentHand = bjPlayerHands[bjActiveHand];
         if (currentHand) {
             document.getElementById("bj-controls").style.display = "flex";
+            
+            // Re-enable hit and stand buttons explicitly when the hand is rendered
+            document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
+            
             document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
             let canSplit = currentHand.length === 2 && 
                            getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && 
