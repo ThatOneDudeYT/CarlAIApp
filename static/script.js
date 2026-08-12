@@ -34,20 +34,37 @@ let pendingImageSrc = null;
 // --- BURGER ECONOMY STATE ---
 let userBurgers = 100;     // Real Burgers for Blackjack
 let clickerBurgers = 0;    // Fake Burgers for the clicker game
-let autoChefs = 0;
+let rebirths = 0;
+let clickPower = 1;
+let autoChefs = 0;         // 1 BPS
+let burgerStands = 0;      // 10 BPS
+let burgerFactories = 0;   // 100 BPS
+
+function getMultiplier() {
+    return 1 + (rebirths * 1.0); // Each rebirth is +100%
+}
+
+function getClickValue() {
+    return clickPower * getMultiplier();
+}
+
+function getBps() {
+    return (autoChefs * 1 + burgerStands * 10 + burgerFactories * 100) * getMultiplier();
+}
 
 function updateBurgerUI() {
     const headerCount = document.getElementById("burger-count");
-    if(headerCount) headerCount.innerText = Math.floor(userBurgers);
+    if(headerCount) headerCount.innerText = Math.floor(userBurgers).toLocaleString();
     
     const clickerCount = document.getElementById("clicker-score-text");
-    if(clickerCount) clickerCount.innerText = Math.floor(clickerBurgers);
+    if(clickerCount) clickerCount.innerText = Math.floor(clickerBurgers).toLocaleString();
 }
 
-// Auto-Chef Loop
+// Global Idle Loop
 setInterval(() => {
-    if (autoChefs > 0) {
-        clickerBurgers += autoChefs;
+    let bps = getBps();
+    if (bps > 0) {
+        clickerBurgers += bps;
         updateBurgerUI();
     }
 }, 1000);
@@ -218,15 +235,27 @@ function handleLogin(e) {
     const email = document.getElementById('auth-username').value.trim();
     const pass = document.getElementById('auth-password').value;
     
-    auth.signInWithEmailAndPassword(email, pass).catch(error => {
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
-            auth.createUserWithEmailAndPassword(email, pass).catch(err => {
-                alert("Sign In / Sign Up Error: " + err.message);
-            });
-        } else {
-            alert(error.message);
-        }
-    });
+    auth.signInWithEmailAndPassword(email, pass)
+        .then((userCredential) => {
+            if (!userCredential.user.emailVerified) {
+                alert("Please check your inbox to verify your email address.");
+            }
+        })
+        .catch(error => {
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
+                auth.createUserWithEmailAndPassword(email, pass)
+                    .then((userCredential) => {
+                        userCredential.user.sendEmailVerification().then(() => {
+                            alert("Account created! A verification link has been sent to your email. Check your spam folder just in case.");
+                        });
+                    })
+                    .catch(err => {
+                        alert("Sign Up Error: " + err.message);
+                    });
+            } else {
+                alert(error.message);
+            }
+        });
 }
 
 function handleSignOut() {
@@ -238,9 +267,14 @@ function handleSignOut() {
         chatHistory = [];
         activeChatId = null;
         
+        // Reset local economy safely
         userBurgers = 100;
         clickerBurgers = 0;
         autoChefs = 0;
+        burgerStands = 0;
+        burgerFactories = 0;
+        clickPower = 1;
+        rebirths = 0;
         updateBurgerUI();
         
         updateProfileUI();
@@ -269,6 +303,11 @@ async function loadUserDataFromCloud() {
             userBurgers = data.burgers !== undefined ? data.burgers : 100;
             clickerBurgers = data.clickerBurgers || 0;
             autoChefs = data.autoChefs || 0;
+            burgerStands = data.burgerStands || 0;
+            burgerFactories = data.burgerFactories || 0;
+            clickPower = data.clickPower || 1;
+            rebirths = data.rebirths || 0;
+            
             updateBurgerUI();
             
             if (data.avatar) currentUserAvatar = data.avatar;
@@ -308,7 +347,11 @@ function saveSessionData() {
         username: currentUser,
         burgers: userBurgers,
         clickerBurgers: clickerBurgers,
-        autoChefs: autoChefs
+        autoChefs: autoChefs,
+        burgerStands: burgerStands,
+        burgerFactories: burgerFactories,
+        clickPower: clickPower,
+        rebirths: rebirths
     }, { merge: true }).catch(e => console.error("Error saving data:", e));
 }
 
@@ -451,6 +494,8 @@ function switchView(viewId) {
         updateDifficultyPickerVisibility();
     } else if (viewId === 'view-friends') {
         fetchAllUsers();
+    } else if (viewId === 'view-burgerclicker') {
+        updateUpgradesUI();
     }
 }
 
@@ -1701,7 +1746,7 @@ function updateDifficultyPickerVisibility() {
 function launchGame() {
     if (selectedGame === "Burger Clicker") {
         switchView("view-burgerclicker");
-        updateAutoChefUI();
+        updateUpgradesUI();
     } else if (selectedGame === "Tic Tac Toe") {
         switchView("view-tictactoe");
         initTicTacToe();
@@ -1733,13 +1778,15 @@ function launchGame() {
 
 // --- GAME 0: BURGER CLICKER ---
 function clickBurger() {
-    clickerBurgers++;
+    let mult = getMultiplier();
+    let amount = clickPower * mult;
+    clickerBurgers += amount;
     updateBurgerUI();
     
     const btn = document.getElementById("carl-clicker-btn");
     const floater = document.createElement("div");
     floater.className = "floating-number";
-    floater.innerText = "+1";
+    floater.innerText = "+" + amount.toLocaleString();
     floater.style.left = (Math.random() * 80 + 10) + "%";
     floater.style.top = (Math.random() * 80 + 10) + "%";
     btn.appendChild(floater);
@@ -1747,17 +1794,29 @@ function clickBurger() {
     setTimeout(() => floater.remove(), 1000);
 }
 
-function buyAutoChef() {
-    let cost = Math.floor(50 * Math.pow(1.15, autoChefs));
-    if (clickerBurgers >= cost) {
-        clickerBurgers -= cost;
-        autoChefs++;
-        updateBurgerUI();
-        updateAutoChefUI();
-        saveSessionData();
-    } else {
-        alert("Not enough Clicker Burgers! You need " + cost);
+function buyUpgrade(type) {
+    let cost = 0;
+    if (type === 'click') {
+        cost = Math.floor(100 * Math.pow(1.5, clickPower - 1));
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; }
+        else { alert("Not enough Clicker Burgers!"); return; }
+    } else if (type === 'chef') {
+        cost = Math.floor(50 * Math.pow(1.15, autoChefs));
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; }
+        else { alert("Not enough Clicker Burgers!"); return; }
+    } else if (type === 'stand') {
+        cost = Math.floor(500 * Math.pow(1.15, burgerStands));
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; }
+        else { alert("Not enough Clicker Burgers!"); return; }
+    } else if (type === 'factory') {
+        cost = Math.floor(5000 * Math.pow(1.15, burgerFactories));
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
+        else { alert("Not enough Clicker Burgers!"); return; }
     }
+    
+    updateBurgerUI();
+    updateUpgradesUI();
+    saveSessionData();
 }
 
 function exchangeBurgers() {
@@ -1771,13 +1830,42 @@ function exchangeBurgers() {
     }
 }
 
-function updateAutoChefUI() {
-    let cost = Math.floor(50 * Math.pow(1.15, autoChefs));
-    let costEl = document.getElementById("auto-chef-cost");
-    if(costEl) costEl.innerText = cost;
+function rebirth() {
+    if (clickerBurgers >= 1000000000000) {
+        clickerBurgers = 0;
+        autoChefs = 0;
+        burgerStands = 0;
+        burgerFactories = 0;
+        clickPower = 1;
+        rebirths++;
+        alert("You have REBIRTHED! All your progress is reset, but you now earn +100% more burgers permanently!");
+        updateBurgerUI();
+        updateUpgradesUI();
+        saveSessionData();
+    } else {
+        alert("You need 1 Trillion Clicker Burgers to Rebirth!");
+    }
+}
+
+function updateUpgradesUI() {
+    if(document.getElementById("click-cost")) document.getElementById("click-cost").innerText = Math.floor(100 * Math.pow(1.5, clickPower - 1)).toLocaleString();
+    if(document.getElementById("click-power-count")) document.getElementById("click-power-count").innerText = clickPower.toLocaleString();
     
-    let countEl = document.getElementById("auto-chef-count");
-    if(countEl) countEl.innerText = autoChefs;
+    if(document.getElementById("chef-cost")) document.getElementById("chef-cost").innerText = Math.floor(50 * Math.pow(1.15, autoChefs)).toLocaleString();
+    if(document.getElementById("chef-count")) document.getElementById("chef-count").innerText = autoChefs.toLocaleString();
+    
+    if(document.getElementById("stand-cost")) document.getElementById("stand-cost").innerText = Math.floor(500 * Math.pow(1.15, burgerStands)).toLocaleString();
+    if(document.getElementById("stand-count")) document.getElementById("stand-count").innerText = burgerStands.toLocaleString();
+    
+    if(document.getElementById("factory-cost")) document.getElementById("factory-cost").innerText = Math.floor(5000 * Math.pow(1.15, burgerFactories)).toLocaleString();
+    if(document.getElementById("factory-count")) document.getElementById("factory-count").innerText = burgerFactories.toLocaleString();
+
+    let bps = getBps();
+    let bpsText = document.getElementById("bps-text");
+    if(bpsText) bpsText.innerText = bps.toLocaleString();
+    
+    let rebirthsText = document.getElementById("rebirth-count");
+    if(rebirthsText) rebirthsText.innerText = rebirths.toLocaleString();
 }
 
 // --- GAME 1: BLACKJACK ---
@@ -1861,7 +1949,6 @@ function initBlackjack() {
         betInput.disabled = true;
     }
 
-    // Unlocks all buttons instantly upon dealing
     document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
 
     bjDeck = buildDeck();
@@ -1957,6 +2044,8 @@ function renderBj() {
         if (currentHand) {
             document.getElementById("bj-controls").style.display = "flex";
             
+            document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
+            
             document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
             let canSplit = currentHand.length === 2 && 
                            getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && 
@@ -2027,7 +2116,6 @@ function bjHit() {
         document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
     }
     
-    // Instantly show the card to the user BEFORE evaluating bust
     renderBj();
 
     if (score > 21) {
@@ -2063,7 +2151,6 @@ function bjDouble() {
     
     document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
     
-    // Instantly display the doubled card before evaluating
     renderBj();
     
     if (getBjScore(hand) > 21) {
@@ -2103,7 +2190,6 @@ function bjNextHand() {
         document.getElementById("bj-controls").style.display = "none";
         bjDealerTurn();
     } else {
-        // Safe unlock for playing the next split hand
         document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
         renderBj();
     }
