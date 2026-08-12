@@ -394,10 +394,10 @@ input:checked + .slider:before { transform: translateX(28px); }
     display: flex;
     align-items: center;
     gap: 12px;
-    font-family: monospace, sans-serif;
-    font-size: 18px;
+    font-family: Arial, Helvetica, sans-serif; /* Makes it regular sans-serif, not bold */
+    font-size: 16px;
     color: var(--text-main);
-    font-weight: bold;
+    font-weight: normal; 
 }
 .social-link img {
     width: 28px;
@@ -948,6 +948,8 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .games-footer { display: flex; flex-direction: column; align-items: center; width: 100%; }
 
 /* --- BURGER CLICKER CSS --- */
+
+/* Mobile fallback layout first */
 .clicker-arena {
     display: flex;
     flex-direction: column;
@@ -955,6 +957,23 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     justify-content: center;
     flex: 1;
     gap: 30px;
+    padding-top: 10px;
+}
+
+.clicker-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.clicker-right {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 320px;
 }
 
 .clicker-stats-row {
@@ -970,6 +989,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .clicker-score {
     font-size: 42px;
     color: #a855f7;
+    text-align: center;
     text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
 }
 
@@ -977,20 +997,26 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     width: 200px;
     height: 200px;
     cursor: pointer;
-    transition: transform 0.05s;
     user-select: none;
     position: relative;
+    /* Put the active scale here on the wrapper, not on the rotating img! */
+    transition: transform 0.05s;
+}
+.carl-clicker-btn:active {
+    transform: scale(0.9);
 }
 
-.carl-clicker-btn img {
+.rotating-burger {
     width: 100%;
     height: 100%;
     object-fit: contain;
     filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+    animation: spinBurger 15s linear infinite;
 }
 
-.carl-clicker-btn:active {
-    transform: scale(0.9);
+@keyframes spinBurger {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .floating-number {
@@ -1009,18 +1035,15 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 }
 
 .clicker-upgrades {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
     background-color: var(--bg-input);
-    padding: 20px;
+    padding: 15px;
     border-radius: 16px;
     border: 1px solid var(--border-color);
-    width: 100%;
-    max-width: 300px;
     max-height: 350px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .upgrade-btn {
@@ -1034,9 +1057,14 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     width: 100%;
     transition: background-color 0.2s;
 }
-
 .upgrade-btn:hover { background-color: #a855f7; }
 .upgrade-desc { font-size: 12px; opacity: 0.8; margin-top: 4px; font-weight: normal; }
+
+.clicker-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 
 .exchange-btn {
     background-color: #84cc16;
@@ -1049,14 +1077,9 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     cursor: pointer;
     width: 100%;
     transition: transform 0.1s, background-color 0.2s;
-    margin-top: 10px;
 }
-.exchange-btn:hover {
-    background-color: #a3e635;
-}
-.exchange-btn:active {
-    transform: scale(0.97);
-}
+.exchange-btn:hover { background-color: #a3e635; }
+.exchange-btn:active { transform: scale(0.97); }
 
 .rebirth-btn {
     background-color: #f59e0b;
@@ -1069,7 +1092,6 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     cursor: pointer;
     width: 100%;
     transition: transform 0.1s, background-color 0.2s;
-    margin-top: 10px;
 }
 .rebirth-btn:hover { background-color: #fbbf24; }
 .rebirth-btn:active { transform: scale(0.97); }
@@ -1279,4 +1301,37 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     
     #startup-title { font-size: 80px; }
     .friend-item { max-width: 500px; }
+
+    /* Desktop layout for Clicker Game */
+    .clicker-arena {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-evenly;
+        gap: 40px;
+        padding: 0 40px;
+    }
+    .clicker-left {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+    }
+    .clicker-right {
+        width: 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* Move "Find Us At" to the absolute bottom-right corner */
+    .social-footer {
+        position: absolute;
+        bottom: 30px;
+        right: 40px;
+        border-top: none;
+        margin-top: 0;
+        padding-top: 0;
+    }
 }
