@@ -231,15 +231,15 @@
                 <div class="social-footer">
                     <h2>Find Us At</h2>
                     <div class="social-link">
-                        <img src="/static/icons/Gmail.png" alt="Email" onerror="this.src='/static/icons/CarlAILogo.png'"> 
+                        <img src="/static/icons/MailIcon.png" alt="Email" onerror="this.src='/static/icons/CarlAILogo.png'"> 
                         carlaisupport@gmail.com
                     </div>
                     <div class="social-link">
-                        <img src="/static/icons/YouTube.png" alt="YouTube" onerror="this.src='/static/icons/CarlAILogo.png'"> 
+                        <img src="/static/icons/YouTubeIcon.png" alt="YouTube" onerror="this.src='/static/icons/CarlAILogo.png'"> 
                         @CarlAIApp
                     </div>
                     <div class="social-link">
-                        <img src="/static/icons/Discord.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'"> 
+                        <img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'"> 
                         https://discord.gg/kkq7gPPqMB
                     </div>
                 </div>
@@ -312,42 +312,50 @@
                 </div>
                 
                 <div class="clicker-arena">
-                    <div class="clicker-stats-row">
-                        <div>BPS: <span id="bps-text">0</span></div>
-                        <div>Rebirths: <span id="rebirth-count">0</span></div>
-                    </div>
-                    
-                    <div class="clicker-score">Burgers: <span id="clicker-score-text">0</span></div>
-                    
-                    <div class="carl-clicker-btn" id="carl-clicker-btn" onclick="clickBurger()">
-                        <img src="/static/icons/BurgerIcon.png" alt="Burger">
-                    </div>
-                    
-                    <div class="clicker-upgrades">
-                        <button class="upgrade-btn" onclick="buyUpgrade('click')">
-                            Upgrade Click (Costs <span id="click-cost">100</span> 🍔)
-                            <div class="upgrade-desc">Current: <span id="click-power-count">1</span> 🍔/click</div>
-                        </button>
-                        <button class="upgrade-btn" onclick="buyUpgrade('chef')">
-                            Buy Auto-Chef (Costs <span id="chef-cost">50</span> 🍔)
-                            <div class="upgrade-desc">Generates 1 🍔/sec | Owned: <span id="chef-count">0</span></div>
-                        </button>
-                        <button class="upgrade-btn" onclick="buyUpgrade('stand')">
-                            Buy Burger Stand (Costs <span id="stand-cost">500</span> 🍔)
-                            <div class="upgrade-desc">Generates 10 🍔/sec | Owned: <span id="stand-count">0</span></div>
-                        </button>
-                        <button class="upgrade-btn" onclick="buyUpgrade('factory')">
-                            Buy Burger Factory (Costs <span id="factory-cost">5000</span> 🍔)
-                            <div class="upgrade-desc">Generates 100 🍔/sec | Owned: <span id="factory-count">0</span></div>
-                        </button>
+                    <!-- Left Panel: Burger & Stats -->
+                    <div class="clicker-left">
+                        <div class="clicker-stats-row">
+                            <div>BPS: <span id="bps-text">0</span></div>
+                            <div>Rebirths: <span id="rebirth-count">0</span></div>
+                        </div>
                         
-                        <button class="exchange-btn" onclick="exchangeBurgers()">
-                            Trade 10,000 🍔 for 1 Real 🍔
-                        </button>
-                        <button class="rebirth-btn" onclick="rebirth()">
-                            Rebirth (Cost: 1 Trillion 🍔)
-                            <div class="upgrade-desc">+100% Boost to All Production</div>
-                        </button>
+                        <div class="clicker-score">Burgers: <br><span id="clicker-score-text">0</span></div>
+                        
+                        <div class="carl-clicker-btn" id="carl-clicker-btn" onclick="clickBurger()">
+                            <img src="/static/icons/BurgerIcon.png" alt="Burger" class="rotating-burger">
+                        </div>
+                    </div>
+                    
+                    <!-- Right Panel: Upgrades -->
+                    <div class="clicker-right">
+                        <div class="clicker-upgrades">
+                            <button class="upgrade-btn" onclick="buyUpgrade('click')">
+                                Upgrade Click (Costs <span id="click-cost">100</span> 🍔)
+                                <div class="upgrade-desc">Current: <span id="click-power-count">1</span> 🍔/click</div>
+                            </button>
+                            <button class="upgrade-btn" onclick="buyUpgrade('chef')">
+                                Buy Auto-Chef (Costs <span id="chef-cost">50</span> 🍔)
+                                <div class="upgrade-desc">Generates 1 🍔/sec | Owned: <span id="chef-count">0</span></div>
+                            </button>
+                            <button class="upgrade-btn" onclick="buyUpgrade('stand')">
+                                Buy Burger Stand (Costs <span id="stand-cost">500</span> 🍔)
+                                <div class="upgrade-desc">Generates 10 🍔/sec | Owned: <span id="stand-count">0</span></div>
+                            </button>
+                            <button class="upgrade-btn" onclick="buyUpgrade('factory')">
+                                Buy Burger Factory (Costs <span id="factory-cost">5000</span> 🍔)
+                                <div class="upgrade-desc">Generates 100 🍔/sec | Owned: <span id="factory-count">0</span></div>
+                            </button>
+                        </div>
+
+                        <div class="clicker-actions">
+                            <button class="exchange-btn" onclick="exchangeBurgers()">
+                                Trade 10,000 🍔 for 1 Real 🍔
+                            </button>
+                            <button class="rebirth-btn" onclick="rebirth()">
+                                Rebirth (Cost: 1 Trillion 🍔)
+                                <div class="upgrade-desc">+100% Boost to All Production</div>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
