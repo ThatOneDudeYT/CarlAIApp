@@ -1030,7 +1030,11 @@ function updateUsageUI() {
         let lastDate = localStorage.getItem("carl_last_msg_date");
         let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
 
-        if (lastDate !== today) count = 0;
+        if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
+        if (count >= 10 && !hasValidApiKey()) {
+            alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
+            switchView('view-settings'); return false;
+        }
         let percent = (count / 10) * 100;
         if (percent > 100) percent = 100;
         fillEl.style.width = `${percent}%`;
@@ -1126,19 +1130,7 @@ if (sendBtn) sendBtn.addEventListener("click", sendMessage);
 const userInput = document.getElementById("user-input");
 if (userInput) { userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); }); }
 
-function checkDailyMessageLimit() {
-    const today = new Date().toISOString().split('T')[0];
-    let lastDate = localStorage.getItem("carl_last_msg_date");
-    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-    if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
-    if (count >= 10 && !hasValidApiKey()) {
-        alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
-        switchView('view-settings'); return false;
-    }
-    return true;
-}
-
-// --- CALL FEATURE (omitted specific repetitive code here for compactness, assuming unchanged functionality) ---
+// --- CALL FEATURE ---
 let isCallActive = false; let isCallConnected = false; let isMuted = false; let isSpeakerOn = true;
 let callTimerInterval = null; let callSeconds = 0; let ringTimeout = null; let ringInterval = null;
 let audioCtx = null; let recognition = null; let callAbortController = null; let carlVoice = null;
