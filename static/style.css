@@ -1388,7 +1388,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     align-items: center;
     gap: 16px;
     flex: 1;
-    min-width: 0;
+    min-width: 0; /* allows text truncation */
 }
 .friend-avatar {
     width: 48px;
@@ -1487,7 +1487,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     
     #startup-title { font-size: 80px; }
 
-    .back-btn { margin-left: 0; } 
+    .back-btn { margin-left: 0; } /* Reset mobile margin */
 
     /* Desktop layout for Clicker Game */
     .clicker-arena {
