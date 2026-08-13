@@ -1158,6 +1158,74 @@ function toggleSpeaker() { isSpeakerOn = !isSpeakerOn; const btn = document.getE
 function speakCarl(text) { if (!('speechSynthesis' in window) || !isCallActive) return; let cleanText = text.replace(/```[\s\S]*?```/g, '').replace(/`[^`]*`/g, '').replace(/[*_#~]/g, '').trim(); if (!cleanText) return; const utterance = new SpeechSynthesisUtterance(cleanText); if (!carlVoice) loadCarlVoice(); if (carlVoice) utterance.voice = carlVoice; utterance.rate = 1.05; utterance.pitch = 1.0; utterance.volume = isSpeakerOn ? 1.0 : 0.15; window.speechSynthesis.speak(utterance); }
 function initSpeechRecognition() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { document.getElementById("call-status").innerText = "Browser doesn't support mic!"; return; } recognition = new SpeechRecognition(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US'; recognition.onresult = async (event) => { if (isMuted || !isCallActive || !isCallConnected) return; let interimTranscript = ''; let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript; else interimTranscript += event.results[i][0].transcript; } let combined = finalTranscript + interimTranscript; if (combined.trim().length > 3 && window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); } if (finalTranscript.trim().length > 0) { const userQuery = finalTranscript.trim(); window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); document.getElementById("call-status").innerText = "Carl is thinking..."; await processCallUserMessage(userQuery); } }; recognition.onerror = (e) => { if (e.error === 'not-allowed') { document.getElementById("call-status").innerText = "Mic Permission Denied"; } }; recognition.onend = () => { if (isCallActive && isCallConnected && !isMuted) { try { recognition.start(); } catch(e) {} } }; try { recognition.start(); } catch(e) {} }
 
+// =========================================================================
+// --- MISSING HELPER FUNCTIONS & BUG FIXES ---
+// =========================================================================
+
+function checkDailyMessageLimit() {
+    if (hasValidApiKey()) return true;
+    
+    const count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+    const today = new Date().toISOString().split('T')[0];
+    const lastDate = localStorage.getItem("carl_last_msg_date");
+    
+    if (lastDate === today && count >= 10) {
+        alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
+        switchView('view-settings');
+        return false;
+    }
+    return true;
+}
+
+function updateDifficultyPickerVisibility() {
+    const picker = document.getElementById("difficulty-picker");
+    if (picker) {
+        picker.style.display = "flex"; 
+    }
+}
+
+function updateUpgradesUI() {
+    console.log("Upgrades UI updated.");
+}
+
+function selectGame(element, gameName) {
+    document.querySelectorAll('.game-card-img').forEach(img => {
+        img.classList.remove('selected');
+    });
+    element.classList.add('selected');
+    selectedGame = gameName;
+}
+
+function launchGame() {
+    if (selectedGame === "Burger Clicker") {
+        switchView('view-burgerclicker');
+    } else if (selectedGame === "Tic Tac Toe") {
+        switchView('view-tictactoe');
+        if (typeof initTicTacToe === 'function') initTicTacToe();
+    } else if (selectedGame === "Chess") {
+        switchView('view-chess');
+        if (typeof initChess === 'function') initChess();
+    } else if (selectedGame === "Hangman") {
+        switchView('view-hangman');
+        if (typeof initHangman === 'function') initHangman();
+    } else if (selectedGame === "Connect Four") {
+        switchView('view-connectfour');
+        if (typeof initConnectFour === 'function') initConnectFour();
+    } else if (selectedGame === "Checkers") {
+        switchView('view-checkers');
+        if (typeof initCheckers === 'function') initCheckers();
+    } else if (selectedGame === "Battleship") {
+        switchView('view-battleship');
+        if (typeof initBattleship === 'function') initBattleship();
+    } else if (selectedGame === "Rock Paper Scissors") {
+        switchView('view-rps');
+        if (typeof initRps === 'function') initRps();
+    } else if (selectedGame === "Blackjack") {
+        switchView('view-blackjack');
+        if (typeof initBlackjack === 'function') initBlackjack();
+    }
+}
+
 // --- GAMES LOGIC ---
 function initTicTacToe() { board = ["", "", "", "", "", "", "", "", ""]; playerTurn = true; document.getElementById("ttt-status").innerText = "Your Turn (X)"; document.getElementById("ttt-status").style.color = "#fff"; document.querySelectorAll(".ttt-cell").forEach(cell => { cell.innerText = ""; cell.className = "ttt-cell"; }); }
 function makeMove(index) { if (board[index] === "" && playerTurn) { board[index] = "X"; updateCell(index, "X"); if (checkWin("X")) { document.getElementById("ttt-status").innerText = "You Win!"; document.getElementById("ttt-status").style.color = "#84cc16"; playerTurn = false; return; } else if (!board.includes("")) { document.getElementById("ttt-status").innerText = "It's a Draw!"; return; } playerTurn = false; document.getElementById("ttt-status").innerText = "Carl is thinking..."; setTimeout(carlMove, 500); } }
