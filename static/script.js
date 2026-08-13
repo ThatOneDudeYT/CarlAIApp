@@ -31,6 +31,11 @@ let pendingImageBase64 = null;
 let pendingImageMime = null;
 let pendingImageSrc = null;
 
+let pendingDmImageBase64 = null;
+let pendingDmImageMime = null;
+let pendingDmImageSrc = null;
+let currentDmUser = null; 
+
 let isDM = false;
 let currentDmUnsubscribe = null;
 
@@ -286,6 +291,7 @@ function handleSignOut() {
         myFriends = [];
         myRequests = [];
         mySentRequests = [];
+        currentDmUser = null;
         
         userBurgers = 100;
         clickerBurgers = 0;
@@ -671,7 +677,6 @@ function renderFriendsView() {
 async function sendFriendRequest(targetId) {
     if (!firebaseUserId) return;
     
-    // Optimistic local update
     mySentRequests.push(targetId);
     renderFriendsView();
     
@@ -686,7 +691,6 @@ async function sendFriendRequest(targetId) {
 async function acceptRequest(requesterId) {
     if (!firebaseUserId) return;
     
-    // Optimistic local update
     myRequests = myRequests.filter(id => id !== requesterId);
     myFriends.push(requesterId);
     renderFriendsView();
@@ -704,9 +708,9 @@ async function acceptRequest(requesterId) {
 
 function openDirectMessage(user) {
     isDM = true;
+    currentDmUser = user;
     activeChatId = "dm_" + [firebaseUserId, user.id].sort().join('_');
     
-    // Setup DM UI matching mockup
     document.getElementById("dm-header-avatar").innerHTML = getAvatarHTML(user);
     document.getElementById("dm-header-name").innerText = user.username;
     document.getElementById("dm-input").placeholder = `Message ${user.username}...`;
@@ -727,17 +731,31 @@ function openDirectMessage(user) {
                 const msgDiv = document.createElement("div");
                 msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`;
                 
-                const textSpan = document.createElement("span");
-                textSpan.className = "dm-message-text";
-                textSpan.innerText = data.text;
+                const contentDiv = document.createElement("div");
+                contentDiv.className = "dm-message-content";
                 
-                const avatarObj = isMe ? { username: currentUser, avatar: currentUserAvatar } : user;
+                if (data.text) {
+                    const textSpan = document.createElement("span");
+                    textSpan.className = "dm-message-text";
+                    textSpan.innerText = data.text;
+                    contentDiv.appendChild(textSpan);
+                }
+                
+                if (data.imageSrc) {
+                    const img = document.createElement("img");
+                    img.src = data.imageSrc;
+                    img.className = "chat-image";
+                    img.draggable = false;
+                    contentDiv.appendChild(img);
+                }
+                
+                const avatarObj = isMe ? { username: currentUser, avatar: currentUserAvatar } : currentDmUser;
                 const avatarWrapper = document.createElement("div");
                 avatarWrapper.className = "dm-message-avatar";
                 avatarWrapper.innerHTML = getAvatarHTML(avatarObj);
                 
                 msgDiv.appendChild(avatarWrapper);
-                msgDiv.appendChild(textSpan);
+                msgDiv.appendChild(contentDiv);
                 
                 log.appendChild(msgDiv);
             });
@@ -747,16 +765,58 @@ function openDirectMessage(user) {
     switchView('view-dm');
 }
 
+function processDmFile(file) {
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            pendingDmImageSrc = event.target.result;
+            pendingDmImageMime = pendingDmImageSrc.split(';')[0].split(':')[1];
+            pendingDmImageBase64 = pendingDmImageSrc.split(',')[1];
+            
+            const imgEl = document.getElementById('dm-image-preview-img');
+            const boxEl = document.getElementById('dm-image-preview-box');
+            if (imgEl && boxEl) {
+                imgEl.src = pendingDmImageSrc;
+                boxEl.classList.add('active');
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+const dmFilePicker = document.getElementById('dm-native-file-picker');
+if (dmFilePicker) {
+    dmFilePicker.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        processDmFile(file);
+        dmFilePicker.value = ""; 
+    });
+}
+
+function clearDmPendingImage() {
+    pendingDmImageBase64 = null;
+    pendingDmImageMime = null;
+    pendingDmImageSrc = null;
+    const box = document.getElementById('dm-image-preview-box');
+    if (box) box.classList.remove('active');
+}
+
 async function sendDmMessage() {
     const input = document.getElementById("dm-input");
     if (!input) return;
     const text = input.value.trim();
-    if (!text || !activeChatId || !isDM) return;
+    
+    if (!text && !pendingDmImageBase64) return;
+    if (!activeChatId || !isDM) return;
     
     input.value = "";
+    const imageSrc = pendingDmImageSrc;
+    clearDmPendingImage();
     
     await db.collection("dms").doc(activeChatId).collection("messages").add({
         text: text,
+        imageSrc: imageSrc || null,
         senderId: firebaseUserId,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -1072,37 +1132,12 @@ function initMobileNavIcons() {
     if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => switchView('view-settings');
 }
 
-// =========================================================================
-// --- CHAT SESSION ARCHIVING & REAL API KEY LIMIT CHECK ---
-// =========================================================================
-
-function checkDailyMessageLimit() {
-    const today = new Date().toISOString().split('T')[0];
-    let lastDate = localStorage.getItem("carl_last_msg_date");
-    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-
-    if (lastDate !== today) {
-        lastDate = today;
-        count = 0;
-        localStorage.setItem("carl_last_msg_date", today);
-        localStorage.setItem("carl_msg_count", "0");
-    }
-
-    if (count >= 10 && !hasValidApiKey()) {
-        alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
-        switchView('view-settings');
-        return false;
-    }
-
-    return true;
-}
-
 function archiveActiveChat() {
     const log = document.getElementById("chat-log");
     if (!log) return;
     const bubbles = log.querySelectorAll('.chat-bubble');
 
-    if (bubbles.length > 0 && activeChatId) {
+    if (bubbles.length > 0 && activeChatId && !isDM) {
         let existing = chatsHistory.find(c => c.id === activeChatId);
         if (existing) {
             existing.html = log.innerHTML;
@@ -1429,587 +1464,463 @@ function formatMessage(text) {
     return safeText;
 }
 
-// ... Rest of the unchanged JS (Call UI, Speech Recognition, Mini Games variables/launchers) ...
+// =========================================================================
+// --- CALL FEATURE & FACETIME CAMERA SYSTEM ---
+// =========================================================================
 
-function launchGame() {
-    if (selectedGame === "Burger Clicker") {
-        switchView("view-burgerclicker");
-        updateUpgradesUI();
-    } else if (selectedGame === "Tic Tac Toe") {
-        switchView("view-tictactoe");
-        initTicTacToe();
-    } else if (selectedGame === "Rock Paper Scissors") {
-        switchView("view-rps");
-        initRps();
-    } else if (selectedGame === "Blackjack") {
-        switchView("view-blackjack");
-        prepBlackjack();
-    } else if (selectedGame === "Hangman") {
-        switchView("view-hangman");
-        initHangman();
-    } else if (selectedGame === "Connect Four") {
-        switchView("view-connectfour");
-        initConnectFour();
-    } else if (selectedGame === "Battleship") {
-        switchView("view-battleship");
-        initBattleship();
-    } else if (selectedGame === "Checkers") {
-        switchView("view-checkers");
-        initCheckers();
-    } else if (selectedGame === "Chess") {
-        switchView("view-chess");
-        initChess();
-    } else {
-        alert(`Starting ${selectedGame}...`);
+let isCallActive = false;
+let isCallConnected = false;
+let isMuted = false;
+let isSpeakerOn = true;
+let callTimerInterval = null;
+let callSeconds = 0;
+let ringTimeout = null;
+let ringInterval = null;
+let audioCtx = null;
+let recognition = null;
+let callAbortController = null;
+let carlVoice = null;
+let isFacetimeActive = false;
+let facetimeStream = null;
+
+function loadCarlVoice() {
+    if (!('speechSynthesis' in window)) return;
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) return;
+    
+    carlVoice = voices.find(v => v.lang.includes('en') && (
+        v.name.includes('Google US English') ||
+        v.name.includes('Aaron') ||
+        v.name.includes('Daniel') ||
+        v.name.includes('Guy') ||
+        v.name.includes('Natural') ||
+        v.name.includes('Male')
+    )) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+}
+
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = loadCarlVoice;
+    loadCarlVoice();
+}
+
+function getAudioContext() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
     }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
 }
 
-// --- GAME 0: BURGER CLICKER ---
-function clickBurger() {
-    let amount = getClickValue();
-    clickerBurgers += amount;
-    updateBurgerUI();
-    
-    const btn = document.getElementById("carl-clicker-btn");
-    const floater = document.createElement("div");
-    floater.className = "floating-number";
-    floater.innerText = "+" + amount.toLocaleString();
-    floater.style.left = (Math.random() * 80 + 10) + "%";
-    floater.style.top = (Math.random() * 80 + 10) + "%";
-    btn.appendChild(floater);
-    
-    setTimeout(() => floater.remove(), 1000);
+function playToneBurst(freq1, freq2, duration) {
+    try {
+        const ctx = getAudioContext();
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.frequency.value = freq1;
+        osc2.frequency.value = freq2;
+
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05);
+        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(ctx.currentTime);
+        osc2.start(ctx.currentTime);
+        osc1.stop(ctx.currentTime + duration);
+        osc2.stop(ctx.currentTime + duration);
+    } catch (e) {}
 }
 
-function buyUpgrade(type) {
-    let cost = 0;
-    if (type === 'click') {
-        cost = Math.floor(100 * Math.pow(1.5, clickPower - 1));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; }
-        else { alert("Not enough Clicker Burgers!"); return; }
-    } else if (type === 'chef') {
-        cost = Math.floor(50 * Math.pow(1.15, autoChefs));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; }
-        else { alert("Not enough Clicker Burgers!"); return; }
-    } else if (type === 'stand') {
-        cost = Math.floor(500 * Math.pow(1.15, burgerStands));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; }
-        else { alert("Not enough Clicker Burgers!"); return; }
-    } else if (type === 'factory') {
-        cost = Math.floor(5000 * Math.pow(1.15, burgerFactories));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
-        else { alert("Not enough Clicker Burgers!"); return; }
-    }
-    
-    updateBurgerUI();
-    updateUpgradesUI();
-    saveSessionData();
-}
-
-function exchangeBurgers() {
-    if (clickerBurgers >= 10000) {
-        clickerBurgers -= 10000;
-        userBurgers += 1;
-        updateBurgerUI();
-        saveSessionData();
-    } else {
-        alert("You need 10,000 Clicker Burgers to make a trade!");
-    }
-}
-
-function rebirth() {
-    if (clickerBurgers >= 1000000000000) {
-        clickerBurgers = 0;
-        autoChefs = 0;
-        burgerStands = 0;
-        burgerFactories = 0;
-        clickPower = 1;
-        rebirths++;
-        alert("You have REBIRTHED! All your progress is reset, but you now earn +100% more burgers permanently!");
-        updateBurgerUI();
-        updateUpgradesUI();
-        saveSessionData();
-    } else {
-        alert("You need 1 Trillion Clicker Burgers to Rebirth!");
-    }
-}
-
-function updateUpgradesUI() {
-    if(document.getElementById("click-cost")) document.getElementById("click-cost").innerText = Math.floor(100 * Math.pow(1.5, clickPower - 1)).toLocaleString();
-    if(document.getElementById("click-power-count")) document.getElementById("click-power-count").innerText = getClickValue().toLocaleString();
-    
-    if(document.getElementById("chef-cost")) document.getElementById("chef-cost").innerText = Math.floor(50 * Math.pow(1.15, autoChefs)).toLocaleString();
-    if(document.getElementById("chef-count")) document.getElementById("chef-count").innerText = autoChefs.toLocaleString();
-    if(document.getElementById("chef-output")) document.getElementById("chef-output").innerText = (getChefPower() * getMultiplier()).toLocaleString();
-    
-    if(document.getElementById("stand-cost")) document.getElementById("stand-cost").innerText = Math.floor(500 * Math.pow(1.15, burgerStands)).toLocaleString();
-    if(document.getElementById("stand-count")) document.getElementById("stand-count").innerText = burgerStands.toLocaleString();
-    if(document.getElementById("stand-output")) document.getElementById("stand-output").innerText = (getStandPower() * getMultiplier()).toLocaleString();
-    
-    if(document.getElementById("factory-cost")) document.getElementById("factory-cost").innerText = Math.floor(5000 * Math.pow(1.15, burgerFactories)).toLocaleString();
-    if(document.getElementById("factory-count")) document.getElementById("factory-count").innerText = burgerFactories.toLocaleString();
-    if(document.getElementById("factory-output")) document.getElementById("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
-
-    let bps = getBps();
-    let bpsText = document.getElementById("bps-text");
-    if(bpsText) bpsText.innerText = bps.toLocaleString();
-    
-    let rebirthsText = document.getElementById("rebirth-count");
-    if(rebirthsText) rebirthsText.innerText = rebirths.toLocaleString();
-}
-
-// --- GAME 1: BLACKJACK ---
-let bjDeck = [];
-let bjPlayerHands = [];
-let bjCarlHand = [];
-let bjActiveHand = 0;
-let bjGameOver = false;
-let bjGameActive = false;
-let bjResults = []; 
-let bjBet = 10;
-let bjBets = [];
-let bjPayoutsDone = false;
-
-function buildDeck() {
-    const suits = ['♠', '♥', '♦', '♣'];
-    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-    let deck = [];
-    for (let i = 0; i < 4; i++) {
-        for (let suit of suits) {
-            for (let value of values) {
-                deck.push({ suit, value });
-            }
-        }
-    }
-    return deck.sort(() => Math.random() - 0.5);
-}
-
-function getCardWeight(val) {
-    if (['J', 'Q', 'K'].includes(val)) return 10;
-    if (val === 'A') return 11;
-    return parseInt(val);
-}
-
-function getBjScore(hand) {
-    if (!hand || !Array.isArray(hand)) return 0;
-    let score = 0;
-    let aces = 0;
-    for (let card of hand) {
-        if (!card) continue;
-        if (['J', 'Q', 'K'].includes(card.value)) score += 10;
-        else if (card.value === 'A') { score += 11; aces += 1; }
-        else score += parseInt(card.value);
-    }
-    while (score > 21 && aces > 0) { score -= 10; aces -= 1; }
-    return score;
-}
-
-function prepBlackjack() {
-    bjGameActive = false;
-    bjGameOver = true; 
-    
-    document.getElementById("bj-status").innerText = "Place your bet and Deal!";
-    document.getElementById("bj-status").style.color = "#fff";
-    document.getElementById("bj-carl-cards").innerHTML = "";
-    document.getElementById("bj-player-hands-container").innerHTML = "";
-    document.getElementById("bj-carl-score").innerText = "?";
-    
-    document.getElementById("bj-controls").style.display = "none";
-    const betInput = document.getElementById("bj-bet-input");
-    if (betInput) betInput.disabled = false;
-    
-    const resetBtn = document.querySelector("#view-blackjack .reset-btn");
-    if (resetBtn) resetBtn.innerText = "Deal";
-}
-
-function initBlackjack() {
-    const betInput = document.getElementById("bj-bet-input");
-    if (betInput) {
-        bjBet = parseInt(betInput.value) || 10;
-        if (bjBet < 10) {
-            bjBet = 10;
-            betInput.value = 10;
-        }
-        if (userBurgers < bjBet) {
-            alert("Not enough Burgers! Play Burger Clicker to earn more.");
+function startRingingSound() {
+    playToneBurst(440, 480, 2.0);
+    ringInterval = setInterval(() => {
+        if (!isCallActive || isCallConnected) {
+            clearInterval(ringInterval);
             return;
         }
-        userBurgers -= bjBet;
-        updateBurgerUI();
-        betInput.disabled = true;
-    }
-
-    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
-
-    bjDeck = buildDeck();
-    bjPlayerHands = [ [bjDeck.pop(), bjDeck.pop()] ];
-    bjCarlHand = [bjDeck.pop(), bjDeck.pop()];
-    bjActiveHand = 0;
-    
-    bjGameActive = true;
-    bjGameOver = false;
-    bjResults = [];
-    bjBets = [bjBet];
-    bjPayoutsDone = false;
-    
-    const resetBtn = document.querySelector("#view-blackjack .reset-btn");
-    if (resetBtn) resetBtn.innerText = "Deal Again";
-    
-    document.getElementById("bj-controls").style.display = "flex";
-    
-    let dealerScore = getBjScore(bjCarlHand);
-    let playerScore = getBjScore(bjPlayerHands[0]);
-
-    if (dealerScore === 21 && playerScore === 21) {
-        bjGameOver = true;
-        bjResults[0] = "Push (Tie)";
-    } else if (dealerScore === 21) {
-        bjGameOver = true;
-        bjResults[0] = "Carl Blackjack!";
-    } else if (playerScore === 21) {
-        bjGameOver = true;
-        bjResults[0] = "Blackjack! You Win!";
-    }
-
-    renderBj();
+        playToneBurst(440, 480, 2.0);
+    }, 4000);
 }
 
-function processBjPayouts() {
-    if (bjPayoutsDone) return;
-    bjPayoutsDone = true;
-    
-    for (let i = 0; i < bjPlayerHands.length; i++) {
-        let res = bjResults[i] || "";
-        let bet = bjBets[i] || 0;
-        
-        if (res.includes("Blackjack! You Win!") || res.includes("Win")) {
-            userBurgers += Math.floor(bet * 2); 
-        } else if (res.includes("Push")) {
-            userBurgers += Math.floor(bet); 
-        }
-    }
-    updateBurgerUI();
-    saveSessionData();
-}
-
-function renderBj() {
-    const cCards = document.getElementById("bj-carl-cards");
-    if (cCards) {
-        cCards.innerHTML = "";
-        bjCarlHand.forEach((card, index) => {
-            if (!card) return;
-            let el = document.createElement("div");
-            if (!bjGameOver && index === 1) {
-                el.className = "bj-card hidden";
-                el.innerText = "";
-            } else {
-                el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
-                el.innerText = `${card.value}${card.suit}`;
-            }
-            cCards.appendChild(el);
-        });
-    }
-
-    if (bjGameOver) {
-        document.getElementById("bj-carl-score").innerText = getBjScore(bjCarlHand);
-        document.getElementById("bj-controls").style.display = "none";
-        
-        if (!document.getElementById("bj-status").innerText.includes("Place your bet")) {
-            document.getElementById("bj-status").innerText = "Round Over";
-            document.getElementById("bj-status").style.color = "#aaa";
-        }
-        
-        const betInput = document.getElementById("bj-bet-input");
-        if (betInput) betInput.disabled = false;
-        
-        if (bjGameActive) {
-            processBjPayouts();
-            bjGameActive = false;
-        }
-        
-    } else {
-        document.getElementById("bj-carl-score").innerText = getBjScore([bjCarlHand[0]]);
-
-        let currentHand = bjPlayerHands[bjActiveHand];
-        if (currentHand) {
-            document.getElementById("bj-controls").style.display = "flex";
-            
-            document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
-            
-            document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
-            let canSplit = currentHand.length === 2 && 
-                           getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && 
-                           bjPlayerHands.length < 4;
-            document.getElementById("bj-btn-split").disabled = !canSplit;
-
-            if (bjPlayerHands.length > 1) {
-                document.getElementById("bj-status").innerText = `Playing Hand ${bjActiveHand + 1}...`;
-            } else {
-                document.getElementById("bj-status").innerText = `Your Turn!`;
-            }
-            document.getElementById("bj-status").style.color = "#fff";
-        } else {
-            document.getElementById("bj-controls").style.display = "none";
-        }
-    }
-
-    const pHandsContainer = document.getElementById("bj-player-hands-container");
-    if (pHandsContainer) {
-        pHandsContainer.innerHTML = "";
-        bjPlayerHands.forEach((hand, index) => {
-            let handDiv = document.createElement("div");
-            handDiv.className = `bj-single-hand ${index === bjActiveHand && !bjGameOver ? 'active' : ''}`;
-
-            let scoreDiv = document.createElement("div");
-            scoreDiv.className = "bj-hand-score";
-            scoreDiv.innerText = `Score: ${getBjScore(hand)}`;
-            handDiv.appendChild(scoreDiv);
-
-            let cardsContainer = document.createElement("div");
-            cardsContainer.className = "bj-cards";
-            hand.forEach(card => {
-                if (!card) return;
-                let el = document.createElement("div");
-                el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
-                el.innerText = `${card.value}${card.suit}`;
-                cardsContainer.appendChild(el);
-            });
-            handDiv.appendChild(cardsContainer);
-
-            if (bjResults[index] && bjResults[index] !== "Doubled") {
-                let resDiv = document.createElement("div");
-                resDiv.className = "bj-hand-result";
-                let txt = bjResults[index];
-                if (txt.includes("Win") || txt.includes("Blackjack")) resDiv.classList.add("win");
-                else if (txt.includes("Lose") || txt.includes("Bust")) resDiv.classList.add("lose");
-                else resDiv.classList.add("push");
-                resDiv.innerText = txt;
-                handDiv.appendChild(resDiv);
-            }
-
-            pHandsContainer.appendChild(handDiv);
-        });
+function stopRingingSound() {
+    if (ringInterval) {
+        clearInterval(ringInterval);
+        ringInterval = null;
     }
 }
 
-function bjHit() {
-    if (bjGameOver) return;
-    let hand = bjPlayerHands[bjActiveHand];
-    if (!hand) return;
-    
-    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
-    hand.push(bjDeck.pop());
-
-    let score = getBjScore(hand);
-    
-    if (score >= 21) {
-        document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
-    }
-    
-    renderBj();
-
-    if (score > 21) {
-        bjResults[bjActiveHand] = "Bust";
-        setTimeout(() => bjNextHand(), 800);
-    } else if (score === 21) {
-        setTimeout(() => bjNextHand(), 800);
-    }
-}
-
-function bjStand() {
-    if (bjGameOver) return;
-    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
-    bjNextHand();
-}
-
-function bjDouble() {
-    if (bjGameOver) return;
-    let hand = bjPlayerHands[bjActiveHand];
-    if (!hand || hand.length !== 2) return;
-    
-    let currentBet = bjBets[bjActiveHand];
-    if (userBurgers < currentBet) {
-        alert("Not enough Burgers to double down!");
-        return;
-    }
-    userBurgers -= currentBet;
-    updateBurgerUI();
-    bjBets[bjActiveHand] *= 2;
-
-    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
-    hand.push(bjDeck.pop());
-    
-    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
-    
-    renderBj();
-    
-    if (getBjScore(hand) > 21) {
-        bjResults[bjActiveHand] = "Bust";
-    } else {
-        bjResults[bjActiveHand] = "Doubled";
-    }
-    setTimeout(() => bjNextHand(), 800);
-}
-
-function bjSplit() {
-    if (bjGameOver) return;
-    let hand = bjPlayerHands[bjActiveHand];
-    if (!hand || hand.length !== 2 || getCardWeight(hand[0].value) !== getCardWeight(hand[1].value)) return;
-    
-    let currentBet = bjBets[bjActiveHand];
-    if (userBurgers < currentBet) {
-        alert("Not enough Burgers to split!");
-        return;
-    }
-    userBurgers -= currentBet;
-    updateBurgerUI();
-
-    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
-    let splitCard = hand.pop();
-    let newHand = [splitCard, bjDeck.pop()];
-    hand.push(bjDeck.pop());
-    
-    bjPlayerHands.splice(bjActiveHand + 1, 0, newHand);
-    bjBets.splice(bjActiveHand + 1, 0, currentBet);
-    renderBj();
-}
-
-function bjNextHand() {
-    bjActiveHand++;
-    if (bjActiveHand >= bjPlayerHands.length) {
-        document.getElementById("bj-controls").style.display = "none";
-        bjDealerTurn();
-    } else {
-        document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
-        renderBj();
-    }
-}
-
-function bjDealerTurn() {
+function playPickupClick() {
     try {
-        let allBusted = bjPlayerHands.every((_, i) => bjResults[i] === "Bust");
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.08);
 
-        const playDealer = () => {
-            try {
-                let score = getBjScore(bjCarlHand);
-                if (score < 17 && !allBusted) {
-                    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
-                    let card = bjDeck.pop();
-                    if (card) bjCarlHand.push(card);
-                    renderBj();
-                    setTimeout(playDealer, 800);
-                } else {
-                    for (let i = 0; i < bjPlayerHands.length; i++) {
-                        if (bjResults[i] === "Bust") continue;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
 
-                        let pScore = getBjScore(bjPlayerHands[i]);
-                        if (score > 21) bjResults[i] = "Win (Carl Busts)";
-                        else if (pScore > score) bjResults[i] = "Win";
-                        else if (score > pScore) bjResults[i] = "Lose";
-                        else bjResults[i] = "Push";
-                    }
-                    bjGameOver = true;
-                    renderBj();
-                }
-            } catch (err) {
-                console.error("Blackjack dealer turn error:", err);
-                bjGameOver = true;
-                renderBj();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+    } catch (e) {}
+}
+
+async function toggleFacetime() {
+    const btn = document.getElementById("facetime-btn");
+    
+    if (!isFacetimeActive) {
+        try {
+            facetimeStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, 
+                audio: false 
+            });
+
+            let vid = document.getElementById("facetime-video");
+            if (!vid) {
+                vid = document.createElement("video");
+                vid.id = "facetime-video";
+                vid.autoplay = true;
+                vid.playsInline = true;
+                vid.muted = true;
+                vid.style.position = "absolute";
+                vid.style.top = "0"; vid.style.left = "0";
+                vid.style.width = "100%"; vid.style.height = "100%";
+                vid.style.objectFit = "cover";
+                vid.style.zIndex = "0";
+                vid.style.borderRadius = "20px";
+                
+                const callView = document.getElementById("view-call");
+                if (callView) callView.insertBefore(vid, callView.firstChild);
             }
-        };
+            vid.srcObject = facetimeStream;
+            vid.style.display = "block";
 
-        document.getElementById("bj-status").innerText = "Carl is dealing...";
-        document.getElementById("bj-status").style.color = "#eccc68";
-        setTimeout(playDealer, 600);
-    } catch (err) {
-        console.error("Blackjack turn error:", err);
-        bjGameOver = true;
-        renderBj();
+            isFacetimeActive = true;
+            if (btn) btn.style.opacity = "1";
+        } catch (err) {
+            alert("Unable to access camera for FaceTime mode: " + err.message);
+        }
+    } else {
+        stopFacetime();
     }
 }
 
-// --- GAME 2: ROCK PAPER SCISSORS ---
-let rpsScore = { player: 0, carl: 0 };
-let rpsPlaying = false;
+function stopFacetime() {
+    isFacetimeActive = false;
+    if (facetimeStream) {
+        facetimeStream.getTracks().forEach(track => track.stop());
+        facetimeStream = null;
+    }
+    const vid = document.getElementById("facetime-video");
+    if (vid) vid.style.display = "none";
 
-const rpsCarlHands = {
-    rock: '/static/icons/CarlRock.png',
-    paper: '/static/icons/CarlPaper.png',
-    scissors: '/static/icons/CarlScissors.png'
-};
-
-const rpsPlayerHands = {
-    rock: '/static/icons/Rock.png',
-    paper: '/static/icons/Paper.png',
-    scissors: '/static/icons/Scissors.png'
-};
-
-function initRps() {
-    rpsScore = { player: 0, carl: 0 };
-    rpsPlaying = false;
-    document.getElementById("rps-status").innerText = "Choose Your Move!";
-    document.getElementById("rps-status").style.color = "#fff";
-    document.getElementById("rps-carl-hand").src = rpsCarlHands.rock;
-    document.getElementById("rps-player-hand").src = rpsPlayerHands.rock;
+    const btn = document.getElementById("facetime-btn");
+    if (btn) btn.style.opacity = "0.4";
 }
 
-function playRps(playerChoice) {
-    if (rpsPlaying) return;
-    rpsPlaying = true;
+function captureFacetimeFrame() {
+    if (!isFacetimeActive) return null;
+    const vid = document.getElementById("facetime-video");
+    if (!vid || vid.readyState < 2) return null;
 
-    const choices = ['rock', 'paper', 'scissors'];
-    document.getElementById("rps-player-hand").src = rpsPlayerHands[playerChoice];
-    document.getElementById("rps-status").innerText = "Carl is choosing...";
-    document.getElementById("rps-status").style.color = "#eccc68";
-
-    setTimeout(() => {
-        let diff = getDifficulty();
-        let carlChoice;
-
-        if (diff === "easy") {
-            if (playerChoice === 'rock') carlChoice = Math.random() < 0.6 ? 'scissors' : choices[Math.floor(Math.random() * 3)];
-            else if (playerChoice === 'paper') carlChoice = Math.random() < 0.6 ? 'rock' : choices[Math.floor(Math.random() * 3)];
-            else carlChoice = Math.random() < 0.6 ? 'paper' : choices[Math.floor(Math.random() * 3)];
-        } else if (diff === "hard") {
-            if (playerChoice === 'rock') carlChoice = Math.random() < 0.6 ? 'paper' : choices[Math.floor(Math.random() * 3)];
-            else if (playerChoice === 'paper') carlChoice = Math.random() < 0.6 ? 'scissors' : choices[Math.floor(Math.random() * 3)];
-            else carlChoice = Math.random() < 0.6 ? 'rock' : choices[Math.floor(Math.random() * 3)];
-        } else {
-            carlChoice = choices[Math.floor(Math.random() * choices.length)];
-        }
-
-        document.getElementById("rps-carl-hand").src = rpsCarlHands[carlChoice];
-
-        if (playerChoice === carlChoice) {
-            document.getElementById("rps-status").innerText = `It's a Tie! (${rpsScore.player} - ${rpsScore.carl})`;
-            document.getElementById("rps-status").style.color = "#fff";
-        } else if (
-            (playerChoice === 'rock' && carlChoice === 'scissors') ||
-            (playerChoice === 'paper' && carlChoice === 'rock') ||
-            (playerChoice === 'scissors' && carlChoice === 'paper')
-        ) {
-            rpsScore.player++;
-            document.getElementById("rps-status").innerText = `You Win! (${rpsScore.player} - ${rpsScore.carl})`;
-            document.getElementById("rps-status").style.color = "#84cc16";
-        } else {
-            rpsScore.carl++;
-            document.getElementById("rps-status").innerText = `Carl Wins! (${rpsScore.player} - ${rpsScore.carl})`;
-            document.getElementById("rps-status").style.color = "#ef4444";
-        }
-
-        rpsPlaying = false;
-    }, 500);
+    const canvas = document.createElement("canvas");
+    canvas.width = vid.videoWidth || 320;
+    canvas.height = vid.videoHeight || 240;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+    
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+    return {
+        base64: dataUrl.split(",")[1],
+        mime: "image/jpeg"
+    };
 }
 
-// --- GAME 3: TIC TAC TOE ---
-let board = ["", "", "", "", "", "", "", "", ""];
-let playerTurn = true;
-const winCombos = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8],
-    [0, 3, 6], [1, 4, 7], [2, 5, 8],
-    [0, 4, 8], [2, 4, 6]
-];
+function startCall() {
+    if (!hasValidApiKey()) {
+        alert("Calling Carl requires a valid custom Gemini API Key! Please enter your key in Settings to unlock voice calls.");
+        switchView('view-settings');
+        return;
+    }
 
+    switchView('view-call');
+    isCallActive = true;
+    isCallConnected = false;
+    isMuted = false;
+    callSeconds = 0;
+
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
+
+    if ('speechSynthesis' in window) {
+        let wakeUp = new SpeechSynthesisUtterance('');
+        wakeUp.volume = 0;
+        window.speechSynthesis.speak(wakeUp);
+    }
+
+    document.getElementById("call-status").innerText = "Calling Carl...";
+    document.getElementById("call-timer").innerText = "00:00";
+    document.getElementById("mute-btn").style.opacity = "1";
+    document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4";
+    
+    const ftBtn = document.getElementById("facetime-btn");
+    if (ftBtn) ftBtn.style.opacity = "0.4";
+
+    startRingingSound();
+    const delay = Math.floor(Math.random() * 4000) + 1500;
+
+    ringTimeout = setTimeout(() => {
+        if (!isCallActive) return;
+        
+        stopRingingSound();
+        playPickupClick();
+
+        isCallConnected = true;
+        document.getElementById("call-status").innerText = "Connected";
+
+        callTimerInterval = setInterval(() => {
+            callSeconds++;
+            const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+            const secs = String(Math.floor(callSeconds % 60)).padStart(2, '0');
+            document.getElementById("call-timer").innerText = `${mins}:${secs}`;
+        }, 1000);
+
+        initSpeechRecognition();
+        speakCarl("Hey! Carl here. What's on your mind?");
+    }, delay);
+}
+
+function endCall() {
+    try {
+        isCallActive = false;
+        isCallConnected = false;
+        stopFacetime();
+
+        if (ringTimeout) clearTimeout(ringTimeout);
+        stopRingingSound();
+        if (callTimerInterval) clearInterval(callTimerInterval);
+
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        if (callAbortController) callAbortController.abort();
+        if (recognition) {
+            try { recognition.stop(); } catch(e) {}
+            recognition = null;
+        }
+
+        document.getElementById("call-timer").innerText = "00:00";
+        document.getElementById("call-status").innerText = "Call Ended";
+        switchView('view-chat');
+    } catch (err) {
+        switchView('view-chat'); 
+    }
+}
+
+function toggleMute() {
+    isMuted = !isMuted;
+    const btn = document.getElementById("mute-btn");
+    if (isMuted) {
+        btn.style.opacity = "0.4";
+        if (recognition) try { recognition.stop(); } catch(e) {}
+    } else {
+        btn.style.opacity = "1";
+        if (recognition && isCallActive && isCallConnected) {
+            try { recognition.start(); } catch(e) {}
+        }
+    }
+}
+
+function toggleSpeaker() {
+    isSpeakerOn = !isSpeakerOn;
+    const btn = document.getElementById("speaker-btn");
+    btn.style.opacity = isSpeakerOn ? "1" : "0.4";
+}
+
+function speakCarl(text) {
+    if (!('speechSynthesis' in window) || !isCallActive) return;
+
+    let cleanText = text
+        .replace(/```[\s\S]*?```/g, '') 
+        .replace(/`[^`]*`/g, '') 
+        .replace(/[*_#~]/g, '') 
+        .trim();
+
+    if (!cleanText) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    if (!carlVoice) loadCarlVoice();
+    if (carlVoice) utterance.voice = carlVoice;
+
+    utterance.rate = 1.05; 
+    utterance.pitch = 1.0;
+    utterance.volume = isSpeakerOn ? 1.0 : 0.15; 
+
+    window.speechSynthesis.speak(utterance);
+}
+
+function initSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        document.getElementById("call-status").innerText = "Browser doesn't support mic!";
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = async (event) => {
+        if (isMuted || !isCallActive || !isCallConnected) return;
+
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+            else interimTranscript += event.results[i][0].transcript;
+        }
+
+        let combined = finalTranscript + interimTranscript;
+        if (combined.trim().length > 3 && window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            if (callAbortController) callAbortController.abort();
+        }
+
+        if (finalTranscript.trim().length > 0) {
+            const userQuery = finalTranscript.trim();
+            window.speechSynthesis.cancel();
+            if (callAbortController) callAbortController.abort();
+
+            document.getElementById("call-status").innerText = "Carl is thinking...";
+            await processCallUserMessage(userQuery);
+        }
+    };
+
+    recognition.onerror = (e) => {
+        if (e.error === 'not-allowed') {
+            document.getElementById("call-status").innerText = "Mic Permission Denied";
+        }
+    };
+
+    recognition.onend = () => {
+        if (isCallActive && isCallConnected && !isMuted) {
+            try { recognition.start(); } catch(e) {}
+        }
+    };
+
+    try { recognition.start(); } catch(e) {}
+}
+
+async function processCallUserMessage(userText) {
+    if (!isCallActive) return;
+
+    callAbortController = new AbortController();
+    chatHistory.push({ role: "user", content: userText });
+
+    const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const ftFrame = captureFacetimeFrame();
+
+    const payload = {
+        message: userText,
+        history: chatHistory,
+        image_b64: ftFrame ? ftFrame.base64 : null,
+        image_mime: ftFrame ? ftFrame.mime : null,
+        api_key: customApiKey,
+        user_time: userLocalTime,
+        user_timezone: userTimezone,
+        client_time: `${userLocalTime} (${userTimezone})`
+    };
+
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: callAbortController.signal
+        });
+
+        if (!response.ok) return;
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = "";
+        let sentenceBuffer = "";
+
+        document.getElementById("call-status").innerText = "Connected";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            fullResponse += chunk;
+            sentenceBuffer += chunk;
+
+            let match;
+            while ((match = sentenceBuffer.match(/([^.!?]+[.!?])/))) {
+                let sentence = match[0].trim();
+                sentenceBuffer = sentenceBuffer.substring(match[0].length);
+                
+                for (let prefix of ["Carl:", "carl:", "Carl - "]) {
+                    if (sentence.startsWith(prefix)) sentence = sentence.replace(prefix, "").trim();
+                }
+
+                if (sentence) speakCarl(sentence);
+            }
+        }
+
+        if (sentenceBuffer.trim()) {
+            let leftover = sentenceBuffer.trim();
+            for (let prefix of ["Carl:", "carl:", "Carl - "]) {
+                if (leftover.startsWith(prefix)) leftover = leftover.replace(prefix, "").trim();
+            }
+            speakCarl(leftover);
+        }
+
+        chatHistory.push({ role: "assistant", content: fullResponse });
+
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            console.error("Call response error:", err);
+        }
+    }
+}
+
+// =========================================================================
+// --- MINI-GAMES LAUNCHER & LOGIC ---
+// =========================================================================
+
+const gamesWithDifficulty = ["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
+
+function selectGame(element, gameName) {
+    document.querySelectorAll('.game-card-img').forEach(card => card.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedGame = gameName;
+    updateDifficultyPickerVisibility();
+}
+
+function updateDifficultyPickerVisibility() {
+    const diffPicker = document.getElementById("difficulty-picker");
+    if (diffPicker) {
+        if (gamesWithDifficulty.includes(selectedGame)) {
+            diffPicker.style.display = "flex";
+        } else {
+            diffPicker.style.display = "none";
+        }
+    }
+}
+// --- Remaining Game logic remains unchanged below ---
 function initTicTacToe() {
     board = ["", "", "", "", "", "", "", "", ""];
     playerTurn = true;
