@@ -176,7 +176,7 @@ function handleLogin(e) {
         .catch(error => {
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
                 auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => {
-                    userCredential.user.sendEmailVerification().then(() => alert("Account created! Verification link sent to your email."));
+                    userCredential.user.sendEmailVerification().then(() => alert("Account created! Verification link sent to your email. Check your spam folder."));
                 }).catch(err => alert("Sign Up Error: " + err.message));
             } else alert(error.message);
         });
@@ -314,7 +314,7 @@ function switchView(viewId) {
 }
 
 // =========================================================================
-// --- GAMES LAUNCHER SYSTEM ---
+// --- GAMES LAUNCHER ROUTING ---
 // =========================================================================
 
 function selectGame(element, gameName) {
@@ -327,8 +327,8 @@ function selectGame(element, gameName) {
 function updateDifficultyPickerVisibility() {
     const diffPicker = document.getElementById("difficulty-picker");
     if (diffPicker) {
-        if (gamesWithDifficulty.includes(selectedGame)) { diffPicker.style.display = "flex"; } 
-        else { diffPicker.style.display = "none"; }
+        if (gamesWithDifficulty.includes(selectedGame)) diffPicker.style.display = "flex"; 
+        else diffPicker.style.display = "none"; 
     }
 }
 
@@ -345,7 +345,10 @@ function launchGame() {
     else { alert(`Starting ${selectedGame}...`); }
 }
 
-// --- GAME 0: BURGER CLICKER LOGIC ---
+// =========================================================================
+// --- BURGER CLICKER LOGIC ---
+// =========================================================================
+
 function clickBurger() {
     let amount = getClickValue();
     clickerBurgers += amount;
@@ -365,27 +368,23 @@ function buyUpgrade(type) {
     let cost = 0;
     if (type === 'click') {
         cost = Math.floor(100 * Math.pow(1.5, clickPower - 1));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; }
-        else { alert("Not enough Clicker Burgers!"); return; }
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; } else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'chef') {
         cost = Math.floor(50 * Math.pow(1.15, autoChefs));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; }
-        else { alert("Not enough Clicker Burgers!"); return; }
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; } else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'stand') {
         cost = Math.floor(500 * Math.pow(1.15, burgerStands));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; }
-        else { alert("Not enough Clicker Burgers!"); return; }
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; } else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'factory') {
         cost = Math.floor(5000 * Math.pow(1.15, burgerFactories));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
-        else { alert("Not enough Clicker Burgers!"); return; }
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; } else { alert("Not enough Clicker Burgers!"); return; }
     }
     updateBurgerUI(); updateUpgradesUI(); saveSessionData();
 }
 
 function exchangeBurgers() {
     if (clickerBurgers >= 10000) { clickerBurgers -= 10000; userBurgers += 1; updateBurgerUI(); saveSessionData(); } 
-    else { alert("You need 10,000 Clicker Burgers to make a trade!"); }
+    else alert("You need 10,000 Clicker Burgers to make a trade!"); 
 }
 
 function rebirth() {
@@ -393,31 +392,24 @@ function rebirth() {
         clickerBurgers = 0; autoChefs = 0; burgerStands = 0; burgerFactories = 0; clickPower = 1; rebirths++;
         alert("You have REBIRTHED! All your progress is reset, but you now earn +100% more burgers permanently!");
         updateBurgerUI(); updateUpgradesUI(); saveSessionData();
-    } else { alert("You need 1 Trillion Clicker Burgers to Rebirth!"); }
+    } else alert("You need 1 Trillion Clicker Burgers to Rebirth!"); 
 }
 
 function updateUpgradesUI() {
     if(document.getElementById("click-cost")) document.getElementById("click-cost").innerText = Math.floor(100 * Math.pow(1.5, clickPower - 1)).toLocaleString();
     if(document.getElementById("click-power-count")) document.getElementById("click-power-count").innerText = getClickValue().toLocaleString();
-    
     if(document.getElementById("chef-cost")) document.getElementById("chef-cost").innerText = Math.floor(50 * Math.pow(1.15, autoChefs)).toLocaleString();
     if(document.getElementById("chef-count")) document.getElementById("chef-count").innerText = autoChefs.toLocaleString();
     if(document.getElementById("chef-output")) document.getElementById("chef-output").innerText = (getChefPower() * getMultiplier()).toLocaleString();
-    
     if(document.getElementById("stand-cost")) document.getElementById("stand-cost").innerText = Math.floor(500 * Math.pow(1.15, burgerStands)).toLocaleString();
     if(document.getElementById("stand-count")) document.getElementById("stand-count").innerText = burgerStands.toLocaleString();
     if(document.getElementById("stand-output")) document.getElementById("stand-output").innerText = (getStandPower() * getMultiplier()).toLocaleString();
-    
     if(document.getElementById("factory-cost")) document.getElementById("factory-cost").innerText = Math.floor(5000 * Math.pow(1.15, burgerFactories)).toLocaleString();
     if(document.getElementById("factory-count")) document.getElementById("factory-count").innerText = burgerFactories.toLocaleString();
     if(document.getElementById("factory-output")) document.getElementById("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
 
-    let bps = getBps();
-    let bpsText = document.getElementById("bps-text");
-    if(bpsText) bpsText.innerText = bps.toLocaleString();
-    
-    let rebirthsText = document.getElementById("rebirth-count");
-    if(rebirthsText) rebirthsText.innerText = rebirths.toLocaleString();
+    let bpsText = document.getElementById("bps-text"); if(bpsText) bpsText.innerText = getBps().toLocaleString();
+    let rebirthsText = document.getElementById("rebirth-count"); if(rebirthsText) rebirthsText.innerText = rebirths.toLocaleString();
 }
 
 // =========================================================================
@@ -426,8 +418,7 @@ function updateUpgradesUI() {
 const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
 
 function getAvatarColor(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
     return avatarColors[Math.abs(hash) % avatarColors.length];
 }
 
@@ -443,7 +434,6 @@ function getAvatarHTML(user) {
 async function fetchAllUsers() {
     const list = document.getElementById("find-people-list");
     if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
-
     try {
         if (firebaseUserId && db) {
             const snapshot = await db.collection("users").get();
@@ -461,16 +451,14 @@ async function fetchAllUsers() {
 
 function renderFriendsView() {
     const query = document.getElementById("friend-search-input").value.toLowerCase().trim();
-    const findList = document.getElementById("find-people-list");
-    const friendsList = document.getElementById("my-friends-list");
+    const findList = document.getElementById("find-people-list"), friendsList = document.getElementById("my-friends-list");
     if (!findList || !friendsList) return;
     
     findList.innerHTML = ""; friendsList.innerHTML = "";
 
     const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
-    if (activeFriends.length === 0) {
-        friendsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No friends yet.</p>";
-    } else {
+    if (activeFriends.length === 0) { friendsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No friends yet.</p>"; } 
+    else {
         activeFriends.forEach(user => {
             const item = document.createElement("div"); item.className = "friend-item";
             item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div><button class="friend-msg-btn" onclick='openDirectMessage(${JSON.stringify(user)})'>Message</button>`;
@@ -480,7 +468,6 @@ function renderFriendsView() {
 
     let searchResults = [];
     const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
-    
     incomingReqs.forEach(user => {
         const item = document.createElement("div"); item.className = "friend-item";
         item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div><button class="friend-req-btn" onclick="acceptRequest('${user.id}')">Accept Request</button>`;
@@ -489,9 +476,8 @@ function renderFriendsView() {
 
     if (query) {
         searchResults = allUsersCache.filter(u => u.username.toLowerCase().includes(query) && !myFriends.includes(u.id) && !myRequests.includes(u.id));
-        if (searchResults.length === 0 && incomingReqs.length === 0) {
-            findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No users found.</p>";
-        } else {
+        if (searchResults.length === 0 && incomingReqs.length === 0) { findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No users found.</p>"; } 
+        else {
             searchResults.forEach(user => {
                 const item = document.createElement("div"); item.className = "friend-item";
                 const isSent = mySentRequests.includes(user.id);
@@ -500,9 +486,7 @@ function renderFriendsView() {
                 findList.appendChild(item);
             });
         }
-    } else if (incomingReqs.length === 0) {
-        findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>Search for a username above!</p>";
-    }
+    } else if (incomingReqs.length === 0) { findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>Search for a username above!</p>"; }
 }
 
 async function sendFriendRequest(targetId) {
@@ -635,9 +619,7 @@ async function sendMessage() {
     }
 
     if (!checkDailyMessageLimit()) return;
-
-    hideStartupScreen();
-    appendMessage(text, "user", pendingImageSrc);
+    hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
     
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const payload = { 
@@ -866,7 +848,7 @@ function playPickupClick() { try { const ctx = getAudioContext(), osc = ctx.crea
 async function toggleFacetime() { const btn = document.getElementById("facetime-btn"); if (!isFacetimeActive) { try { facetimeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false }); let vid = document.getElementById("facetime-video"); if (!vid) { vid = document.createElement("video"); vid.id = "facetime-video"; vid.autoplay = true; vid.playsInline = true; vid.muted = true; vid.style.position = "absolute"; vid.style.top = "0"; vid.style.left = "0"; vid.style.width = "100%"; vid.style.height = "100%"; vid.style.objectFit = "cover"; vid.style.zIndex = "0"; vid.style.borderRadius = "20px"; const callView = document.getElementById("view-call"); if (callView) callView.insertBefore(vid, callView.firstChild); } vid.srcObject = facetimeStream; vid.style.display = "block"; isFacetimeActive = true; if (btn) btn.style.opacity = "1"; } catch (err) { alert("Unable to access camera for FaceTime mode: " + err.message); } } else { stopFacetime(); } }
 function stopFacetime() { isFacetimeActive = false; if (facetimeStream) { facetimeStream.getTracks().forEach(track => track.stop()); facetimeStream = null; } const vid = document.getElementById("facetime-video"); if (vid) vid.style.display = "none"; const btn = document.getElementById("facetime-btn"); if (btn) btn.style.opacity = "0.4"; }
 function captureFacetimeFrame() { if (!isFacetimeActive) return null; const vid = document.getElementById("facetime-video"); if (!vid || vid.readyState < 2) return null; const canvas = document.createElement("canvas"); canvas.width = vid.videoWidth || 320; canvas.height = vid.videoHeight || 240; const ctx = canvas.getContext("2d"); ctx.drawImage(vid, 0, 0, canvas.width, canvas.height); const dataUrl = canvas.toDataURL("image/jpeg", 0.6); return { base64: dataUrl.split(",")[1], mime: "image/jpeg" }; }
-function startCall() { if (!hasValidApiKey()) { alert("Calling Carl requires a valid API Key!"); switchView('view-settings'); return; } switchView('view-call'); isCallActive = true; isCallConnected = false; isMuted = false; callSeconds = 0; const ctx = getAudioContext(); if (ctx.state === 'suspended') ctx.resume(); if ('speechSynthesis' in window) { let wakeUp = new SpeechSynthesisUtterance(''); wakeUp.volume = 0; window.speechSynthesis.speak(wakeUp); } document.getElementById("call-status").innerText = "Calling Carl..."; document.getElementById("call-timer").innerText = "00:00"; document.getElementById("mute-btn").style.opacity = "1"; document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4"; const ftBtn = document.getElementById("facetime-btn"); if (ftBtn) ftBtn.style.opacity = "0.4"; startRingingSound(); const delay = Math.floor(Math.random() * 4000) + 1500; ringTimeout = setTimeout(() => { if (!isCallActive) return; stopRingingSound(); playPickupClick(); isCallConnected = true; document.getElementById("call-status").innerText = "Connected"; callTimerInterval = setInterval(() => { callSeconds++; const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0'); const secs = String(Math.floor(callSeconds % 60)).padStart(2, '0'); document.getElementById("call-timer").innerText = `${mins}:${secs}`; }, 1000); initSpeechRecognition(); speakCarl("Hey! Carl here. What's on your mind?"); }, delay); }
+function startCall() { if (!hasValidApiKey()) { alert("Calling Carl requires a valid custom Gemini API Key!"); switchView('view-settings'); return; } switchView('view-call'); isCallActive = true; isCallConnected = false; isMuted = false; callSeconds = 0; const ctx = getAudioContext(); if (ctx.state === 'suspended') ctx.resume(); if ('speechSynthesis' in window) { let wakeUp = new SpeechSynthesisUtterance(''); wakeUp.volume = 0; window.speechSynthesis.speak(wakeUp); } document.getElementById("call-status").innerText = "Calling Carl..."; document.getElementById("call-timer").innerText = "00:00"; document.getElementById("mute-btn").style.opacity = "1"; document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4"; const ftBtn = document.getElementById("facetime-btn"); if (ftBtn) ftBtn.style.opacity = "0.4"; startRingingSound(); const delay = Math.floor(Math.random() * 4000) + 1500; ringTimeout = setTimeout(() => { if (!isCallActive) return; stopRingingSound(); playPickupClick(); isCallConnected = true; document.getElementById("call-status").innerText = "Connected"; callTimerInterval = setInterval(() => { callSeconds++; const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0'); const secs = String(Math.floor(callSeconds % 60)).padStart(2, '0'); document.getElementById("call-timer").innerText = `${mins}:${secs}`; }, 1000); initSpeechRecognition(); speakCarl("Hey! Carl here. What's on your mind?"); }, delay); }
 function endCall() { try { isCallActive = false; isCallConnected = false; stopFacetime(); if (ringTimeout) clearTimeout(ringTimeout); stopRingingSound(); if (callTimerInterval) clearInterval(callTimerInterval); if ('speechSynthesis' in window) window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; } document.getElementById("call-timer").innerText = "00:00"; document.getElementById("call-status").innerText = "Call Ended"; switchView('view-chat'); } catch (err) { switchView('view-chat'); } }
 function toggleMute() { isMuted = !isMuted; const btn = document.getElementById("mute-btn"); if (isMuted) { btn.style.opacity = "0.4"; if (recognition) try { recognition.stop(); } catch(e) {} } else { btn.style.opacity = "1"; if (recognition && isCallActive && isCallConnected) { try { recognition.start(); } catch(e) {} } } }
 function toggleSpeaker() { isSpeakerOn = !isSpeakerOn; const btn = document.getElementById("speaker-btn"); btn.style.opacity = isSpeakerOn ? "1" : "0.4"; }
