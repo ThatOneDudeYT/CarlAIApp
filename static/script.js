@@ -12,7 +12,6 @@ const firebaseConfig = {
     measurementId: "G-G4H60BZHT3"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -48,34 +47,22 @@ let autoChefs = 0;
 let burgerStands = 0;      
 let burgerFactories = 0;   
 
-function getMultiplier() {
-    return 1 + (rebirths * 1.0); 
-}
-
-function getClickValue() {
-    let pwr = clickPower * Math.floor(1 + (clickPower * 0.1));
-    return pwr * getMultiplier();
-}
-
+function getMultiplier() { return 1 + (rebirths * 1.0); }
+function getClickValue() { return (clickPower * Math.floor(1 + (clickPower * 0.1))) * getMultiplier(); }
 function getChefPower() { return Math.floor(1 + (autoChefs * 0.1)); }
 function getStandPower() { return Math.floor(10 + (burgerStands * 0.2)); }
 function getFactoryPower() { return Math.floor(100 + (burgerFactories * 1)); }
-
 function getBps() {
-    return ((autoChefs * getChefPower()) + 
-            (burgerStands * getStandPower()) + 
-            (burgerFactories * getFactoryPower())) * getMultiplier();
+    return ((autoChefs * getChefPower()) + (burgerStands * getStandPower()) + (burgerFactories * getFactoryPower())) * getMultiplier();
 }
 
 function updateBurgerUI() {
     const headerCount = document.getElementById("burger-count");
     if(headerCount) headerCount.innerText = Math.floor(userBurgers).toLocaleString();
-    
     const clickerCount = document.getElementById("clicker-score-text");
     if(clickerCount) clickerCount.innerText = Math.floor(clickerBurgers).toLocaleString();
 }
 
-// Global Idle Loop
 setInterval(() => {
     let bps = getBps();
     if (bps > 0) {
@@ -189,6 +176,13 @@ window.addEventListener("DOMContentLoaded", () => {
             if (e.key === "Enter") sendDmMessage();
         });
     }
+
+    // Attach chat send listeners globally
+    const sendBtn = document.getElementById("send-btn");
+    if (sendBtn) sendBtn.addEventListener("click", sendMessage);
+
+    const userInput = document.getElementById("user-input");
+    if (userInput) { userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); }); }
 });
 
 function toggleMobileSidebar() {
@@ -260,10 +254,6 @@ function handleSignOut() {
 }
 
 // --- CLOUD DATABASE ---
-let myFriends = [];
-let myRequests = [];
-let mySentRequests = [];
-
 async function loadUserDataFromCloud() {
     if (!firebaseUserId) return;
     
@@ -303,7 +293,6 @@ async function loadUserDataFromCloud() {
             updateUsageUI();
             
             if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
-
         } else {
             saveSessionData();
             startNewChat();
@@ -500,7 +489,6 @@ function launchGame() {
 // =========================================================================
 // --- FRIENDS & CONTACTS SYSTEM ---
 // =========================================================================
-let allUsersCache = [];
 const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
 
 function getAvatarColor(str) {
@@ -733,6 +721,20 @@ async function sendDmMessage() {
 // =========================================================================
 // --- GENERAL APP LOGIC & CHAT ---
 // =========================================================================
+
+function checkDailyMessageLimit() {
+    const today = new Date().toISOString().split('T')[0];
+    let lastDate = localStorage.getItem("carl_last_msg_date");
+    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+
+    if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
+    
+    if (count >= 10 && !hasValidApiKey()) {
+        alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
+        switchView('view-settings'); return false;
+    }
+    return true;
+}
 
 function startNewChat() {
     isDM = false;
@@ -1088,10 +1090,6 @@ function updateUsageUI() {
         let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
 
         if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
-        if (count >= 10 && !hasValidApiKey()) {
-            alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
-            switchView('view-settings'); return false;
-        }
         let percent = (count / 10) * 100;
         if (percent > 100) percent = 100;
         fillEl.style.width = `${percent}%`;
@@ -1181,12 +1179,6 @@ function appendMessage(msg, sender, imgSrc = null) {
     log.appendChild(bubble); log.scrollTop = log.scrollHeight;
 }
 
-const sendBtn = document.getElementById("send-btn");
-if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-
-const userInput = document.getElementById("user-input");
-if (userInput) { userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); }); }
-
 // --- CALL FEATURE ---
 let isCallActive = false; let isCallConnected = false; let isMuted = false; let isSpeakerOn = true;
 let callTimerInterval = null; let callSeconds = 0; let ringTimeout = null; let ringInterval = null;
@@ -1216,7 +1208,7 @@ function speakCarl(text) { if (!('speechSynthesis' in window) || !isCallActive) 
 function initSpeechRecognition() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { document.getElementById("call-status").innerText = "Browser doesn't support mic!"; return; } recognition = new SpeechRecognition(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US'; recognition.onresult = async (event) => { if (isMuted || !isCallActive || !isCallConnected) return; let interimTranscript = ''; let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript; else interimTranscript += event.results[i][0].transcript; } let combined = finalTranscript + interimTranscript; if (combined.trim().length > 3 && window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); } if (finalTranscript.trim().length > 0) { const userQuery = finalTranscript.trim(); window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); document.getElementById("call-status").innerText = "Carl is thinking..."; await processCallUserMessage(userQuery); } }; recognition.onerror = (e) => { if (e.error === 'not-allowed') { document.getElementById("call-status").innerText = "Mic Permission Denied"; } }; recognition.onend = () => { if (isCallActive && isCallConnected && !isMuted) { try { recognition.start(); } catch(e) {} } }; try { recognition.start(); } catch(e) {} }
 
 // =========================================================================
-// --- GAMES GLOBAL VARIABLES ---
+// --- MINIGAME GLOBAL LOGIC & MATRICES ---
 // =========================================================================
 
 // Tic Tac Toe
@@ -1225,65 +1217,27 @@ let playerTurn = true;
 const winCombos = [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ];
 
 // Hangman
-let hmWord = "";
-let hmGuessed = new Set();
-let hmMistakes = 0;
-let hmPlayerTurn = true;
-let hmGameOver = false;
+let hmWord = ""; let hmGuessed = new Set(); let hmMistakes = 0; let hmPlayerTurn = true; let hmGameOver = false;
 const safeDictionary = ["ROBLOX", "MINECRAFT", "DEVELOPER", "PYTHON", "KEYBOARD", "MONITOR", "VARIABLE", "FUNCTION", "BLENDER", "UNITY", "GODOT", "SCRIPTING", "ANIMATION", "TEXTURE", "PHYSICS", "CANVA", "FIGMA", "INTERFACE", "SURVIVAL", "MULTIPLAYER", "SERVER", "BEDROCK", "ARENA", "ISLAND", "ORAVON", "SCRAPWAGON", "HAVOC", "CARLAI", "DESKTOP", "COMPANION", "ELEPHANT", "GIRAFFE", "KANGAROO", "DOLPHIN", "PENGUIN", "CHEETAH", "VOLCANO", "TORNADO", "AVALANCHE", "GALAXY", "ASTEROID", "UNIVERSE", "BACKPACK", "TELESCOPE", "MICROSCOPE", "COMPASS", "TREASURE", "PYRAMID", "GUITAR", "PIANO", "BICYCLE", "SKATEBOARD", "HELICOPTER", "SPACESHIP"];
 
 // Connect Four
-const C4_ROWS = 6;
-const C4_COLS = 7;
-let c4Board = [];
-let c4PlayerTurn = true;
-let c4GameOver = false;
+const C4_ROWS = 6; const C4_COLS = 7;
+let c4Board = []; let c4PlayerTurn = true; let c4GameOver = false;
 
 // Battleship
 const BS_SIZE = 6;
-let bsPlayerGrid = [];
-let bsEnemyGrid = [];
-let bsEnemyShips = [];
-let bsPlayerTurn = true;
-let bsGameOver = false;
-let bsPlacing = true;
-let bsShipSizes = [4, 3, 2];
-let bsCurrentShipIndex = 0;
-let bsIsHorizontal = true;
-let bsPreviewOrigin = null;
-let bsPreviewCoords = [];
+let bsPlayerGrid = []; let bsEnemyGrid = []; let bsEnemyShips = []; let bsPlayerTurn = true; let bsGameOver = false; let bsPlacing = true; let bsShipSizes = [4, 3, 2]; let bsCurrentShipIndex = 0; let bsIsHorizontal = true; let bsPreviewOrigin = null; let bsPreviewCoords = [];
 
 // Checkers
 const CHK_SIZE = 8;
-let chkBoard = [];
-let chkSelected = null;
-let chkValidMoves = [];
-let chkPlayerTurn = true;
-let chkGameOver = false;
+let chkBoard = []; let chkSelected = null; let chkValidMoves = []; let chkPlayerTurn = true; let chkGameOver = false;
 
 // Chess
 const CHS_SIZE = 8;
-let chsBoard = [];
-let chsSelected = null;
-let chsValidMoves = [];
-let chsPlayerTurn = true;
-let chsGameOver = false;
-const chsInitialBoard = [
-    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-    ['', '', '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', ''],
-    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-    ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-];
-const chsIcons = {
-    'P': '/static/icons/PawnWhite.png', 'R': '/static/icons/RookWhite.png', 'N': '/static/icons/HorseWhite.png', 'B': '/static/icons/BishopWhite.png', 'Q': '/static/icons/QueenWhite.png', 'K': '/static/icons/KingWhite.png',
-    'p': '/static/icons/PawnBlack.png', 'r': '/static/icons/RookBlack.png', 'n': '/static/icons/HorseBlack.png', 'b': '/static/icons/BishopBlack.png', 'q': '/static/icons/QueenBlack.png', 'k': '/static/icons/KingBlack.png'
-};
+let chsBoard = []; let chsSelected = null; let chsValidMoves = []; let chsPlayerTurn = true; let chsGameOver = false;
+const chsInitialBoard = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']];
+const chsIcons = { 'P': '/static/icons/PawnWhite.png', 'R': '/static/icons/RookWhite.png', 'N': '/static/icons/HorseWhite.png', 'B': '/static/icons/BishopWhite.png', 'Q': '/static/icons/QueenWhite.png', 'K': '/static/icons/KingWhite.png', 'p': '/static/icons/PawnBlack.png', 'r': '/static/icons/RookBlack.png', 'n': '/static/icons/HorseBlack.png', 'b': '/static/icons/BishopBlack.png', 'q': '/static/icons/QueenBlack.png', 'k': '/static/icons/KingBlack.png' };
 
-// --- GAMES LOGIC ---
 function initTicTacToe() { board = ["", "", "", "", "", "", "", "", ""]; playerTurn = true; document.getElementById("ttt-status").innerText = "Your Turn (X)"; document.getElementById("ttt-status").style.color = "#fff"; document.querySelectorAll(".ttt-cell").forEach(cell => { cell.innerText = ""; cell.className = "ttt-cell"; }); }
 function makeMove(index) { if (board[index] === "" && playerTurn) { board[index] = "X"; updateCell(index, "X"); if (checkWin("X")) { document.getElementById("ttt-status").innerText = "You Win!"; document.getElementById("ttt-status").style.color = "#84cc16"; playerTurn = false; return; } else if (!board.includes("")) { document.getElementById("ttt-status").innerText = "It's a Draw!"; return; } playerTurn = false; document.getElementById("ttt-status").innerText = "Carl is thinking..."; setTimeout(carlMove, 500); } }
 function updateCell(index, player) { const cell = document.getElementById(`ttt-cell-${index}`); if (cell) { cell.innerText = player; cell.classList.add(player.toLowerCase()); } }
@@ -1313,19 +1267,19 @@ function bsCellClick(r, c) { if (bsGameOver) return; if (bsPlacing) { let coords
 function bsConfirmPlacement() { if (!bsPlacing) return; if (bsPreviewCoords.length === 0) { alert("Please tap a valid spot on the grid to position your ship first!"); return; } bsPreviewCoords.forEach(coord => { bsPlayerGrid[coord.r][coord.c] = 1; }); bsPreviewOrigin = null; bsPreviewCoords = []; bsCurrentShipIndex++; if (bsCurrentShipIndex < bsShipSizes.length) { document.getElementById("bs-status").innerText = `Place your ${bsShipSizes[bsCurrentShipIndex]}-length ship`; } else { bsPlacing = false; document.getElementById("bs-placement-controls").style.display = "none"; document.getElementById("bs-enemy-label").style.display = "block"; document.getElementById("bs-enemy-grid").style.display = "grid"; document.getElementById("bs-player-label").innerText = "Your Fleet"; document.getElementById("bs-status").innerText = "Your Turn - Fire!"; } bsUpdateBoardsUI(); }
 function bsFire(r, c) { if (bsPlacing || !bsPlayerTurn || bsGameOver) return; if (bsEnemyGrid[r][c] !== 0) return; let targetCoord = `${r},${c}`; let isHit = bsEnemyShips.includes(targetCoord); if (isHit) { bsEnemyGrid[r][c] = 3; document.getElementById("bs-status").innerText = "Direct Hit! Fire Again!"; document.getElementById("bs-status").style.color = "#84cc16"; } else { bsEnemyGrid[r][c] = 2; document.getElementById("bs-status").innerText = "Miss!"; document.getElementById("bs-status").style.color = "#ef4444"; } bsUpdateBoardsUI(); if (bsEnemyShips.every(coord => { let [tr,tc] = coord.split(',').map(Number); return bsEnemyGrid[tr][tc] === 3; })) { bsGameOver = true; document.getElementById("bs-status").innerText = "You Destroyed Carl's Fleet!"; document.getElementById("bs-status").style.color = "#84cc16"; return; } if (isHit) return; bsPlayerTurn = false; setTimeout(bsCarlTurn, 800); }
 function bsCarlTurn() { if (bsGameOver) return; document.getElementById("bs-status").innerText = "Carl is firing..."; document.getElementById("bs-status").style.color = "#eccc68"; setTimeout(() => { let r, c; do { r = Math.floor(Math.random() * BS_SIZE); c = Math.floor(Math.random() * BS_SIZE); } while (bsPlayerGrid[r][c] === 2 || bsPlayerGrid[r][c] === 3); let isHit = (bsPlayerGrid[r][c] === 1); if (isHit) { bsPlayerGrid[r][c] = 3; document.getElementById("bs-status").innerText = "Carl hit your ship and fires again!"; document.getElementById("bs-status").style.color = "#ef4444"; } else { bsPlayerGrid[r][c] = 2; document.getElementById("bs-status").innerText = "Carl missed! Your Turn - Fire!"; document.getElementById("bs-status").style.color = "#fff"; } bsUpdateBoardsUI(); let playerLost = true; for (let row = 0; row < BS_SIZE; row++) { for (let col = 0; col < BS_SIZE; col++) { if (bsPlayerGrid[row][col] === 1) playerLost = false; } } if (playerLost) { bsGameOver = true; document.getElementById("bs-status").innerText = "Carl Destroyed Your Fleet!"; document.getElementById("bs-status").style.color = "#ef4444"; } else if (isHit) { setTimeout(bsCarlTurn, 800); } else { bsPlayerTurn = true; } }, 600); }
-function bsUpdateBoardsUI() { const enemyDiv = document.getElementById("bs-enemy-grid"); const playerDiv = document.getElementById("bs-player-grid"); if (!enemyDiv || !playerDiv) return; enemyDiv.innerHTML = ""; playerDiv.innerHTML = ""; if (!bsPlacing) { for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsEnemyGrid[r][c]; if (val === 2) { cell.classList.add("miss"); } else if (val === 3) { cell.classList.add("hit"); } cell.onclick = () => bsFire(r, c); enemyDiv.appendChild(cell); } } } for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsPlayerGrid[r][c]; let isPreview = bsPreviewCoords.some(coord => coord.r === r && coord.c === c); if (val === 1) { cell.classList.add("ship"); } else if (val === 2) { cell.classList.add("miss"); } else if (val === 3) { cell.classList.add("hit"); } else if (isPreview) { cell.classList.add("preview"); } if (bsPlacing) { cell.onclick = () => bsCellClick(r, c); } playerDiv.appendChild(cell); } } }
+function bsUpdateBoardsUI() { const enemyDiv = document.getElementById("bs-enemy-grid"); const playerDiv = document.getElementById("bs-player-grid"); if (!enemyDiv || !playerDiv) return; enemyDiv.innerHTML = ""; playerDiv.innerHTML = ""; if (!bsPlacing) { for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsEnemyGrid[r][c]; if (val === 2) cell.classList.add("miss"); else if (val === 3) cell.classList.add("hit"); cell.onclick = () => bsFire(r, c); enemyDiv.appendChild(cell); } } } for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsPlayerGrid[r][c]; let isPreview = bsPreviewCoords.some(coord => coord.r === r && coord.c === c); if (val === 1) cell.classList.add("ship"); else if (val === 2) cell.classList.add("miss"); else if (val === 3) cell.classList.add("hit"); else if (isPreview) cell.classList.add("preview"); if (bsPlacing) cell.onclick = () => bsCellClick(r, c); playerDiv.appendChild(cell); } } }
 
 function initCheckers() { chkBoard = Array(CHK_SIZE).fill().map(() => Array(CHK_SIZE).fill(0)); chkSelected = null; chkValidMoves = []; chkPlayerTurn = true; chkGameOver = false; document.getElementById("chk-status").innerText = "Your Turn (Red)"; document.getElementById("chk-status").style.color = "#fff"; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { if ((r + c) % 2 === 1) { if (r < 3) chkBoard[r][c] = 2; else if (r > 4) chkBoard[r][c] = 1; } } } chkRenderBoard(); }
 function chkRenderBoard() { const boardDiv = document.getElementById("chk-board"); if (!boardDiv) return; boardDiv.innerHTML = ""; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { const tile = document.createElement("div"); let isDark = (r + c) % 2 === 1; tile.className = `chk-tile ${isDark ? "dark" : "light"}`; let pieceVal = chkBoard[r][c]; if (chkSelected && chkSelected.r === r && chkSelected.c === c) tile.classList.add("selected"); let moveObj = chkValidMoves.find(m => m.toR === r && m.toC === c); if (moveObj) tile.classList.add("target"); let isJumped = chkValidMoves.some(m => m.isJump && m.jumpedR === r && m.jumpedC === c); if (isJumped) tile.classList.add("jump-capture"); if (pieceVal !== 0) { const piece = document.createElement("div"); let isRed = pieceVal === 1 || pieceVal === 11; let isKing = pieceVal === 11 || pieceVal === 22; piece.className = `chk-piece ${isRed ? "red" : "black"}`; if (isKing) piece.classList.add("king"); tile.appendChild(piece); } tile.onclick = () => chkTileClick(r, c); boardDiv.appendChild(tile); } } }
 function chkTileClick(r, c) { if (!chkPlayerTurn || chkGameOver) return; let pieceVal = chkBoard[r][c]; let isPlayerPiece = pieceVal === 1 || pieceVal === 11; if (isPlayerPiece) { chkSelected = { r, c }; chkValidMoves = chkGetMovesForPiece(r, c, chkBoard); chkRenderBoard(); return; } if (chkSelected) { let move = chkValidMoves.find(m => m.toR === r && m.toC === c); if (move) { chkExecuteMove(move); chkSelected = null; chkValidMoves = []; chkRenderBoard(); if (chkCheckWin(1)) { chkGameOver = true; document.getElementById("chk-status").innerText = "You Win!"; document.getElementById("chk-status").style.color = "#84cc16"; return; } chkPlayerTurn = false; document.getElementById("chk-status").innerText = "Carl is thinking..."; document.getElementById("chk-status").style.color = "#9333ea"; setTimeout(chkCarlTurn, 600); } else { chkSelected = null; chkValidMoves = []; chkRenderBoard(); } } }
 function chkGetMovesForPiece(r, c, boardState) { let p = boardState[r][c]; if (p === 0) return []; let isRed = p === 1 || p === 11; let isKing = p === 11 || p === 22; let moves = []; let dirs = []; if (isRed || isKing) dirs.push([-1, -1], [-1, 1]); if (!isRed || isKing) dirs.push([1, -1], [1, 1]); for (let [dr, dc] of dirs) { let nr = r + dr; let nc = c + dc; if (nr >= 0 && nr < CHK_SIZE && nc >= 0 && nc < CHK_SIZE) { if (boardState[nr][nc] === 0) { moves.push({ fromR: r, fromC: c, toR: nr, toC: nc, isJump: false }); } else { let opp = boardState[nr][nc]; let isOpponent = isRed ? (opp === 2 || opp === 22) : (opp === 1 || opp === 11); if (isOpponent) { let jR = r + 2 * dr; let jC = c + 2 * dc; if (jR >= 0 && jR < CHK_SIZE && jC >= 0 && jC < CHK_SIZE && boardState[jR][jC] === 0) { moves.push({ fromR: r, fromC: c, toR: jR, toC: jC, isJump: true, jumpedR: nr, jumpedC: nc }); } } } } } return moves; }
 function chkExecuteMove(move) { let p = chkBoard[move.fromR][move.fromC]; chkBoard[move.fromR][move.fromC] = 0; if (move.isJump) chkBoard[move.jumpedR][move.jumpedC] = 0; if (p === 1 && move.toR === 0) p = 11; if (p === 2 && move.toR === 7) p = 22; chkBoard[move.toR][move.toC] = p; }
-function chkCarlTurn() { if (chkGameOver) return; let diff = getDifficulty(); let allMoves = []; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { let p = chkBoard[r][c]; if (p === 2 || p === 22) { let moves = chkGetMovesForPiece(r, c, chkBoard); allMoves.push(...moves); } } } if (allMoves.length === 0) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Has No Moves! You Win!"; document.getElementById("chk-status").style.color = "#84cc16"; return; } let jumps = allMoves.filter(m => m.isJump); let chosenMove = null; if (diff === "easy") { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else if (diff === "medium") { if (jumps.length > 0 && Math.random() < 0.7) { chosenMove = jumps[Math.floor(Math.random() * jumps.length)]; } else { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } } else { if (jumps.length > 0) { chosenMove = jumps[Math.floor(Math.random() * jumps.length)]; } else { let kingingMoves = allMoves.filter(m => m.toR === 7); if (kingingMoves.length > 0) { chosenMove = kingingMoves[Math.floor(Math.random() * kingingMoves.length)]; } else { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } } } chkExecuteMove(chosenMove); chkRenderBoard(); if (chkCheckWin(2)) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Wins!"; document.getElementById("chk-status").style.color = "#ef4444"; return; } chkPlayerTurn = true; document.getElementById("chk-status").innerText = "Your Turn (Red)"; document.getElementById("chk-status").style.color = "#fff"; }
+function chkCarlTurn() { if (chkGameOver) return; let diff = getDifficulty(); let allMoves = []; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { let p = chkBoard[r][c]; if (p === 2 || p === 22) { let moves = chkGetMovesForPiece(r, c, chkBoard); allMoves.push(...moves); } } } if (allMoves.length === 0) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Has No Moves! You Win!"; document.getElementById("chk-status").style.color = "#84cc16"; return; } let jumps = allMoves.filter(m => m.isJump); let chosenMove = null; if (diff === "easy") { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else if (diff === "medium") { if (jumps.length > 0 && Math.random() < 0.7) chosenMove = jumps[Math.floor(Math.random() * jumps.length)]; else chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else { if (jumps.length > 0) chosenMove = jumps[Math.floor(Math.random() * jumps.length)]; else { let kingingMoves = allMoves.filter(m => m.toR === 7); if (kingingMoves.length > 0) chosenMove = kingingMoves[Math.floor(Math.random() * kingingMoves.length)]; else chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } } chkExecuteMove(chosenMove); chkRenderBoard(); if (chkCheckWin(2)) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Wins!"; document.getElementById("chk-status").style.color = "#ef4444"; return; } chkPlayerTurn = true; document.getElementById("chk-status").innerText = "Your Turn (Red)"; document.getElementById("chk-status").style.color = "#fff"; }
 function chkCheckWin(player) { let enemyVal1 = player === 1 ? 2 : 1; let enemyVal2 = player === 1 ? 22 : 11; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { let p = chkBoard[r][c]; if (p === enemyVal1 || p === enemyVal2) return false; } } return true; }
 
 function initChess() { chsBoard = JSON.parse(JSON.stringify(chsInitialBoard)); chsSelected = null; chsValidMoves = []; chsPlayerTurn = true; chsGameOver = false; document.getElementById("chs-status").innerText = "Your Turn (White)"; document.getElementById("chs-status").style.color = "#fff"; chsRenderBoard(); }
-function chsRenderBoard() { const boardDiv = document.getElementById("chs-board"); if (!boardDiv) return; boardDiv.innerHTML = ""; for (let r = 0; r < CHS_SIZE; r++) { for (let c = 0; c < CHS_SIZE; c++) { const tile = document.createElement("div"); let isDark = (r + c) % 2 === 1; tile.className = `chs-tile ${isDark ? "dark" : "light"}`; let p = chsBoard[r][c]; if (chsSelected && chsSelected.r === r && chsSelected.c === c) tile.classList.add("selected"); let moveObj = chsValidMoves.find(m => m.r === r && m.c === c); if (moveObj) { if (p !== '') { tile.classList.add("target-capture"); } else { tile.classList.add("target"); } } if (p !== '') { const piece = document.createElement("img"); piece.className = "chs-piece"; piece.src = chsIcons[p]; piece.draggable = false; tile.appendChild(piece); } tile.onclick = () => chsTileClick(r, c); boardDiv.appendChild(tile); } } }
-function chsGetMoves(r, c, board) { let p = board[r][c]; if (p === '') return []; let isPlayer = /^[A-Z]$/.test(p); let piece = p.toLowerCase(); let moves = []; function addMove(nr, nc) { if (nr < 0 || nr >= CHS_SIZE || nc < 0 || nc >= CHS_SIZE) return false; let target = board[nr][nc]; if (target === '') { moves.push({r: nr, c: nc}); return true; } let targetIsPlayer = /^[A-Z]$/.test(target); if (isPlayer !== targetIsPlayer) { moves.push({r: nr, c: nc}); } return false; } if (piece === 'p') { let dir = isPlayer ? -1 : 1; let startRow = isPlayer ? 6 : 1; if (r+dir >= 0 && r+dir < CHS_SIZE && board[r+dir][c] === '') { moves.push({r: r+dir, c: c}); if (r === startRow && board[r+2*dir][c] === '') { moves.push({r: r+2*dir, c: c}); } } for (let dc of [-1, 1]) { let nc = c + dc; let nr = r + dir; if (nr >= 0 && nr < CHS_SIZE && nc >= 0 && nc < CHS_SIZE) { let target = board[nr][nc]; if (target !== '' && (/^[A-Z]$/.test(target) !== isPlayer)) { moves.push({r: nr, c: nc}); } } } } else if (piece === 'r') { let dirs = [[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'b') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'q') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'n') { let jumps = [[-2,-1],[-2,1],[2,-1],[2,1],[-1,-2],[-1,2],[1,-2],[1,2]]; for (let [dr, dc] of jumps) addMove(r+dr, c+dc); } else if (piece === 'k') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) addMove(r+dr, c+dc); } return moves; }
+function chsRenderBoard() { const boardDiv = document.getElementById("chs-board"); if (!boardDiv) return; boardDiv.innerHTML = ""; for (let r = 0; r < CHS_SIZE; r++) { for (let c = 0; c < CHS_SIZE; c++) { const tile = document.createElement("div"); let isDark = (r + c) % 2 === 1; tile.className = `chs-tile ${isDark ? "dark" : "light"}`; let p = chsBoard[r][c]; if (chsSelected && chsSelected.r === r && chsSelected.c === c) tile.classList.add("selected"); let moveObj = chsValidMoves.find(m => m.r === r && m.c === c); if (moveObj) { if (p !== '') tile.classList.add("target-capture"); else tile.classList.add("target"); } if (p !== '') { const piece = document.createElement("img"); piece.className = "chs-piece"; piece.src = chsIcons[p]; piece.draggable = false; tile.appendChild(piece); } tile.onclick = () => chsTileClick(r, c); boardDiv.appendChild(tile); } } }
+function chsGetMoves(r, c, board) { let p = board[r][c]; if (p === '') return []; let isPlayer = /^[A-Z]$/.test(p); let piece = p.toLowerCase(); let moves = []; function addMove(nr, nc) { if (nr < 0 || nr >= CHS_SIZE || nc < 0 || nc >= CHS_SIZE) return false; let target = board[nr][nc]; if (target === '') { moves.push({r: nr, c: nc}); return true; } let targetIsPlayer = /^[A-Z]$/.test(target); if (isPlayer !== targetIsPlayer) moves.push({r: nr, c: nc}); return false; } if (piece === 'p') { let dir = isPlayer ? -1 : 1; let startRow = isPlayer ? 6 : 1; if (r+dir >= 0 && r+dir < CHS_SIZE && board[r+dir][c] === '') { moves.push({r: r+dir, c: c}); if (r === startRow && board[r+2*dir][c] === '') moves.push({r: r+2*dir, c: c}); } for (let dc of [-1, 1]) { let nc = c + dc; let nr = r + dir; if (nr >= 0 && nr < CHS_SIZE && nc >= 0 && nc < CHS_SIZE) { let target = board[nr][nc]; if (target !== '' && (/^[A-Z]$/.test(target) !== isPlayer)) moves.push({r: nr, c: nc}); } } } else if (piece === 'r') { let dirs = [[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'b') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'q') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'n') { let jumps = [[-2,-1],[-2,1],[2,-1],[2,1],[-1,-2],[-1,2],[1,-2],[1,2]]; for (let [dr, dc] of jumps) addMove(r+dr, c+dc); } else if (piece === 'k') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) addMove(r+dr, c+dc); } return moves; }
 function chsTileClick(r, c) { if (!chsPlayerTurn || chsGameOver) return; let p = chsBoard[r][c]; let isPlayerPiece = /^[A-Z]$/.test(p); if (isPlayerPiece) { chsSelected = { r, c }; chsValidMoves = chsGetMoves(r, c, chsBoard); chsRenderBoard(); return; } if (chsSelected) { let move = chsValidMoves.find(m => m.r === r && m.c === c); if (move) { chsExecuteMove(chsSelected.r, chsSelected.c, move.r, move.c); if (chsGameOver) { chsRenderBoard(); return; } chsSelected = null; chsValidMoves = []; chsRenderBoard(); chsPlayerTurn = false; document.getElementById("chs-status").innerText = "Carl is thinking..."; document.getElementById("chs-status").style.color = "#9333ea"; setTimeout(chsCarlTurn, 800); } else { chsSelected = null; chsValidMoves = []; chsRenderBoard(); } } }
 function chsExecuteMove(fromR, fromC, toR, toC) { let piece = chsBoard[fromR][fromC]; let target = chsBoard[toR][toC]; if (target === 'k') { chsGameOver = true; document.getElementById("chs-status").innerText = "Checkmate! You Win!"; document.getElementById("chs-status").style.color = "#84cc16"; } else if (target === 'K') { chsGameOver = true; document.getElementById("chs-status").innerText = "Checkmate! Carl Wins!"; document.getElementById("chs-status").style.color = "#ef4444"; } if (piece === 'P' && toR === 0) piece = 'Q'; if (piece === 'p' && toR === 7) piece = 'q'; chsBoard[toR][toC] = piece; chsBoard[fromR][fromC] = ''; }
 function chsCarlTurn() { if (chsGameOver) return; let diff = getDifficulty(); let allMoves = []; const values = {'p':1, 'n':3, 'b':3, 'r':5, 'q':9, 'k':100, 'P':1, 'N':3, 'B':3, 'R':5, 'Q':9, 'K':100}; for (let r = 0; r < CHS_SIZE; r++) { for (let c = 0; c < CHS_SIZE; c++) { if (/^[a-z]$/.test(chsBoard[r][c])) { let moves = chsGetMoves(r, c, chsBoard); for (let m of moves) { let target = chsBoard[m.r][m.c]; let score = target === '' ? 0 : values[target]; allMoves.push({ fr: r, fc: c, tr: m.r, tc: m.c, score: score }); } } } } if (allMoves.length === 0) { chsGameOver = true; document.getElementById("chs-status").innerText = "Stalemate!"; return; } let chosenMove; if (diff === "easy") { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else { allMoves.sort((a, b) => b.score - a.score); let bestScore = allMoves[0].score; let bestMoves = allMoves.filter(m => m.score === bestScore); if (diff === "medium" && Math.random() < 0.6) { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else { chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)]; } } chsExecuteMove(chosenMove.fr, chosenMove.fc, chosenMove.tr, chosenMove.tc); chsRenderBoard(); if (!chsGameOver) { chsPlayerTurn = true; document.getElementById("chs-status").innerText = "Your Turn (White)"; document.getElementById("chs-status").style.color = "#fff"; } }
