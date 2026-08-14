@@ -26,35 +26,21 @@ let activeChatId = null;
 let chatHistory = [];  
 
 let selectedGame = "Burger Clicker";
-let pendingImageBase64 = null;
-let pendingImageMime = null;
-let pendingImageSrc = null;
+const gamesWithDifficulty = ["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
 
-let pendingDmImageBase64 = null;
-let pendingDmImageMime = null;
-let pendingDmImageSrc = null;
-let currentDmUser = null; 
-
-let isDM = false;
-let currentDmUnsubscribe = null;
+let pendingImageBase64 = null, pendingImageMime = null, pendingImageSrc = null;
+let pendingDmImageBase64 = null, pendingDmImageMime = null, pendingDmImageSrc = null, currentDmUser = null; 
+let isDM = false, currentDmUnsubscribe = null;
 
 // --- BURGER ECONOMY STATE ---
-let userBurgers = 100;     
-let clickerBurgers = 0;    
-let rebirths = 0;
-let clickPower = 1;
-let autoChefs = 0;         
-let burgerStands = 0;      
-let burgerFactories = 0;   
+let userBurgers = 100, clickerBurgers = 0, rebirths = 0, clickPower = 1, autoChefs = 0, burgerStands = 0, burgerFactories = 0;   
 
 function getMultiplier() { return 1 + (rebirths * 1.0); }
 function getClickValue() { return (clickPower * Math.floor(1 + (clickPower * 0.1))) * getMultiplier(); }
 function getChefPower() { return Math.floor(1 + (autoChefs * 0.1)); }
 function getStandPower() { return Math.floor(10 + (burgerStands * 0.2)); }
 function getFactoryPower() { return Math.floor(100 + (burgerFactories * 1)); }
-function getBps() {
-    return ((autoChefs * getChefPower()) + (burgerStands * getStandPower()) + (burgerFactories * getFactoryPower())) * getMultiplier();
-}
+function getBps() { return ((autoChefs * getChefPower()) + (burgerStands * getStandPower()) + (burgerFactories * getFactoryPower())) * getMultiplier(); }
 
 function updateBurgerUI() {
     const headerCount = document.getElementById("burger-count");
@@ -65,10 +51,7 @@ function updateBurgerUI() {
 
 setInterval(() => {
     let bps = getBps();
-    if (bps > 0) {
-        clickerBurgers += bps;
-        updateBurgerUI();
-    }
+    if (bps > 0) { clickerBurgers += bps; updateBurgerUI(); }
 }, 1000);
 
 // =========================================================================
@@ -83,39 +66,24 @@ function initTypingAnimation() {
     const titleEl = document.getElementById("startup-title");
     if (!titleEl) return;
     if (typingTimeout) clearTimeout(typingTimeout);
-
-    let isDeleting = false;
-    let currentText = "Ask Away!"; 
-    let charIndex = currentText.length; 
-    
+    let isDeleting = false, currentText = "Ask Away!", charIndex = currentText.length; 
     titleEl.innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
-    typingTimeout = setTimeout(() => {
-        isDeleting = true;
-        typeLoop(titleEl, currentText, charIndex, isDeleting);
-    }, 2000);
+    typingTimeout = setTimeout(() => { isDeleting = true; typeLoop(titleEl, currentText, charIndex, isDeleting); }, 2000);
 }
 
 function typeLoop(titleEl, currentText, charIndex, isDeleting) {
     let typingSpeed = isDeleting ? 45 : 65 + Math.random() * 40; 
-    
-    if (isDeleting) charIndex--;
-    else charIndex++;
-    
+    if (isDeleting) charIndex--; else charIndex++;
     titleEl.innerHTML = currentText.substring(0, charIndex) + '<span class="typing-cursor"></span>';
     
     if (!isDeleting && charIndex === currentText.length) {
-        typingSpeed = 2400; 
-        isDeleting = true;
+        typingSpeed = 2400; isDeleting = true;
     } else if (isDeleting && charIndex === 0) {
         isDeleting = false;
-        const useRare = Math.random() < 0.10;
-        const pool = useRare ? rarePhrases : normalPhrases;
+        const pool = Math.random() < 0.10 ? rarePhrases : normalPhrases;
         let newPhrase = currentText;
-        while (newPhrase === currentText) {
-            newPhrase = pool[Math.floor(Math.random() * pool.length)];
-        }
-        currentText = newPhrase;
-        typingSpeed = 400;
+        while (newPhrase === currentText) newPhrase = pool[Math.floor(Math.random() * pool.length)];
+        currentText = newPhrase; typingSpeed = 400;
     }
     typingTimeout = setTimeout(() => typeLoop(titleEl, currentText, charIndex, isDeleting), typingSpeed);
 }
@@ -131,10 +99,7 @@ function hideStartupScreen() {
 function showStartupScreen() {
     const startupScreen = document.getElementById("startup-screen");
     const viewChat = document.getElementById("view-chat");
-    if (startupScreen) {
-        startupScreen.classList.remove("hidden");
-        initTypingAnimation();
-    }
+    if (startupScreen) { startupScreen.classList.remove("hidden"); initTypingAnimation(); }
     if (viewChat) viewChat.classList.add("startup-active");
 }
 
@@ -153,36 +118,25 @@ window.addEventListener("DOMContentLoaded", () => {
         const hamburgerBtn = document.createElement("button");
         hamburgerBtn.id = "mobile-hamburger-btn";
         hamburgerBtn.className = "mobile-top-header";
-        hamburgerBtn.innerHTML = `
-            <div class="hamburger-line"></div>
-            <div class="hamburger-line"></div>
-            <div class="hamburger-line"></div>
-        `;
+        hamburgerBtn.innerHTML = `<div class="hamburger-line"></div><div class="hamburger-line"></div><div class="hamburger-line"></div>`;
         hamburgerBtn.onclick = toggleMobileSidebar; 
         document.body.appendChild(hamburgerBtn);
     }
 
     if (!document.getElementById("sidebar-overlay")) {
         const overlay = document.createElement("div");
-        overlay.id = "sidebar-overlay";
-        overlay.className = "sidebar-overlay";
+        overlay.id = "sidebar-overlay"; overlay.className = "sidebar-overlay";
         overlay.onclick = toggleMobileSidebar;
         document.body.appendChild(overlay);
     }
     
     const dmInput = document.getElementById("dm-input");
-    if (dmInput) {
-        dmInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") sendDmMessage();
-        });
-    }
+    if (dmInput) dmInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendDmMessage(); });
 
-    // Attach chat send listeners globally
     const sendBtn = document.getElementById("send-btn");
     if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-
     const userInput = document.getElementById("user-input");
-    if (userInput) { userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); }); }
+    if (userInput) userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 });
 
 function toggleMobileSidebar() {
@@ -199,7 +153,6 @@ auth.onAuthStateChanged(async (user) => {
         firebaseUserId = user.uid;
         currentUser = user.displayName || user.email.split('@')[0];
         currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
-        
         if (overlay) overlay.classList.add('hidden');
         await loadUserDataFromCloud();
     } else {
@@ -219,83 +172,52 @@ function handleLogin(e) {
     const pass = document.getElementById('auth-password').value;
     
     auth.signInWithEmailAndPassword(email, pass)
-        .then((userCredential) => {
-            if (!userCredential.user.emailVerified) alert("Please check your inbox to verify your email address.");
-        })
+        .then((userCredential) => { if (!userCredential.user.emailVerified) alert("Please check your inbox to verify your email address."); })
         .catch(error => {
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
-                auth.createUserWithEmailAndPassword(email, pass)
-                    .then((userCredential) => {
-                        userCredential.user.sendEmailVerification().then(() => {
-                            alert("Account created! A verification link has been sent to your email. Check your spam folder just in case.");
-                        });
-                    })
-                    .catch(err => alert("Sign Up Error: " + err.message));
-            } else {
-                alert(error.message);
-            }
+                auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => {
+                    userCredential.user.sendEmailVerification().then(() => alert("Account created! A verification link has been sent to your email. Check your spam folder just in case."));
+                }).catch(err => alert("Sign Up Error: " + err.message));
+            } else alert(error.message);
         });
 }
 
 function handleSignOut() {
     auth.signOut().then(() => {
-        currentUser = null;
-        currentUserAvatar = "/static/icons/default-avatar.png";
-        customApiKey = "";
-        chatsHistory = []; chatHistory = []; activeChatId = null;
-        myFriends = []; myRequests = []; mySentRequests = [];
-        currentDmUser = null;
-        
-        userBurgers = 100; clickerBurgers = 0; autoChefs = 0;
-        burgerStands = 0; burgerFactories = 0; clickPower = 1; rebirths = 0;
-        updateBurgerUI(); updateProfileUI(); renderChatHistorySidebar();
-        switchView('view-chat'); showStartupScreen(); updateUsageUI();
+        currentUser = null; currentUserAvatar = "/static/icons/default-avatar.png"; customApiKey = "";
+        chatsHistory = []; chatHistory = []; activeChatId = null; myFriends = []; myRequests = []; mySentRequests = []; currentDmUser = null;
+        userBurgers = 100; clickerBurgers = 0; autoChefs = 0; burgerStands = 0; burgerFactories = 0; clickPower = 1; rebirths = 0;
+        updateBurgerUI(); updateProfileUI(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
     });
 }
 
 // --- CLOUD DATABASE ---
+let myFriends = [];
+let myRequests = [];
+let mySentRequests = [];
+
 async function loadUserDataFromCloud() {
     if (!firebaseUserId) return;
-    
     db.collection("users").doc(firebaseUserId).onSnapshot(async (doc) => {
         if (doc.exists) {
             const data = doc.data();
-            customApiKey = data.apiKey || "";
-            chatsHistory = data.chats || [];
-            
+            customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
             if (!isDM) activeChatId = data.activeChatId || null;
             applyTheme(data.theme || "dark");
-            
-            userBurgers = data.burgers !== undefined ? data.burgers : 100;
-            clickerBurgers = data.clickerBurgers || 0;
-            autoChefs = data.autoChefs || 0;
-            burgerStands = data.burgerStands || 0;
-            burgerFactories = data.burgerFactories || 0;
-            clickPower = data.clickPower || 1;
-            rebirths = data.rebirths || 0;
-            
-            myFriends = data.friends || [];
-            myRequests = data.friendRequests || [];
-            mySentRequests = data.sentRequests || [];
-            
+            userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0;
+            autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0;
+            clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
+            myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || [];
             updateBurgerUI();
-            
             if (data.avatar) currentUserAvatar = data.avatar;
             if (data.username) currentUser = data.username;
-
             updateProfileUI();
-            const keyInput = document.getElementById('user-api-key');
-            if (keyInput) keyInput.value = customApiKey;
-            const usernameInput = document.getElementById('settings-username-input');
-            if (usernameInput) usernameInput.value = currentUser;
-            
-            renderChatHistorySidebar();
-            updateUsageUI();
-            
+            const keyInput = document.getElementById('user-api-key'); if (keyInput) keyInput.value = customApiKey;
+            const usernameInput = document.getElementById('settings-username-input'); if (usernameInput) usernameInput.value = currentUser;
+            renderChatHistorySidebar(); updateUsageUI();
             if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
         } else {
-            saveSessionData();
-            startNewChat();
+            saveSessionData(); startNewChat();
         }
     }, (error) => console.error("Error listening to user data:", error));
 }
@@ -303,111 +225,68 @@ async function loadUserDataFromCloud() {
 function saveSessionData() {
     if (!firebaseUserId) return;
     const currentActive = isDM ? (chatsHistory.length > 0 ? chatsHistory[0].id : null) : activeChatId;
-
     db.collection("users").doc(firebaseUserId).set({
-        apiKey: customApiKey, chats: chatsHistory, activeChatId: currentActive,
-        theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
-        avatar: currentUserAvatar, username: currentUser,
-        burgers: userBurgers, clickerBurgers: clickerBurgers,
-        autoChefs: autoChefs, burgerStands: burgerStands,
-        burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths
+        apiKey: customApiKey, chats: chatsHistory, activeChatId: currentActive, theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
+        avatar: currentUserAvatar, username: currentUser, burgers: userBurgers, clickerBurgers: clickerBurgers,
+        autoChefs: autoChefs, burgerStands: burgerStands, burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths
     }, { merge: true }).catch(e => console.error("Error saving data:", e));
 }
 
 // --- USER PROFILE & SETTINGS ---
 function applyTheme(theme) {
-    const body = document.body;
-    const themeSwitch = document.getElementById('theme-toggle-switch');
-    if (theme === "light") {
-        body.classList.remove("dark-mode"); body.classList.add("light-mode");
-        if (themeSwitch) themeSwitch.checked = true;
-    } else {
-        body.classList.remove("light-mode"); body.classList.add("dark-mode");
-        if (themeSwitch) themeSwitch.checked = false;
-    }
+    const body = document.body, themeSwitch = document.getElementById('theme-toggle-switch');
+    if (theme === "light") { body.classList.remove("dark-mode"); body.classList.add("light-mode"); if (themeSwitch) themeSwitch.checked = true; } 
+    else { body.classList.remove("light-mode"); body.classList.add("dark-mode"); if (themeSwitch) themeSwitch.checked = false; }
 }
 
 function toggleTheme() {
-    const body = document.body;
-    const themeSwitch = document.getElementById('theme-toggle-switch');
-    if (body.classList.contains('dark-mode')) {
-        body.classList.remove('dark-mode'); body.classList.add('light-mode');
-        if (themeSwitch) themeSwitch.checked = true;
-    } else {
-        body.classList.remove('light-mode'); body.classList.add('dark-mode');
-        if (themeSwitch) themeSwitch.checked = false;
-    }
+    const body = document.body, themeSwitch = document.getElementById('theme-toggle-switch');
+    if (body.classList.contains('dark-mode')) { body.classList.remove('dark-mode'); body.classList.add('light-mode'); if (themeSwitch) themeSwitch.checked = true; } 
+    else { body.classList.remove('light-mode'); body.classList.add('dark-mode'); if (themeSwitch) themeSwitch.checked = false; }
     saveSessionData();
 }
 
 function updateProfileUI() {
-    const avatarEl = document.getElementById("header-user-avatar");
-    const nameEl = document.getElementById("header-user-name");
-    if (avatarEl) avatarEl.src = currentUserAvatar;
-    if (nameEl) nameEl.innerText = currentUser || "Guest";
+    const avatarEl = document.getElementById("header-user-avatar"), nameEl = document.getElementById("header-user-name");
+    if (avatarEl) avatarEl.src = currentUserAvatar; if (nameEl) nameEl.innerText = currentUser || "Guest";
 }
 
 function updateUsernameFromSettings() {
     const input = document.getElementById("settings-username-input");
     if (!input || !currentUser) return;
     const newName = input.value.trim();
-    if (newName.length >= 3 && newName.length <= 20) {
-        currentUser = newName; updateProfileUI(); saveSessionData();
-    } else {
-        alert("Username must be between 3 and 20 characters!");
-        input.value = currentUser || "";
-    }
+    if (newName.length >= 3 && newName.length <= 20) { currentUser = newName; updateProfileUI(); saveSessionData(); } 
+    else { alert("Username must be between 3 and 20 characters!"); input.value = currentUser || ""; }
 }
 
 function handleAvatarUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
-        currentUserAvatar = e.target.result; updateProfileUI(); saveSessionData();
-    };
+    reader.onload = function(e) { currentUserAvatar = e.target.result; updateProfileUI(); saveSessionData(); };
     reader.readAsDataURL(file);
 }
 
 function saveSettings() {
-    const keyInput = document.getElementById('user-api-key');
-    if (keyInput) customApiKey = keyInput.value.trim();
-    const newPass = document.getElementById('settings-new-pass').value;
-    const confirmPass = document.getElementById('settings-confirm-pass').value;
-    
+    const keyInput = document.getElementById('user-api-key'); if (keyInput) customApiKey = keyInput.value.trim();
+    const newPass = document.getElementById('settings-new-pass').value, confirmPass = document.getElementById('settings-confirm-pass').value;
     if (newPass || confirmPass) {
-        if (newPass === confirmPass) {
-            auth.currentUser.updatePassword(newPass).then(() => {
-                alert("Password updated successfully.");
-                document.getElementById('settings-new-pass').value = ""; document.getElementById('settings-confirm-pass').value = "";
-            }).catch(error => alert(error.message));
-        } else alert("Passwords do not match!");
+        if (newPass === confirmPass) { auth.currentUser.updatePassword(newPass).then(() => { alert("Password updated successfully."); document.getElementById('settings-new-pass').value = ""; document.getElementById('settings-confirm-pass').value = ""; }).catch(error => alert(error.message)); } 
+        else alert("Passwords do not match!");
     }
     saveSessionData(); updateUsageUI();
 }
 
-function toggleApiKeyHelp() {
-    const helpBox = document.getElementById('api-key-help-box');
-    if (helpBox) helpBox.classList.toggle('hidden');
-}
+function toggleApiKeyHelp() { const helpBox = document.getElementById('api-key-help-box'); if (helpBox) helpBox.classList.toggle('hidden'); }
 
 function toggleSidebar() {
-    const sidebar = document.getElementById('desktop-sidebar');
-    const btn = document.getElementById('sidebar-toggle-btn');
+    const sidebar = document.getElementById('desktop-sidebar'), btn = document.getElementById('sidebar-toggle-btn');
     if (!sidebar) return;
-    if (sidebar.classList.contains('expanded')) {
-        sidebar.classList.remove('expanded'); sidebar.classList.add('collapsed');
-        if (btn) btn.innerText = "❯";
-    } else {
-        sidebar.classList.remove('collapsed'); sidebar.classList.add('expanded');
-        if (btn) btn.innerText = "❮";
-    }
+    if (sidebar.classList.contains('expanded')) { sidebar.classList.remove('expanded'); sidebar.classList.add('collapsed'); if (btn) btn.innerText = "❯"; } 
+    else { sidebar.classList.remove('collapsed'); sidebar.classList.add('expanded'); if (btn) btn.innerText = "❮"; }
 }
 
-function getDifficulty() {
-    const select = document.getElementById("difficulty-select");
-    return select ? select.value : "medium";
-}
+function getDifficulty() { const select = document.getElementById("difficulty-select"); return select ? select.value : "medium"; }
 
 function switchView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -419,530 +298,15 @@ function switchView(viewId) {
     if (sidebar && sidebar.classList.contains('open')) sidebar.classList.remove('open');
     if (overlay && overlay.classList.contains('active')) overlay.classList.remove('active');
     
-    if (viewId !== 'view-dm') {
-        isDM = false;
-        if(currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
-    }
-
+    if (viewId !== 'view-dm') { isDM = false; if(currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; } }
     if (viewId === 'view-games') updateDifficultyPickerVisibility();
     else if (viewId === 'view-friends') fetchAllUsers();
     else if (viewId === 'view-burgerclicker') updateUpgradesUI();
 }
 
 // =========================================================================
-// --- GAMES LAUNCHER SYSTEM ---
+// --- GENERAL APP LOGIC & CHAT UI ---
 // =========================================================================
-
-const gamesWithDifficulty = ["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
-
-function selectGame(element, gameName) {
-    document.querySelectorAll('.game-card-img').forEach(card => card.classList.remove('selected'));
-    element.classList.add('selected');
-    selectedGame = gameName;
-    updateDifficultyPickerVisibility();
-}
-
-function updateDifficultyPickerVisibility() {
-    const diffPicker = document.getElementById("difficulty-picker");
-    if (diffPicker) {
-        if (gamesWithDifficulty.includes(selectedGame)) {
-            diffPicker.style.display = "flex";
-        } else {
-            diffPicker.style.display = "none";
-        }
-    }
-}
-
-function launchGame() {
-    if (selectedGame === "Burger Clicker") {
-        switchView("view-burgerclicker");
-        updateUpgradesUI();
-    } else if (selectedGame === "Tic Tac Toe") {
-        switchView("view-tictactoe");
-        initTicTacToe();
-    } else if (selectedGame === "Rock Paper Scissors") {
-        switchView("view-rps");
-        initRps();
-    } else if (selectedGame === "Blackjack") {
-        switchView("view-blackjack");
-        prepBlackjack();
-    } else if (selectedGame === "Hangman") {
-        switchView("view-hangman");
-        initHangman();
-    } else if (selectedGame === "Connect Four") {
-        switchView("view-connectfour");
-        initConnectFour();
-    } else if (selectedGame === "Battleship") {
-        switchView("view-battleship");
-        initBattleship();
-    } else if (selectedGame === "Checkers") {
-        switchView("view-checkers");
-        initCheckers();
-    } else if (selectedGame === "Chess") {
-        switchView("view-chess");
-        initChess();
-    } else {
-        alert(`Starting ${selectedGame}...`);
-    }
-}
-
-// =========================================================================
-// --- FRIENDS & CONTACTS SYSTEM ---
-// =========================================================================
-const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
-
-function getAvatarColor(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    return avatarColors[Math.abs(hash) % avatarColors.length];
-}
-
-function getAvatarHTML(user) {
-    if (!user.avatar || user.avatar.includes('default-avatar.png')) {
-        const color = getAvatarColor(user.username);
-        const initial = user.username.charAt(0).toUpperCase();
-        return `<div class="text-avatar" style="background-color: ${color};">${initial}</div>`;
-    }
-    return `<img class="friend-avatar" src="${user.avatar}" draggable="false">`;
-}
-
-async function fetchAllUsers() {
-    const list = document.getElementById("find-people-list");
-    if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
-
-    try {
-        if (firebaseUserId && db) {
-            const snapshot = await db.collection("users").get();
-            allUsersCache = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (doc.id !== firebaseUserId && data.username) {
-                    allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "" });
-                }
-            });
-        }
-    } catch (err) { console.error("Error fetching real users", err); }
-    renderFriendsView();
-}
-
-function renderFriendsView() {
-    const query = document.getElementById("friend-search-input").value.toLowerCase().trim();
-    const findList = document.getElementById("find-people-list");
-    const friendsList = document.getElementById("my-friends-list");
-    if (!findList || !friendsList) return;
-    
-    findList.innerHTML = ""; friendsList.innerHTML = "";
-
-    const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
-    if (activeFriends.length === 0) {
-        friendsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No friends yet.</p>";
-    } else {
-        activeFriends.forEach(user => {
-            const item = document.createElement("div");
-            item.className = "friend-item";
-            item.innerHTML = `
-                <div class="friend-info">
-                    ${getAvatarHTML(user)}
-                    <span class="friend-name">${user.username}</span>
-                </div>
-                <button class="friend-msg-btn" onclick='openDirectMessage(${JSON.stringify(user)})'>Message</button>
-            `;
-            friendsList.appendChild(item);
-        });
-    }
-
-    let searchResults = [];
-    const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
-    
-    incomingReqs.forEach(user => {
-        const item = document.createElement("div");
-        item.className = "friend-item";
-        item.innerHTML = `
-            <div class="friend-info">
-                ${getAvatarHTML(user)}
-                <span class="friend-name">${user.username}</span>
-            </div>
-            <button class="friend-req-btn" onclick="acceptRequest('${user.id}')">Accept Request</button>
-        `;
-        findList.appendChild(item);
-    });
-
-    if (query) {
-        searchResults = allUsersCache.filter(u => u.username.toLowerCase().includes(query) && !myFriends.includes(u.id) && !myRequests.includes(u.id));
-        if (searchResults.length === 0 && incomingReqs.length === 0) {
-            findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No users found.</p>";
-        } else {
-            searchResults.forEach(user => {
-                const item = document.createElement("div");
-                item.className = "friend-item";
-                const isSent = mySentRequests.includes(user.id);
-                const btnHTML = isSent ? `<button class="friend-msg-btn" style="opacity: 0.5;" disabled>Sent!</button>` : `<button class="friend-msg-btn" onclick="sendFriendRequest('${user.id}')">Add Friend</button>`;
-                item.innerHTML = `
-                    <div class="friend-info">
-                        ${getAvatarHTML(user)}
-                        <span class="friend-name">${user.username}</span>
-                    </div>
-                    ${btnHTML}
-                `;
-                findList.appendChild(item);
-            });
-        }
-    } else if (incomingReqs.length === 0) {
-        findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>Search for a username above!</p>";
-    }
-}
-
-async function sendFriendRequest(targetId) {
-    if (!firebaseUserId) return;
-    mySentRequests.push(targetId);
-    renderFriendsView();
-    await db.collection("users").doc(targetId).update({ friendRequests: firebase.firestore.FieldValue.arrayUnion(firebaseUserId) });
-    await db.collection("users").doc(firebaseUserId).update({ sentRequests: firebase.firestore.FieldValue.arrayUnion(targetId) });
-}
-
-async function acceptRequest(requesterId) {
-    if (!firebaseUserId) return;
-    myRequests = myRequests.filter(id => id !== requesterId);
-    myFriends.push(requesterId);
-    renderFriendsView();
-    await db.collection("users").doc(firebaseUserId).update({
-        friendRequests: firebase.firestore.FieldValue.arrayRemove(requesterId),
-        friends: firebase.firestore.FieldValue.arrayUnion(requesterId)
-    });
-    await db.collection("users").doc(requesterId).update({
-        sentRequests: firebase.firestore.FieldValue.arrayRemove(firebaseUserId),
-        friends: firebase.firestore.FieldValue.arrayUnion(firebaseUserId)
-    });
-}
-
-function openDirectMessage(user) {
-    isDM = true;
-    currentDmUser = user;
-    activeChatId = "dm_" + [firebaseUserId, user.id].sort().join('_');
-    
-    document.getElementById("dm-header-avatar").innerHTML = getAvatarHTML(user);
-    document.getElementById("dm-header-name").innerText = user.username;
-    document.getElementById("dm-input").placeholder = `Message ${user.username}...`;
-    document.getElementById("dm-chat-log").innerHTML = "";
-    
-    if (currentDmUnsubscribe) currentDmUnsubscribe();
-    
-    currentDmUnsubscribe = db.collection("dms").doc(activeChatId).collection("messages")
-        .orderBy("timestamp", "asc")
-        .onSnapshot(snapshot => {
-            const log = document.getElementById("dm-chat-log");
-            log.innerHTML = "";
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const isMe = data.senderId === firebaseUserId;
-                const msgDiv = document.createElement("div");
-                msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`;
-                const contentDiv = document.createElement("div");
-                contentDiv.className = "dm-message-content";
-                
-                if (data.text) {
-                    const textSpan = document.createElement("span");
-                    textSpan.className = "dm-message-text";
-                    textSpan.innerText = data.text;
-                    contentDiv.appendChild(textSpan);
-                }
-                if (data.imageSrc) {
-                    const img = document.createElement("img");
-                    img.src = data.imageSrc;
-                    img.className = "chat-image";
-                    img.draggable = false;
-                    contentDiv.appendChild(img);
-                }
-                
-                const avatarObj = isMe ? { username: currentUser, avatar: currentUserAvatar } : currentDmUser;
-                const avatarWrapper = document.createElement("div");
-                avatarWrapper.className = "dm-message-avatar";
-                avatarWrapper.innerHTML = getAvatarHTML(avatarObj);
-                
-                msgDiv.appendChild(avatarWrapper);
-                msgDiv.appendChild(contentDiv);
-                log.appendChild(msgDiv);
-            });
-            log.scrollTop = log.scrollHeight;
-        });
-    switchView('view-dm');
-}
-
-function processDmFile(file) {
-    if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            pendingDmImageSrc = event.target.result;
-            pendingDmImageMime = pendingDmImageSrc.split(';')[0].split(':')[1];
-            pendingDmImageBase64 = pendingDmImageSrc.split(',')[1];
-            const imgEl = document.getElementById('dm-image-preview-img');
-            const boxEl = document.getElementById('dm-image-preview-box');
-            if (imgEl && boxEl) {
-                imgEl.src = pendingDmImageSrc;
-                boxEl.classList.add('active');
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-const dmFilePicker = document.getElementById('dm-native-file-picker');
-if (dmFilePicker) {
-    dmFilePicker.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        processDmFile(file);
-        dmFilePicker.value = ""; 
-    });
-}
-
-function clearDmPendingImage() {
-    pendingDmImageBase64 = null; pendingDmImageMime = null; pendingDmImageSrc = null;
-    const box = document.getElementById('dm-image-preview-box');
-    if (box) box.classList.remove('active');
-}
-
-async function sendDmMessage() {
-    const input = document.getElementById("dm-input");
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text && !pendingDmImageBase64) return;
-    if (!activeChatId || !isDM) return;
-    
-    input.value = "";
-    const imageSrc = pendingDmImageSrc;
-    clearDmPendingImage();
-    
-    await db.collection("dms").doc(activeChatId).collection("messages").add({
-        text: text, imageSrc: imageSrc || null, senderId: firebaseUserId, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-}
-
-// =========================================================================
-// --- GENERAL APP LOGIC & CHAT ---
-// =========================================================================
-
-function checkDailyMessageLimit() {
-    const today = new Date().toISOString().split('T')[0];
-    let lastDate = localStorage.getItem("carl_last_msg_date");
-    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-
-    if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
-    
-    if (count >= 10 && !hasValidApiKey()) {
-        alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
-        switchView('view-settings'); return false;
-    }
-    return true;
-}
-
-function startNewChat() {
-    isDM = false;
-    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
-    archiveActiveChat();
-    activeChatId = "chat_" + Date.now();
-    chatHistory = [];
-    const log = document.getElementById("chat-log");
-    if (log) log.innerHTML = '';
-    const input = document.getElementById("user-input");
-    if (input) input.value = "";
-    
-    clearPendingImage();
-    document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
-    showStartupScreen();
-    saveSessionData(); switchView('view-chat');
-}
-
-function loadChat(chatId) {
-    isDM = false;
-    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
-    archiveActiveChat();
-    const target = chatsHistory.find(c => c.id === chatId);
-    if (target) {
-        activeChatId = target.id;
-        const log = document.getElementById("chat-log");
-        if (log) log.innerHTML = target.html;
-        chatHistory = [...target.apiHistory];
-        
-        if (chatHistory.length > 0) hideStartupScreen();
-        else {
-            document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
-            showStartupScreen();
-        }
-        saveSessionData(); switchView('view-chat');
-    }
-}
-
-async function sendMessage() {
-    const input = document.getElementById("user-input");
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text && !pendingImageBase64) return;
-
-    if (text.toLowerCase().trim() === "/whomadeyou") {
-        hideStartupScreen();
-        appendMessage(text, "user", pendingImageSrc);
-        appendMessage("Emmett Breen", "carl");
-        input.value = ""; clearPendingImage();
-        return;
-    }
-
-    if (!checkDailyMessageLimit()) return;
-
-    hideStartupScreen();
-    appendMessage(text, "user", pendingImageSrc);
-    
-    const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const payload = { 
-        message: text || "Look at this image.", history: chatHistory,
-        image_b64: pendingImageBase64, image_mime: pendingImageMime, api_key: customApiKey,
-        user_time: userLocalTime, user_timezone: userTimezone, client_time: `${userLocalTime} (${userTimezone})`
-    };
-
-    input.value = ""; clearPendingImage();
-
-    const log = document.getElementById("chat-log");
-    const carlBubble = document.createElement("div");
-    carlBubble.className = "chat-bubble carl";
-    const textNode = document.createElement("div");
-    carlBubble.appendChild(textNode);
-    log.appendChild(carlBubble);
-    log.scrollTop = log.scrollHeight;
-
-    try {
-        const response = await fetch("/api/chat", {
-            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                textNode.innerText = "Error: Invalid API Key provided. Reverting key settings.";
-                alert("The API key provided is invalid! Please check your key in Settings.");
-                customApiKey = ""; const keyInput = document.getElementById('user-api-key');
-                if (keyInput) keyInput.value = "";
-                saveSessionData(); return;
-            }
-            textNode.innerText = "Error reaching Carl."; return;
-        }
-
-        if (!hasValidApiKey()) {
-            const today = new Date().toISOString().split('T')[0];
-            let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + 1;
-            localStorage.setItem("carl_last_msg_date", today);
-            localStorage.setItem("carl_msg_count", count.toString());
-            updateUsageUI();
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullResponse = ""; let displayBuffer = "";
-        let streamFinished = false; let isTypingStream = false;
-
-        function renderTypewriter() {
-            if (displayBuffer.length < fullResponse.length) {
-                let diff = fullResponse.length - displayBuffer.length;
-                let charsToAdd = diff > 20 ? 4 : (diff > 5 ? 2 : 1);
-                displayBuffer += fullResponse.substring(displayBuffer.length, displayBuffer.length + charsToAdd);
-                textNode.innerHTML = formatMessage(displayBuffer) + '<span class="typing-cursor"></span>';
-                log.scrollTop = log.scrollHeight;
-                setTimeout(renderTypewriter, 15); 
-            } else if (!streamFinished) setTimeout(renderTypewriter, 15);
-            else {
-                textNode.innerHTML = formatMessage(fullResponse);
-                log.scrollTop = log.scrollHeight;
-                isTypingStream = false;
-            }
-        }
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) { streamFinished = true; break; }
-            const chunk = decoder.decode(value, { stream: true });
-            fullResponse += chunk;
-            
-            for (let bad_prefix of ["Carl:", "carl:", "Carl - ", "Assistant:"]) {
-                if (fullResponse.startsWith(bad_prefix)) {
-                    fullResponse = fullResponse.substring(bad_prefix.length).trimStart();
-                    displayBuffer = ""; 
-                }
-            }
-            if (!isTypingStream) { isTypingStream = true; renderTypewriter(); }
-        }
-
-        chatHistory.push({ role: "user", content: text || "Look at this image." });
-        chatHistory.push({ role: "assistant", content: fullResponse });
-        saveSessionData();
-    } catch (err) { textNode.innerText = "Network error."; }
-}
-
-function searchChats() {
-    let oldModal = document.getElementById("search-modal");
-    if (oldModal) oldModal.remove();
-
-    const modal = document.createElement("div");
-    modal.id = "search-modal";
-    modal.style.position = "fixed"; modal.style.top = "0"; modal.style.left = "0";
-    modal.style.width = "100vw"; modal.style.height = "100vh";
-    modal.style.backgroundColor = "rgba(0,0,0,0.85)"; modal.style.backdropFilter = "blur(5px)";
-    modal.style.zIndex = "10000"; modal.style.display = "flex";
-    modal.style.justifyContent = "center"; modal.style.alignItems = "center";
-
-    const box = document.createElement("div");
-    box.style.backgroundColor = "var(--bg-card)"; box.style.padding = "24px";
-    box.style.borderRadius = "20px"; box.style.width = "90%"; box.style.maxWidth = "420px";
-    box.style.border = "1px solid var(--border-color)"; box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
-
-    const title = document.createElement("h2");
-    title.innerText = "Search Chats"; title.style.marginBottom = "16px"; title.style.fontSize = "28px";
-
-    const input = document.createElement("input");
-    input.type = "text"; input.placeholder = "Search messages or titles...";
-    input.style.width = "100%"; input.style.padding = "14px";
-    input.style.borderRadius = "12px"; input.style.border = "1px solid var(--border-color)";
-    input.style.backgroundColor = "var(--bg-input)"; input.style.color = "var(--text-main)";
-    input.style.outline = "none"; input.style.fontSize = "16px"; input.style.marginBottom = "16px";
-
-    const results = document.createElement("div");
-    results.style.maxHeight = "250px"; results.style.overflowY = "auto";
-    results.style.display = "flex"; results.style.flexDirection = "column"; results.style.gap = "8px";
-
-    const closeBtn = document.createElement("button");
-    closeBtn.innerText = "Close"; closeBtn.style.padding = "12px"; closeBtn.style.width = "100%";
-    closeBtn.style.marginTop = "16px"; closeBtn.style.borderRadius = "12px"; closeBtn.style.border = "none";
-    closeBtn.style.backgroundColor = "#ef4444"; closeBtn.style.color = "#fff";
-    closeBtn.style.fontSize = "18px"; closeBtn.style.cursor = "pointer";
-    closeBtn.onclick = () => modal.remove();
-
-    input.oninput = (e) => {
-        results.innerHTML = "";
-        const q = e.target.value.toLowerCase().trim();
-        if (!q) return;
-
-        const matched = chatsHistory.filter(c => 
-            c.title.toLowerCase().includes(q) || c.apiHistory.some(m => m.content.toLowerCase().includes(q))
-        );
-        
-        if (matched.length === 0) results.innerHTML = "<div style='color:var(--text-sub); font-size:15px; text-align:center; padding: 10px;'>No results found.</div>";
-
-        matched.forEach(chat => {
-            const item = document.createElement("div");
-            item.innerText = chat.title; item.style.padding = "14px"; item.style.backgroundColor = "var(--bg-input)";
-            item.style.border = "1px solid var(--border-color)"; item.style.borderRadius = "12px";
-            item.style.cursor = "pointer"; item.style.transition = "background-color 0.2s";
-            
-            item.onmouseover = () => item.style.backgroundColor = "#9333ea";
-            item.onmouseleave = () => item.style.backgroundColor = "var(--bg-input)";
-            
-            item.onclick = () => { loadChat(chat.id); modal.remove(); };
-            results.appendChild(item);
-        });
-    };
-
-    box.appendChild(title); box.appendChild(input); box.appendChild(results); box.appendChild(closeBtn);
-    modal.appendChild(box); document.body.appendChild(modal);
-    setTimeout(() => input.focus(), 100);
-}
 
 function initMobileNavIcons() {
     const mobileChatBtn = document.getElementById("mobile-nav-chat");
@@ -960,18 +324,13 @@ function archiveActiveChat() {
     const log = document.getElementById("chat-log");
     if (!log) return;
     const bubbles = log.querySelectorAll('.chat-bubble');
-
     if (bubbles.length > 0 && activeChatId && !isDM) {
         let existing = chatsHistory.find(c => c.id === activeChatId);
-        if (existing) {
-            existing.html = log.innerHTML;
-            existing.apiHistory = [...chatHistory];
-        } else {
+        if (existing) { existing.html = log.innerHTML; existing.apiHistory = [...chatHistory]; } 
+        else {
             const firstMsgText = bubbles[0].innerText || "Chat Session";
             const newTitle = firstMsgText.length > 20 ? firstMsgText.substring(0, 20) + "..." : firstMsgText;
-            chatsHistory.unshift({
-                id: activeChatId, title: newTitle, html: log.innerHTML, apiHistory: [...chatHistory], pinned: false
-            });
+            chatsHistory.unshift({ id: activeChatId, title: newTitle, html: log.innerHTML, apiHistory: [...chatHistory], pinned: false });
         }
     }
     saveSessionData(); renderChatHistorySidebar();
@@ -997,103 +356,49 @@ function renderChatHistorySidebar() {
     });
     
     sortedChats.forEach(chat => {
-        const item = document.createElement("div");
-        item.className = "saved-chat-item";
-        
-        const titleContainer = document.createElement("div");
-        titleContainer.className = "chat-title-text";
-        
+        const item = document.createElement("div"); item.className = "saved-chat-item";
+        const titleContainer = document.createElement("div"); titleContainer.className = "chat-title-text";
         if (chat.pinned) {
-            const pinIcon = document.createElement("img");
-            pinIcon.className = "pinned-icon-img";
+            const pinIcon = document.createElement("img"); pinIcon.className = "pinned-icon-img";
             pinIcon.src = "/static/icons/PinIcon.png"; pinIcon.alt = "Pinned"; pinIcon.draggable = false;
             titleContainer.appendChild(pinIcon);
         }
-        
-        const titleText = document.createElement("span");
-        titleText.innerText = chat.title;
-        titleContainer.appendChild(titleText);
-        titleContainer.onclick = () => loadChat(chat.id);
-
-        const optionsBtn = document.createElement("button");
-        optionsBtn.className = "chat-options-btn"; optionsBtn.innerText = "⋮";
-        
-        const dropdown = document.createElement("div");
-        dropdown.className = "chat-dropdown-menu";
-        
-        const editBtn = document.createElement("button");
-        editBtn.className = "chat-dropdown-item"; editBtn.innerText = "Edit Name";
+        const titleText = document.createElement("span"); titleText.innerText = chat.title;
+        titleContainer.appendChild(titleText); titleContainer.onclick = () => loadChat(chat.id);
+        const optionsBtn = document.createElement("button"); optionsBtn.className = "chat-options-btn"; optionsBtn.innerText = "⋮";
+        const dropdown = document.createElement("div"); dropdown.className = "chat-dropdown-menu";
+        const editBtn = document.createElement("button"); editBtn.className = "chat-dropdown-item"; editBtn.innerText = "Edit Name";
         editBtn.onclick = (e) => { e.stopPropagation(); editChatTitle(chat.id); dropdown.classList.remove('active'); };
-        
-        const pinBtn = document.createElement("button");
-        pinBtn.className = "chat-dropdown-item"; pinBtn.innerText = chat.pinned ? "Unpin Chat" : "Pin Chat";
+        const pinBtn = document.createElement("button"); pinBtn.className = "chat-dropdown-item"; pinBtn.innerText = chat.pinned ? "Unpin Chat" : "Pin Chat";
         pinBtn.onclick = (e) => { e.stopPropagation(); togglePinChat(chat.id); dropdown.classList.remove('active'); };
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "chat-dropdown-item delete"; deleteBtn.innerText = "Delete";
+        const deleteBtn = document.createElement("button"); deleteBtn.className = "chat-dropdown-item delete"; deleteBtn.innerText = "Delete";
         deleteBtn.onclick = (e) => { e.stopPropagation(); deleteChat(chat.id); dropdown.classList.remove('active'); };
-        
         dropdown.appendChild(editBtn); dropdown.appendChild(pinBtn); dropdown.appendChild(deleteBtn);
-        
         optionsBtn.onclick = (e) => {
             e.stopPropagation();
-            document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => {
-                if (menu !== dropdown) menu.classList.remove('active');
-            });
+            document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => { if (menu !== dropdown) menu.classList.remove('active'); });
             dropdown.classList.toggle('active');
         };
-
-        item.appendChild(titleContainer); item.appendChild(optionsBtn); item.appendChild(dropdown);
-        container.appendChild(item);
+        item.appendChild(titleContainer); item.appendChild(optionsBtn); item.appendChild(dropdown); container.appendChild(item);
     });
 }
 
-document.addEventListener("click", () => {
-    document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => menu.classList.remove('active'));
-});
-
-function editChatTitle(chatId) {
-    const chat = chatsHistory.find(c => c.id === chatId);
-    if (!chat) return;
-    const newTitle = prompt("Enter a new name for this chat:", chat.title);
-    if (newTitle && newTitle.trim() !== "") {
-        chat.title = newTitle.trim();
-        saveSessionData(); renderChatHistorySidebar();
-    }
-}
-
-function togglePinChat(chatId) {
-    const chat = chatsHistory.find(c => c.id === chatId);
-    if (!chat) return;
-    chat.pinned = !chat.pinned;
-    saveSessionData(); renderChatHistorySidebar();
-}
-
-function deleteChat(chatId) {
-    if (confirm("Are you sure you want to delete this chat forever?")) {
-        chatsHistory = chatsHistory.filter(c => c.id !== chatId);
-        if (activeChatId === chatId) startNewChat();
-        else { saveSessionData(); renderChatHistorySidebar(); }
-    }
-}
+document.addEventListener("click", () => { document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => menu.classList.remove('active')); });
+function editChatTitle(chatId) { const chat = chatsHistory.find(c => c.id === chatId); if (!chat) return; const newTitle = prompt("Enter a new name for this chat:", chat.title); if (newTitle && newTitle.trim() !== "") { chat.title = newTitle.trim(); saveSessionData(); renderChatHistorySidebar(); } }
+function togglePinChat(chatId) { const chat = chatsHistory.find(c => c.id === chatId); if (!chat) return; chat.pinned = !chat.pinned; saveSessionData(); renderChatHistorySidebar(); }
+function deleteChat(chatId) { if (confirm("Are you sure you want to delete this chat forever?")) { chatsHistory = chatsHistory.filter(c => c.id !== chatId); if (activeChatId === chatId) startNewChat(); else { saveSessionData(); renderChatHistorySidebar(); } } }
 
 function updateUsageUI() {
-    const fillEl = document.getElementById("usage-fill");
-    const textEl = document.getElementById("usage-text");
+    const fillEl = document.getElementById("usage-fill"), textEl = document.getElementById("usage-text");
     if (!fillEl || !textEl) return;
-
-    if (hasValidApiKey()) {
-        fillEl.style.width = "100%"; textEl.innerText = "Unlimited";
-    } else {
+    if (hasValidApiKey()) { fillEl.style.width = "100%"; textEl.innerText = "Unlimited"; } 
+    else {
         const today = new Date().toISOString().split('T')[0];
         let lastDate = localStorage.getItem("carl_last_msg_date");
         let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-
         if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
-        let percent = (count / 10) * 100;
-        if (percent > 100) percent = 100;
-        fillEl.style.width = `${percent}%`;
-        textEl.innerText = `${count}/10`;
+        if (count >= 10 && !hasValidApiKey()) { alert("Daily limit reached! Enter API key in Settings."); switchView('view-settings'); return false; }
+        let percent = (count / 10) * 100; if (percent > 100) percent = 100; fillEl.style.width = `${percent}%`; textEl.innerText = `${count}/10`;
     }
 }
 
@@ -1101,19 +406,15 @@ function processFile(file) {
     if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(event) {
-            pendingImageSrc = event.target.result;
-            pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1];
-            pendingImageBase64 = pendingImageSrc.split(',')[1];
-            const imgEl = document.getElementById('image-preview-img');
-            const boxEl = document.getElementById('image-preview-box');
+            pendingImageSrc = event.target.result; pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1]; pendingImageBase64 = pendingImageSrc.split(',')[1];
+            const imgEl = document.getElementById('image-preview-img'), boxEl = document.getElementById('image-preview-box');
             if (imgEl && boxEl) { imgEl.src = pendingImageSrc; boxEl.classList.add('active'); }
         };
         reader.readAsDataURL(file);
     } else {
         const reader = new FileReader();
         reader.onload = function(event) {
-            const text = event.target.result;
-            const input = document.getElementById("user-input");
+            const text = event.target.result, input = document.getElementById("user-input");
             if (input) input.value += `\n\`\`\`${file.name.split('.').pop() || ''}\n${text}\n\`\`\`\n`;
         };
         reader.readAsText(file);
@@ -1121,17 +422,11 @@ function processFile(file) {
 }
 
 const filePicker = document.getElementById('native-file-picker');
-if (filePicker) {
-    filePicker.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return; processFile(file); filePicker.value = ""; 
-    });
-}
+if (filePicker) filePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processFile(file); filePicker.value = ""; });
 
 let dragCounter = 0;
 const dragOverlay = document.getElementById('drag-drop-overlay');
 const dragChatView = document.getElementById('view-chat');
-
 if (dragChatView && dragOverlay) {
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => window.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false));
     window.addEventListener('dragenter', (e) => { if (dragChatView.classList.contains('active')) { dragCounter++; dragOverlay.classList.add('active'); } });
@@ -1139,20 +434,12 @@ if (dragChatView && dragOverlay) {
     window.addEventListener('drop', (e) => { dragCounter = 0; dragOverlay.classList.remove('active'); if (dragChatView.classList.contains('active') && e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
 }
 
-window.copyCode = function(button) {
-    const code = decodeURIComponent(button.getAttribute("data-code"));
-    navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error("Copy failed", err));
-};
+window.copyCode = function(button) { const code = decodeURIComponent(button.getAttribute("data-code")); navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error("Copy failed", err)); };
 
 function showCopyToast() {
     let toast = document.getElementById('copy-toast');
-    if (!toast) {
-        toast = document.createElement('div'); toast.id = 'copy-toast'; toast.className = 'copy-toast';
-        toast.innerHTML = `<img src="/static/icons/CopyIcon.png" alt="Copy"><span>Text Copied</span>`;
-        document.body.appendChild(toast);
-    }
-    toast.classList.add('show');
-    if (window.copyToastTimeout) clearTimeout(window.copyToastTimeout);
+    if (!toast) { toast = document.createElement('div'); toast.id = 'copy-toast'; toast.className = 'copy-toast'; toast.innerHTML = `<img src="/static/icons/CopyIcon.png" alt="Copy"><span>Text Copied</span>`; document.body.appendChild(toast); }
+    toast.classList.add('show'); if (window.copyToastTimeout) clearTimeout(window.copyToastTimeout);
     window.copyToastTimeout = setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
@@ -1160,8 +447,7 @@ function formatMessage(text) {
     let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
     safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
-        const displayLang = (lang || "CODE").toUpperCase();
-        const encodedCode = encodeURIComponent(code);
+        const displayLang = (lang || "CODE").toUpperCase(), encodedCode = encodeURIComponent(code);
         let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
         return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-language">${displayLang}</span><button class="copy-code-btn" data-code="${encodedCode}" onclick="copyCode(this)"><img src="/static/icons/CopyIcon.png" alt="Copy"></button></div><div class="code-block-body">${styledCode.trim()}</div></div>`;
     });
@@ -1179,7 +465,280 @@ function appendMessage(msg, sender, imgSrc = null) {
     log.appendChild(bubble); log.scrollTop = log.scrollHeight;
 }
 
-// --- CALL FEATURE ---
+// --- CORE AI MESSAGING ---
+function checkDailyMessageLimit() {
+    const today = new Date().toISOString().split('T')[0];
+    let lastDate = localStorage.getItem("carl_last_msg_date");
+    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+    if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
+    if (count >= 10 && !hasValidApiKey()) {
+        alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
+        switchView('view-settings'); return false;
+    }
+    return true;
+}
+
+function startNewChat() {
+    isDM = false;
+    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
+    archiveActiveChat(); activeChatId = "chat_" + Date.now(); chatHistory = [];
+    const log = document.getElementById("chat-log"); if (log) log.innerHTML = '';
+    const input = document.getElementById("user-input"); if (input) input.value = "";
+    clearPendingImage(); document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
+    showStartupScreen(); saveSessionData(); switchView('view-chat');
+}
+
+function loadChat(chatId) {
+    isDM = false;
+    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
+    archiveActiveChat(); const target = chatsHistory.find(c => c.id === chatId);
+    if (target) {
+        activeChatId = target.id; const log = document.getElementById("chat-log"); if (log) log.innerHTML = target.html;
+        chatHistory = [...target.apiHistory];
+        if (chatHistory.length > 0) hideStartupScreen(); else { document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>'; showStartupScreen(); }
+        saveSessionData(); switchView('view-chat');
+    }
+}
+
+async function sendMessage() {
+    const input = document.getElementById("user-input");
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text && !pendingImageBase64) return;
+
+    if (text.toLowerCase().trim() === "/whomadeyou") {
+        hideStartupScreen();
+        appendMessage(text, "user", pendingImageSrc);
+        appendMessage("Emmett Breen", "carl");
+        input.value = ""; clearPendingImage();
+        return;
+    }
+
+    if (!checkDailyMessageLimit()) return;
+    hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
+    
+    const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const payload = { 
+        message: text || "Look at this image.", history: chatHistory, image_b64: pendingImageBase64, image_mime: pendingImageMime, 
+        api_key: customApiKey, user_time: userLocalTime, user_timezone: userTimezone, client_time: `${userLocalTime} (${userTimezone})`
+    };
+
+    input.value = ""; clearPendingImage();
+    const log = document.getElementById("chat-log"), carlBubble = document.createElement("div");
+    carlBubble.className = "chat-bubble carl"; const textNode = document.createElement("div");
+    carlBubble.appendChild(textNode); log.appendChild(carlBubble); log.scrollTop = log.scrollHeight;
+
+    try {
+        const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                textNode.innerText = "Error: Invalid API Key provided. Reverting key settings."; alert("The API key provided is invalid! Please check your key in Settings.");
+                customApiKey = ""; const keyInput = document.getElementById('user-api-key'); if (keyInput) keyInput.value = ""; saveSessionData(); return;
+            }
+            textNode.innerText = "Error reaching Carl."; return;
+        }
+
+        if (!hasValidApiKey()) {
+            const today = new Date().toISOString().split('T')[0];
+            let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + 1;
+            localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", count.toString()); updateUsageUI();
+        }
+
+        const reader = response.body.getReader(), decoder = new TextDecoder();
+        let fullResponse = "", displayBuffer = "", streamFinished = false, isTypingStream = false;
+
+        function renderTypewriter() {
+            if (displayBuffer.length < fullResponse.length) {
+                let diff = fullResponse.length - displayBuffer.length, charsToAdd = diff > 20 ? 4 : (diff > 5 ? 2 : 1);
+                displayBuffer += fullResponse.substring(displayBuffer.length, displayBuffer.length + charsToAdd);
+                textNode.innerHTML = formatMessage(displayBuffer) + '<span class="typing-cursor"></span>'; log.scrollTop = log.scrollHeight;
+                setTimeout(renderTypewriter, 15); 
+            } else if (!streamFinished) setTimeout(renderTypewriter, 15);
+            else { textNode.innerHTML = formatMessage(fullResponse); log.scrollTop = log.scrollHeight; isTypingStream = false; }
+        }
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) { streamFinished = true; break; }
+            const chunk = decoder.decode(value, { stream: true }); fullResponse += chunk;
+            for (let bad_prefix of ["Carl:", "carl:", "Carl - ", "Assistant:"]) { if (fullResponse.startsWith(bad_prefix)) { fullResponse = fullResponse.substring(bad_prefix.length).trimStart(); displayBuffer = ""; } }
+            if (!isTypingStream) { isTypingStream = true; renderTypewriter(); }
+        }
+        chatHistory.push({ role: "user", content: text || "Look at this image." }); chatHistory.push({ role: "assistant", content: fullResponse }); saveSessionData();
+    } catch (err) { textNode.innerText = "Network error."; }
+}
+
+function searchChats() {
+    let oldModal = document.getElementById("search-modal"); if (oldModal) oldModal.remove();
+    const modal = document.createElement("div"); modal.id = "search-modal"; modal.style.position = "fixed"; modal.style.top = "0"; modal.style.left = "0"; modal.style.width = "100vw"; modal.style.height = "100vh"; modal.style.backgroundColor = "rgba(0,0,0,0.85)"; modal.style.backdropFilter = "blur(5px)"; modal.style.zIndex = "10000"; modal.style.display = "flex"; modal.style.justifyContent = "center"; modal.style.alignItems = "center";
+    const box = document.createElement("div"); box.style.backgroundColor = "var(--bg-card)"; box.style.padding = "24px"; box.style.borderRadius = "20px"; box.style.width = "90%"; box.style.maxWidth = "420px"; box.style.border = "1px solid var(--border-color)"; box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
+    const title = document.createElement("h2"); title.innerText = "Search Chats"; title.style.marginBottom = "16px"; title.style.fontSize = "28px";
+    const input = document.createElement("input"); input.type = "text"; input.placeholder = "Search messages or titles..."; input.style.width = "100%"; input.style.padding = "14px"; input.style.borderRadius = "12px"; input.style.border = "1px solid var(--border-color)"; input.style.backgroundColor = "var(--bg-input)"; input.style.color = "var(--text-main)"; input.style.outline = "none"; input.style.fontSize = "16px"; input.style.marginBottom = "16px";
+    const results = document.createElement("div"); results.style.maxHeight = "250px"; results.style.overflowY = "auto"; results.style.display = "flex"; results.style.flexDirection = "column"; results.style.gap = "8px";
+    const closeBtn = document.createElement("button"); closeBtn.innerText = "Close"; closeBtn.style.padding = "12px"; closeBtn.style.width = "100%"; closeBtn.style.marginTop = "16px"; closeBtn.style.borderRadius = "12px"; closeBtn.style.border = "none"; closeBtn.style.backgroundColor = "#ef4444"; closeBtn.style.color = "#fff"; closeBtn.style.fontSize = "18px"; closeBtn.style.cursor = "pointer"; closeBtn.onclick = () => modal.remove();
+    input.oninput = (e) => {
+        results.innerHTML = ""; const q = e.target.value.toLowerCase().trim(); if (!q) return;
+        const matched = chatsHistory.filter(c => c.title.toLowerCase().includes(q) || c.apiHistory.some(m => m.content.toLowerCase().includes(q)));
+        if (matched.length === 0) results.innerHTML = "<div style='color:var(--text-sub); font-size:15px; text-align:center; padding: 10px;'>No results found.</div>";
+        matched.forEach(chat => {
+            const item = document.createElement("div"); item.innerText = chat.title; item.style.padding = "14px"; item.style.backgroundColor = "var(--bg-input)"; item.style.border = "1px solid var(--border-color)"; item.style.borderRadius = "12px"; item.style.cursor = "pointer"; item.style.transition = "background-color 0.2s";
+            item.onmouseover = () => item.style.backgroundColor = "#9333ea"; item.onmouseleave = () => item.style.backgroundColor = "var(--bg-input)";
+            item.onclick = () => { loadChat(chat.id); modal.remove(); }; results.appendChild(item);
+        });
+    };
+    box.appendChild(title); box.appendChild(input); box.appendChild(results); box.appendChild(closeBtn); modal.appendChild(box); document.body.appendChild(modal);
+    setTimeout(() => input.focus(), 100);
+}
+
+// =========================================================================
+// --- FRIENDS & CONTACTS SYSTEM ---
+// =========================================================================
+const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
+
+function getAvatarColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    return avatarColors[Math.abs(hash) % avatarColors.length];
+}
+
+function getAvatarHTML(user) {
+    if (!user.avatar || user.avatar.includes('default-avatar.png')) {
+        const color = getAvatarColor(user.username);
+        const initial = user.username.charAt(0).toUpperCase();
+        return `<div class="text-avatar" style="background-color: ${color};">${initial}</div>`;
+    }
+    return `<img class="friend-avatar" src="${user.avatar}" draggable="false">`;
+}
+
+async function fetchAllUsers() {
+    const list = document.getElementById("find-people-list");
+    if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
+    try {
+        if (firebaseUserId && db) {
+            const snapshot = await db.collection("users").get();
+            allUsersCache = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (doc.id !== firebaseUserId && data.username) { allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "" }); }
+            });
+        }
+    } catch (err) { console.error("Error fetching real users", err); }
+    renderFriendsView();
+}
+
+function renderFriendsView() {
+    const query = document.getElementById("friend-search-input").value.toLowerCase().trim();
+    const findList = document.getElementById("find-people-list"), friendsList = document.getElementById("my-friends-list");
+    if (!findList || !friendsList) return;
+    
+    findList.innerHTML = ""; friendsList.innerHTML = "";
+
+    const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
+    if (activeFriends.length === 0) { friendsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No friends yet.</p>"; } 
+    else {
+        activeFriends.forEach(user => {
+            const item = document.createElement("div"); item.className = "friend-item";
+            item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div><button class="friend-msg-btn" onclick='openDirectMessage(${JSON.stringify(user)})'>Message</button>`;
+            friendsList.appendChild(item);
+        });
+    }
+
+    let searchResults = [];
+    const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
+    
+    incomingReqs.forEach(user => {
+        const item = document.createElement("div"); item.className = "friend-item";
+        item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div><button class="friend-req-btn" onclick="acceptRequest('${user.id}')">Accept Request</button>`;
+        findList.appendChild(item);
+    });
+
+    if (query) {
+        searchResults = allUsersCache.filter(u => u.username.toLowerCase().includes(query) && !myFriends.includes(u.id) && !myRequests.includes(u.id));
+        if (searchResults.length === 0 && incomingReqs.length === 0) { findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No users found.</p>"; } 
+        else {
+            searchResults.forEach(user => {
+                const item = document.createElement("div"); item.className = "friend-item";
+                const isSent = mySentRequests.includes(user.id);
+                const btnHTML = isSent ? `<button class="friend-msg-btn" style="opacity: 0.5;" disabled>Sent!</button>` : `<button class="friend-msg-btn" onclick="sendFriendRequest('${user.id}')">Add Friend</button>`;
+                item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div>${btnHTML}`;
+                findList.appendChild(item);
+            });
+        }
+    } else if (incomingReqs.length === 0) { findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>Search for a username above!</p>"; }
+}
+
+async function sendFriendRequest(targetId) {
+    if (!firebaseUserId) return;
+    mySentRequests.push(targetId); renderFriendsView();
+    await db.collection("users").doc(targetId).update({ friendRequests: firebase.firestore.FieldValue.arrayUnion(firebaseUserId) });
+    await db.collection("users").doc(firebaseUserId).update({ sentRequests: firebase.firestore.FieldValue.arrayUnion(targetId) });
+}
+
+async function acceptRequest(requesterId) {
+    if (!firebaseUserId) return;
+    myRequests = myRequests.filter(id => id !== requesterId); myFriends.push(requesterId); renderFriendsView();
+    await db.collection("users").doc(firebaseUserId).update({ friendRequests: firebase.firestore.FieldValue.arrayRemove(requesterId), friends: firebase.firestore.FieldValue.arrayUnion(requesterId) });
+    await db.collection("users").doc(requesterId).update({ sentRequests: firebase.firestore.FieldValue.arrayRemove(firebaseUserId), friends: firebase.firestore.FieldValue.arrayUnion(firebaseUserId) });
+}
+
+function openDirectMessage(user) {
+    isDM = true; currentDmUser = user; activeChatId = "dm_" + [firebaseUserId, user.id].sort().join('_');
+    document.getElementById("dm-header-avatar").innerHTML = getAvatarHTML(user);
+    document.getElementById("dm-header-name").innerText = user.username;
+    document.getElementById("dm-input").placeholder = `Message ${user.username}...`;
+    document.getElementById("dm-chat-log").innerHTML = "";
+    
+    if (currentDmUnsubscribe) currentDmUnsubscribe();
+    currentDmUnsubscribe = db.collection("dms").doc(activeChatId).collection("messages").orderBy("timestamp", "asc").onSnapshot(snapshot => {
+        const log = document.getElementById("dm-chat-log"); log.innerHTML = "";
+        snapshot.forEach(doc => {
+            const data = doc.data(), isMe = data.senderId === firebaseUserId;
+            const msgDiv = document.createElement("div"); msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`;
+            const contentDiv = document.createElement("div"); contentDiv.className = "dm-message-content";
+            if (data.text) { const textSpan = document.createElement("span"); textSpan.className = "dm-message-text"; textSpan.innerText = data.text; contentDiv.appendChild(textSpan); }
+            if (data.imageSrc) { const img = document.createElement("img"); img.src = data.imageSrc; img.className = "chat-image"; img.draggable = false; contentDiv.appendChild(img); }
+            const avatarObj = isMe ? { username: currentUser, avatar: currentUserAvatar } : currentDmUser;
+            const avatarWrapper = document.createElement("div"); avatarWrapper.className = "dm-message-avatar"; avatarWrapper.innerHTML = getAvatarHTML(avatarObj);
+            msgDiv.appendChild(avatarWrapper); msgDiv.appendChild(contentDiv); log.appendChild(msgDiv);
+        });
+        log.scrollTop = log.scrollHeight;
+    });
+    switchView('view-dm');
+}
+
+function processDmFile(file) {
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            pendingDmImageSrc = event.target.result; pendingDmImageMime = pendingDmImageSrc.split(';')[0].split(':')[1]; pendingDmImageBase64 = pendingDmImageSrc.split(',')[1];
+            const imgEl = document.getElementById('dm-image-preview-img'), boxEl = document.getElementById('dm-image-preview-box');
+            if (imgEl && boxEl) { imgEl.src = pendingDmImageSrc; boxEl.classList.add('active'); }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+const dmFilePicker = document.getElementById('dm-native-file-picker');
+if (dmFilePicker) dmFilePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processDmFile(file); dmFilePicker.value = ""; });
+
+function clearDmPendingImage() {
+    pendingDmImageBase64 = null; pendingDmImageMime = null; pendingDmImageSrc = null;
+    const box = document.getElementById('dm-image-preview-box'); if (box) box.classList.remove('active');
+}
+
+async function sendDmMessage() {
+    const input = document.getElementById("dm-input"); if (!input) return;
+    const text = input.value.trim();
+    if (!text && !pendingDmImageBase64) return;
+    if (!activeChatId || !isDM) return;
+    input.value = ""; const imageSrc = pendingDmImageSrc; clearDmPendingImage();
+    await db.collection("dms").doc(activeChatId).collection("messages").add({ text: text, imageSrc: imageSrc || null, senderId: firebaseUserId, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+}
+
+
+// =========================================================================
+// --- CALL FEATURE & FACETIME CAMERA SYSTEM ---
+// =========================================================================
 let isCallActive = false; let isCallConnected = false; let isMuted = false; let isSpeakerOn = true;
 let callTimerInterval = null; let callSeconds = 0; let ringTimeout = null; let ringInterval = null;
 let audioCtx = null; let recognition = null; let callAbortController = null; let carlVoice = null;
@@ -1187,8 +746,7 @@ let isFacetimeActive = false; let facetimeStream = null;
 
 function loadCarlVoice() {
     if (!('speechSynthesis' in window)) return;
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) return;
+    const voices = window.speechSynthesis.getVoices(); if (voices.length === 0) return;
     carlVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google US English') || v.name.includes('Aaron') || v.name.includes('Daniel') || v.name.includes('Guy') || v.name.includes('Natural') || v.name.includes('Male'))) || voices.find(v => v.lang.startsWith('en')) || voices[0];
 }
 if ('speechSynthesis' in window) { window.speechSynthesis.onvoiceschanged = loadCarlVoice; loadCarlVoice(); }
@@ -1208,35 +766,14 @@ function speakCarl(text) { if (!('speechSynthesis' in window) || !isCallActive) 
 function initSpeechRecognition() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { document.getElementById("call-status").innerText = "Browser doesn't support mic!"; return; } recognition = new SpeechRecognition(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US'; recognition.onresult = async (event) => { if (isMuted || !isCallActive || !isCallConnected) return; let interimTranscript = ''; let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript; else interimTranscript += event.results[i][0].transcript; } let combined = finalTranscript + interimTranscript; if (combined.trim().length > 3 && window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); } if (finalTranscript.trim().length > 0) { const userQuery = finalTranscript.trim(); window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); document.getElementById("call-status").innerText = "Carl is thinking..."; await processCallUserMessage(userQuery); } }; recognition.onerror = (e) => { if (e.error === 'not-allowed') { document.getElementById("call-status").innerText = "Mic Permission Denied"; } }; recognition.onend = () => { if (isCallActive && isCallConnected && !isMuted) { try { recognition.start(); } catch(e) {} } }; try { recognition.start(); } catch(e) {} }
 
 // =========================================================================
-// --- MINIGAME GLOBAL LOGIC & MATRICES ---
+// --- GAMES GLOBAL VARIABLES & MINIFIED LOGIC ---
 // =========================================================================
-
-// Tic Tac Toe
-let board = ["", "", "", "", "", "", "", "", ""];
-let playerTurn = true;
-const winCombos = [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ];
-
-// Hangman
-let hmWord = ""; let hmGuessed = new Set(); let hmMistakes = 0; let hmPlayerTurn = true; let hmGameOver = false;
-const safeDictionary = ["ROBLOX", "MINECRAFT", "DEVELOPER", "PYTHON", "KEYBOARD", "MONITOR", "VARIABLE", "FUNCTION", "BLENDER", "UNITY", "GODOT", "SCRIPTING", "ANIMATION", "TEXTURE", "PHYSICS", "CANVA", "FIGMA", "INTERFACE", "SURVIVAL", "MULTIPLAYER", "SERVER", "BEDROCK", "ARENA", "ISLAND", "ORAVON", "SCRAPWAGON", "HAVOC", "CARLAI", "DESKTOP", "COMPANION", "ELEPHANT", "GIRAFFE", "KANGAROO", "DOLPHIN", "PENGUIN", "CHEETAH", "VOLCANO", "TORNADO", "AVALANCHE", "GALAXY", "ASTEROID", "UNIVERSE", "BACKPACK", "TELESCOPE", "MICROSCOPE", "COMPASS", "TREASURE", "PYRAMID", "GUITAR", "PIANO", "BICYCLE", "SKATEBOARD", "HELICOPTER", "SPACESHIP"];
-
-// Connect Four
-const C4_ROWS = 6; const C4_COLS = 7;
-let c4Board = []; let c4PlayerTurn = true; let c4GameOver = false;
-
-// Battleship
-const BS_SIZE = 6;
-let bsPlayerGrid = []; let bsEnemyGrid = []; let bsEnemyShips = []; let bsPlayerTurn = true; let bsGameOver = false; let bsPlacing = true; let bsShipSizes = [4, 3, 2]; let bsCurrentShipIndex = 0; let bsIsHorizontal = true; let bsPreviewOrigin = null; let bsPreviewCoords = [];
-
-// Checkers
-const CHK_SIZE = 8;
-let chkBoard = []; let chkSelected = null; let chkValidMoves = []; let chkPlayerTurn = true; let chkGameOver = false;
-
-// Chess
-const CHS_SIZE = 8;
-let chsBoard = []; let chsSelected = null; let chsValidMoves = []; let chsPlayerTurn = true; let chsGameOver = false;
-const chsInitialBoard = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']];
-const chsIcons = { 'P': '/static/icons/PawnWhite.png', 'R': '/static/icons/RookWhite.png', 'N': '/static/icons/HorseWhite.png', 'B': '/static/icons/BishopWhite.png', 'Q': '/static/icons/QueenWhite.png', 'K': '/static/icons/KingWhite.png', 'p': '/static/icons/PawnBlack.png', 'r': '/static/icons/RookBlack.png', 'n': '/static/icons/HorseBlack.png', 'b': '/static/icons/BishopBlack.png', 'q': '/static/icons/QueenBlack.png', 'k': '/static/icons/KingBlack.png' };
+let board = ["", "", "", "", "", "", "", "", ""]; let playerTurn = true; const winCombos = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let hmWord = "", hmGuessed = new Set(), hmMistakes = 0, hmPlayerTurn = true, hmGameOver = false; const safeDictionary = ["ROBLOX", "MINECRAFT", "DEVELOPER", "PYTHON", "KEYBOARD", "UNITY", "GODOT", "SCRIPTING", "ANIMATION", "PHYSICS", "MULTIPLAYER", "SERVER", "GALAXY", "UNIVERSE", "HELICOPTER", "SPACESHIP"];
+const C4_ROWS = 6, C4_COLS = 7; let c4Board = [], c4PlayerTurn = true, c4GameOver = false;
+const BS_SIZE = 6; let bsPlayerGrid = [], bsEnemyGrid = [], bsEnemyShips = [], bsPlayerTurn = true, bsGameOver = false, bsPlacing = true, bsShipSizes = [4, 3, 2], bsCurrentShipIndex = 0, bsIsHorizontal = true, bsPreviewOrigin = null, bsPreviewCoords = [];
+const CHK_SIZE = 8; let chkBoard = [], chkSelected = null, chkValidMoves = [], chkPlayerTurn = true, chkGameOver = false;
+const CHS_SIZE = 8; let chsBoard = [], chsSelected = null, chsValidMoves = [], chsPlayerTurn = true, chsGameOver = false; const chsInitialBoard = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']]; const chsIcons = {'P':'/static/icons/PawnWhite.png','R':'/static/icons/RookWhite.png','N':'/static/icons/HorseWhite.png','B':'/static/icons/BishopWhite.png','Q':'/static/icons/QueenWhite.png','K':'/static/icons/KingWhite.png','p':'/static/icons/PawnBlack.png','r':'/static/icons/RookBlack.png','n':'/static/icons/HorseBlack.png','b':'/static/icons/BishopBlack.png','q':'/static/icons/QueenBlack.png','k':'/static/icons/KingBlack.png'};
 
 function initTicTacToe() { board = ["", "", "", "", "", "", "", "", ""]; playerTurn = true; document.getElementById("ttt-status").innerText = "Your Turn (X)"; document.getElementById("ttt-status").style.color = "#fff"; document.querySelectorAll(".ttt-cell").forEach(cell => { cell.innerText = ""; cell.className = "ttt-cell"; }); }
 function makeMove(index) { if (board[index] === "" && playerTurn) { board[index] = "X"; updateCell(index, "X"); if (checkWin("X")) { document.getElementById("ttt-status").innerText = "You Win!"; document.getElementById("ttt-status").style.color = "#84cc16"; playerTurn = false; return; } else if (!board.includes("")) { document.getElementById("ttt-status").innerText = "It's a Draw!"; return; } playerTurn = false; document.getElementById("ttt-status").innerText = "Carl is thinking..."; setTimeout(carlMove, 500); } }
@@ -1267,19 +804,19 @@ function bsCellClick(r, c) { if (bsGameOver) return; if (bsPlacing) { let coords
 function bsConfirmPlacement() { if (!bsPlacing) return; if (bsPreviewCoords.length === 0) { alert("Please tap a valid spot on the grid to position your ship first!"); return; } bsPreviewCoords.forEach(coord => { bsPlayerGrid[coord.r][coord.c] = 1; }); bsPreviewOrigin = null; bsPreviewCoords = []; bsCurrentShipIndex++; if (bsCurrentShipIndex < bsShipSizes.length) { document.getElementById("bs-status").innerText = `Place your ${bsShipSizes[bsCurrentShipIndex]}-length ship`; } else { bsPlacing = false; document.getElementById("bs-placement-controls").style.display = "none"; document.getElementById("bs-enemy-label").style.display = "block"; document.getElementById("bs-enemy-grid").style.display = "grid"; document.getElementById("bs-player-label").innerText = "Your Fleet"; document.getElementById("bs-status").innerText = "Your Turn - Fire!"; } bsUpdateBoardsUI(); }
 function bsFire(r, c) { if (bsPlacing || !bsPlayerTurn || bsGameOver) return; if (bsEnemyGrid[r][c] !== 0) return; let targetCoord = `${r},${c}`; let isHit = bsEnemyShips.includes(targetCoord); if (isHit) { bsEnemyGrid[r][c] = 3; document.getElementById("bs-status").innerText = "Direct Hit! Fire Again!"; document.getElementById("bs-status").style.color = "#84cc16"; } else { bsEnemyGrid[r][c] = 2; document.getElementById("bs-status").innerText = "Miss!"; document.getElementById("bs-status").style.color = "#ef4444"; } bsUpdateBoardsUI(); if (bsEnemyShips.every(coord => { let [tr,tc] = coord.split(',').map(Number); return bsEnemyGrid[tr][tc] === 3; })) { bsGameOver = true; document.getElementById("bs-status").innerText = "You Destroyed Carl's Fleet!"; document.getElementById("bs-status").style.color = "#84cc16"; return; } if (isHit) return; bsPlayerTurn = false; setTimeout(bsCarlTurn, 800); }
 function bsCarlTurn() { if (bsGameOver) return; document.getElementById("bs-status").innerText = "Carl is firing..."; document.getElementById("bs-status").style.color = "#eccc68"; setTimeout(() => { let r, c; do { r = Math.floor(Math.random() * BS_SIZE); c = Math.floor(Math.random() * BS_SIZE); } while (bsPlayerGrid[r][c] === 2 || bsPlayerGrid[r][c] === 3); let isHit = (bsPlayerGrid[r][c] === 1); if (isHit) { bsPlayerGrid[r][c] = 3; document.getElementById("bs-status").innerText = "Carl hit your ship and fires again!"; document.getElementById("bs-status").style.color = "#ef4444"; } else { bsPlayerGrid[r][c] = 2; document.getElementById("bs-status").innerText = "Carl missed! Your Turn - Fire!"; document.getElementById("bs-status").style.color = "#fff"; } bsUpdateBoardsUI(); let playerLost = true; for (let row = 0; row < BS_SIZE; row++) { for (let col = 0; col < BS_SIZE; col++) { if (bsPlayerGrid[row][col] === 1) playerLost = false; } } if (playerLost) { bsGameOver = true; document.getElementById("bs-status").innerText = "Carl Destroyed Your Fleet!"; document.getElementById("bs-status").style.color = "#ef4444"; } else if (isHit) { setTimeout(bsCarlTurn, 800); } else { bsPlayerTurn = true; } }, 600); }
-function bsUpdateBoardsUI() { const enemyDiv = document.getElementById("bs-enemy-grid"); const playerDiv = document.getElementById("bs-player-grid"); if (!enemyDiv || !playerDiv) return; enemyDiv.innerHTML = ""; playerDiv.innerHTML = ""; if (!bsPlacing) { for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsEnemyGrid[r][c]; if (val === 2) cell.classList.add("miss"); else if (val === 3) cell.classList.add("hit"); cell.onclick = () => bsFire(r, c); enemyDiv.appendChild(cell); } } } for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsPlayerGrid[r][c]; let isPreview = bsPreviewCoords.some(coord => coord.r === r && coord.c === c); if (val === 1) cell.classList.add("ship"); else if (val === 2) cell.classList.add("miss"); else if (val === 3) cell.classList.add("hit"); else if (isPreview) cell.classList.add("preview"); if (bsPlacing) cell.onclick = () => bsCellClick(r, c); playerDiv.appendChild(cell); } } }
+function bsUpdateBoardsUI() { const enemyDiv = document.getElementById("bs-enemy-grid"); const playerDiv = document.getElementById("bs-player-grid"); if (!enemyDiv || !playerDiv) return; enemyDiv.innerHTML = ""; playerDiv.innerHTML = ""; if (!bsPlacing) { for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsEnemyGrid[r][c]; if (val === 2) { cell.classList.add("miss"); } else if (val === 3) { cell.classList.add("hit"); } cell.onclick = () => bsFire(r, c); enemyDiv.appendChild(cell); } } } for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsPlayerGrid[r][c]; let isPreview = bsPreviewCoords.some(coord => coord.r === r && coord.c === c); if (val === 1) { cell.classList.add("ship"); } else if (val === 2) { cell.classList.add("miss"); } else if (val === 3) { cell.classList.add("hit"); } else if (isPreview) { cell.classList.add("preview"); } if (bsPlacing) { cell.onclick = () => bsCellClick(r, c); } playerDiv.appendChild(cell); } } }
 
 function initCheckers() { chkBoard = Array(CHK_SIZE).fill().map(() => Array(CHK_SIZE).fill(0)); chkSelected = null; chkValidMoves = []; chkPlayerTurn = true; chkGameOver = false; document.getElementById("chk-status").innerText = "Your Turn (Red)"; document.getElementById("chk-status").style.color = "#fff"; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { if ((r + c) % 2 === 1) { if (r < 3) chkBoard[r][c] = 2; else if (r > 4) chkBoard[r][c] = 1; } } } chkRenderBoard(); }
 function chkRenderBoard() { const boardDiv = document.getElementById("chk-board"); if (!boardDiv) return; boardDiv.innerHTML = ""; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { const tile = document.createElement("div"); let isDark = (r + c) % 2 === 1; tile.className = `chk-tile ${isDark ? "dark" : "light"}`; let pieceVal = chkBoard[r][c]; if (chkSelected && chkSelected.r === r && chkSelected.c === c) tile.classList.add("selected"); let moveObj = chkValidMoves.find(m => m.toR === r && m.toC === c); if (moveObj) tile.classList.add("target"); let isJumped = chkValidMoves.some(m => m.isJump && m.jumpedR === r && m.jumpedC === c); if (isJumped) tile.classList.add("jump-capture"); if (pieceVal !== 0) { const piece = document.createElement("div"); let isRed = pieceVal === 1 || pieceVal === 11; let isKing = pieceVal === 11 || pieceVal === 22; piece.className = `chk-piece ${isRed ? "red" : "black"}`; if (isKing) piece.classList.add("king"); tile.appendChild(piece); } tile.onclick = () => chkTileClick(r, c); boardDiv.appendChild(tile); } } }
 function chkTileClick(r, c) { if (!chkPlayerTurn || chkGameOver) return; let pieceVal = chkBoard[r][c]; let isPlayerPiece = pieceVal === 1 || pieceVal === 11; if (isPlayerPiece) { chkSelected = { r, c }; chkValidMoves = chkGetMovesForPiece(r, c, chkBoard); chkRenderBoard(); return; } if (chkSelected) { let move = chkValidMoves.find(m => m.toR === r && m.toC === c); if (move) { chkExecuteMove(move); chkSelected = null; chkValidMoves = []; chkRenderBoard(); if (chkCheckWin(1)) { chkGameOver = true; document.getElementById("chk-status").innerText = "You Win!"; document.getElementById("chk-status").style.color = "#84cc16"; return; } chkPlayerTurn = false; document.getElementById("chk-status").innerText = "Carl is thinking..."; document.getElementById("chk-status").style.color = "#9333ea"; setTimeout(chkCarlTurn, 600); } else { chkSelected = null; chkValidMoves = []; chkRenderBoard(); } } }
 function chkGetMovesForPiece(r, c, boardState) { let p = boardState[r][c]; if (p === 0) return []; let isRed = p === 1 || p === 11; let isKing = p === 11 || p === 22; let moves = []; let dirs = []; if (isRed || isKing) dirs.push([-1, -1], [-1, 1]); if (!isRed || isKing) dirs.push([1, -1], [1, 1]); for (let [dr, dc] of dirs) { let nr = r + dr; let nc = c + dc; if (nr >= 0 && nr < CHK_SIZE && nc >= 0 && nc < CHK_SIZE) { if (boardState[nr][nc] === 0) { moves.push({ fromR: r, fromC: c, toR: nr, toC: nc, isJump: false }); } else { let opp = boardState[nr][nc]; let isOpponent = isRed ? (opp === 2 || opp === 22) : (opp === 1 || opp === 11); if (isOpponent) { let jR = r + 2 * dr; let jC = c + 2 * dc; if (jR >= 0 && jR < CHK_SIZE && jC >= 0 && jC < CHK_SIZE && boardState[jR][jC] === 0) { moves.push({ fromR: r, fromC: c, toR: jR, toC: jC, isJump: true, jumpedR: nr, jumpedC: nc }); } } } } } return moves; }
 function chkExecuteMove(move) { let p = chkBoard[move.fromR][move.fromC]; chkBoard[move.fromR][move.fromC] = 0; if (move.isJump) chkBoard[move.jumpedR][move.jumpedC] = 0; if (p === 1 && move.toR === 0) p = 11; if (p === 2 && move.toR === 7) p = 22; chkBoard[move.toR][move.toC] = p; }
-function chkCarlTurn() { if (chkGameOver) return; let diff = getDifficulty(); let allMoves = []; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { let p = chkBoard[r][c]; if (p === 2 || p === 22) { let moves = chkGetMovesForPiece(r, c, chkBoard); allMoves.push(...moves); } } } if (allMoves.length === 0) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Has No Moves! You Win!"; document.getElementById("chk-status").style.color = "#84cc16"; return; } let jumps = allMoves.filter(m => m.isJump); let chosenMove = null; if (diff === "easy") { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else if (diff === "medium") { if (jumps.length > 0 && Math.random() < 0.7) chosenMove = jumps[Math.floor(Math.random() * jumps.length)]; else chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else { if (jumps.length > 0) chosenMove = jumps[Math.floor(Math.random() * jumps.length)]; else { let kingingMoves = allMoves.filter(m => m.toR === 7); if (kingingMoves.length > 0) chosenMove = kingingMoves[Math.floor(Math.random() * kingingMoves.length)]; else chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } } chkExecuteMove(chosenMove); chkRenderBoard(); if (chkCheckWin(2)) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Wins!"; document.getElementById("chk-status").style.color = "#ef4444"; return; } chkPlayerTurn = true; document.getElementById("chk-status").innerText = "Your Turn (Red)"; document.getElementById("chk-status").style.color = "#fff"; }
+function chkCarlTurn() { if (chkGameOver) return; let diff = getDifficulty(); let allMoves = []; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { let p = chkBoard[r][c]; if (p === 2 || p === 22) { let moves = chkGetMovesForPiece(r, c, chkBoard); allMoves.push(...moves); } } } if (allMoves.length === 0) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Has No Moves! You Win!"; document.getElementById("chk-status").style.color = "#84cc16"; return; } let jumps = allMoves.filter(m => m.isJump); let chosenMove = null; if (diff === "easy") { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else if (diff === "medium") { if (jumps.length > 0 && Math.random() < 0.7) { chosenMove = jumps[Math.floor(Math.random() * jumps.length)]; } else { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } } else { if (jumps.length > 0) { chosenMove = jumps[Math.floor(Math.random() * jumps.length)]; } else { let kingingMoves = allMoves.filter(m => m.toR === 7); if (kingingMoves.length > 0) { chosenMove = kingingMoves[Math.floor(Math.random() * kingingMoves.length)]; } else { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } } } chkExecuteMove(chosenMove); chkRenderBoard(); if (chkCheckWin(2)) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Wins!"; document.getElementById("chk-status").style.color = "#ef4444"; return; } chkPlayerTurn = true; document.getElementById("chk-status").innerText = "Your Turn (Red)"; document.getElementById("chk-status").style.color = "#fff"; }
 function chkCheckWin(player) { let enemyVal1 = player === 1 ? 2 : 1; let enemyVal2 = player === 1 ? 22 : 11; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { let p = chkBoard[r][c]; if (p === enemyVal1 || p === enemyVal2) return false; } } return true; }
 
 function initChess() { chsBoard = JSON.parse(JSON.stringify(chsInitialBoard)); chsSelected = null; chsValidMoves = []; chsPlayerTurn = true; chsGameOver = false; document.getElementById("chs-status").innerText = "Your Turn (White)"; document.getElementById("chs-status").style.color = "#fff"; chsRenderBoard(); }
-function chsRenderBoard() { const boardDiv = document.getElementById("chs-board"); if (!boardDiv) return; boardDiv.innerHTML = ""; for (let r = 0; r < CHS_SIZE; r++) { for (let c = 0; c < CHS_SIZE; c++) { const tile = document.createElement("div"); let isDark = (r + c) % 2 === 1; tile.className = `chs-tile ${isDark ? "dark" : "light"}`; let p = chsBoard[r][c]; if (chsSelected && chsSelected.r === r && chsSelected.c === c) tile.classList.add("selected"); let moveObj = chsValidMoves.find(m => m.r === r && m.c === c); if (moveObj) { if (p !== '') tile.classList.add("target-capture"); else tile.classList.add("target"); } if (p !== '') { const piece = document.createElement("img"); piece.className = "chs-piece"; piece.src = chsIcons[p]; piece.draggable = false; tile.appendChild(piece); } tile.onclick = () => chsTileClick(r, c); boardDiv.appendChild(tile); } } }
-function chsGetMoves(r, c, board) { let p = board[r][c]; if (p === '') return []; let isPlayer = /^[A-Z]$/.test(p); let piece = p.toLowerCase(); let moves = []; function addMove(nr, nc) { if (nr < 0 || nr >= CHS_SIZE || nc < 0 || nc >= CHS_SIZE) return false; let target = board[nr][nc]; if (target === '') { moves.push({r: nr, c: nc}); return true; } let targetIsPlayer = /^[A-Z]$/.test(target); if (isPlayer !== targetIsPlayer) moves.push({r: nr, c: nc}); return false; } if (piece === 'p') { let dir = isPlayer ? -1 : 1; let startRow = isPlayer ? 6 : 1; if (r+dir >= 0 && r+dir < CHS_SIZE && board[r+dir][c] === '') { moves.push({r: r+dir, c: c}); if (r === startRow && board[r+2*dir][c] === '') moves.push({r: r+2*dir, c: c}); } for (let dc of [-1, 1]) { let nc = c + dc; let nr = r + dir; if (nr >= 0 && nr < CHS_SIZE && nc >= 0 && nc < CHS_SIZE) { let target = board[nr][nc]; if (target !== '' && (/^[A-Z]$/.test(target) !== isPlayer)) moves.push({r: nr, c: nc}); } } } else if (piece === 'r') { let dirs = [[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'b') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'q') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'n') { let jumps = [[-2,-1],[-2,1],[2,-1],[2,1],[-1,-2],[-1,2],[1,-2],[1,2]]; for (let [dr, dc] of jumps) addMove(r+dr, c+dc); } else if (piece === 'k') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) addMove(r+dr, c+dc); } return moves; }
+function chsRenderBoard() { const boardDiv = document.getElementById("chs-board"); if (!boardDiv) return; boardDiv.innerHTML = ""; for (let r = 0; r < CHS_SIZE; r++) { for (let c = 0; c < CHS_SIZE; c++) { const tile = document.createElement("div"); let isDark = (r + c) % 2 === 1; tile.className = `chs-tile ${isDark ? "dark" : "light"}`; let p = chsBoard[r][c]; if (chsSelected && chsSelected.r === r && chsSelected.c === c) tile.classList.add("selected"); let moveObj = chsValidMoves.find(m => m.r === r && m.c === c); if (moveObj) { if (p !== '') { tile.classList.add("target-capture"); } else { tile.classList.add("target"); } } if (p !== '') { const piece = document.createElement("img"); piece.className = "chs-piece"; piece.src = chsIcons[p]; piece.draggable = false; tile.appendChild(piece); } tile.onclick = () => chsTileClick(r, c); boardDiv.appendChild(tile); } } }
+function chsGetMoves(r, c, board) { let p = board[r][c]; if (p === '') return []; let isPlayer = /^[A-Z]$/.test(p); let piece = p.toLowerCase(); let moves = []; function addMove(nr, nc) { if (nr < 0 || nr >= CHS_SIZE || nc < 0 || nc >= CHS_SIZE) return false; let target = board[nr][nc]; if (target === '') { moves.push({r: nr, c: nc}); return true; } let targetIsPlayer = /^[A-Z]$/.test(target); if (isPlayer !== targetIsPlayer) { moves.push({r: nr, c: nc}); } return false; } if (piece === 'p') { let dir = isPlayer ? -1 : 1; let startRow = isPlayer ? 6 : 1; if (r+dir >= 0 && r+dir < CHS_SIZE && board[r+dir][c] === '') { moves.push({r: r+dir, c: c}); if (r === startRow && board[r+2*dir][c] === '') { moves.push({r: r+2*dir, c: c}); } } for (let dc of [-1, 1]) { let nc = c + dc; let nr = r + dir; if (nr >= 0 && nr < CHS_SIZE && nc >= 0 && nc < CHS_SIZE) { let target = board[nr][nc]; if (target !== '' && (/^[A-Z]$/.test(target) !== isPlayer)) { moves.push({r: nr, c: nc}); } } } } else if (piece === 'r') { let dirs = [[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'b') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'q') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc)) break; } } } else if (piece === 'n') { let jumps = [[-2,-1],[-2,1],[2,-1],[2,1],[-1,-2],[-1,2],[1,-2],[1,2]]; for (let [dr, dc] of jumps) addMove(r+dr, c+dc); } else if (piece === 'k') { let dirs = [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]; for (let [dr, dc] of dirs) addMove(r+dr, c+dc); } return moves; }
 function chsTileClick(r, c) { if (!chsPlayerTurn || chsGameOver) return; let p = chsBoard[r][c]; let isPlayerPiece = /^[A-Z]$/.test(p); if (isPlayerPiece) { chsSelected = { r, c }; chsValidMoves = chsGetMoves(r, c, chsBoard); chsRenderBoard(); return; } if (chsSelected) { let move = chsValidMoves.find(m => m.r === r && m.c === c); if (move) { chsExecuteMove(chsSelected.r, chsSelected.c, move.r, move.c); if (chsGameOver) { chsRenderBoard(); return; } chsSelected = null; chsValidMoves = []; chsRenderBoard(); chsPlayerTurn = false; document.getElementById("chs-status").innerText = "Carl is thinking..."; document.getElementById("chs-status").style.color = "#9333ea"; setTimeout(chsCarlTurn, 800); } else { chsSelected = null; chsValidMoves = []; chsRenderBoard(); } } }
 function chsExecuteMove(fromR, fromC, toR, toC) { let piece = chsBoard[fromR][fromC]; let target = chsBoard[toR][toC]; if (target === 'k') { chsGameOver = true; document.getElementById("chs-status").innerText = "Checkmate! You Win!"; document.getElementById("chs-status").style.color = "#84cc16"; } else if (target === 'K') { chsGameOver = true; document.getElementById("chs-status").innerText = "Checkmate! Carl Wins!"; document.getElementById("chs-status").style.color = "#ef4444"; } if (piece === 'P' && toR === 0) piece = 'Q'; if (piece === 'p' && toR === 7) piece = 'q'; chsBoard[toR][toC] = piece; chsBoard[fromR][fromC] = ''; }
 function chsCarlTurn() { if (chsGameOver) return; let diff = getDifficulty(); let allMoves = []; const values = {'p':1, 'n':3, 'b':3, 'r':5, 'q':9, 'k':100, 'P':1, 'N':3, 'B':3, 'R':5, 'Q':9, 'K':100}; for (let r = 0; r < CHS_SIZE; r++) { for (let c = 0; c < CHS_SIZE; c++) { if (/^[a-z]$/.test(chsBoard[r][c])) { let moves = chsGetMoves(r, c, chsBoard); for (let m of moves) { let target = chsBoard[m.r][m.c]; let score = target === '' ? 0 : values[target]; allMoves.push({ fr: r, fc: c, tr: m.r, tc: m.c, score: score }); } } } } if (allMoves.length === 0) { chsGameOver = true; document.getElementById("chs-status").innerText = "Stalemate!"; return; } let chosenMove; if (diff === "easy") { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else { allMoves.sort((a, b) => b.score - a.score); let bestScore = allMoves[0].score; let bestMoves = allMoves.filter(m => m.score === bestScore); if (diff === "medium" && Math.random() < 0.6) { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else { chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)]; } } chsExecuteMove(chosenMove.fr, chosenMove.fc, chosenMove.tr, chosenMove.tc); chsRenderBoard(); if (!chsGameOver) { chsPlayerTurn = true; document.getElementById("chs-status").innerText = "Your Turn (White)"; document.getElementById("chs-status").style.color = "#fff"; } }
