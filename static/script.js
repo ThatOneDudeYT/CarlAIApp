@@ -204,16 +204,21 @@ async function loadUserDataFromCloud() {
             customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
             if (!isDM) activeChatId = data.activeChatId || null;
             applyTheme(data.theme || "dark");
+            
             userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0;
             autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0;
             clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
             myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || [];
+            
             updateBurgerUI();
+            
             if (data.avatar) currentUserAvatar = data.avatar;
             if (data.username) currentUser = data.username;
             updateProfileUI();
+            
             const keyInput = document.getElementById('user-api-key'); if (keyInput) keyInput.value = customApiKey;
             const usernameInput = document.getElementById('settings-username-input'); if (usernameInput) usernameInput.value = currentUser;
+            
             renderChatHistorySidebar(); updateUsageUI();
             if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
         } else {
@@ -322,45 +327,22 @@ function selectGame(element, gameName) {
 function updateDifficultyPickerVisibility() {
     const diffPicker = document.getElementById("difficulty-picker");
     if (diffPicker) {
-        if (gamesWithDifficulty.includes(selectedGame)) {
-            diffPicker.style.display = "flex";
-        } else {
-            diffPicker.style.display = "none";
-        }
+        if (gamesWithDifficulty.includes(selectedGame)) { diffPicker.style.display = "flex"; } 
+        else { diffPicker.style.display = "none"; }
     }
 }
 
 function launchGame() {
-    if (selectedGame === "Burger Clicker") {
-        switchView("view-burgerclicker");
-        updateUpgradesUI();
-    } else if (selectedGame === "Tic Tac Toe") {
-        switchView("view-tictactoe");
-        initTicTacToe();
-    } else if (selectedGame === "Rock Paper Scissors") {
-        switchView("view-rps");
-        initRps();
-    } else if (selectedGame === "Blackjack") {
-        switchView("view-blackjack");
-        prepBlackjack();
-    } else if (selectedGame === "Hangman") {
-        switchView("view-hangman");
-        initHangman();
-    } else if (selectedGame === "Connect Four") {
-        switchView("view-connectfour");
-        initConnectFour();
-    } else if (selectedGame === "Battleship") {
-        switchView("view-battleship");
-        initBattleship();
-    } else if (selectedGame === "Checkers") {
-        switchView("view-checkers");
-        initCheckers();
-    } else if (selectedGame === "Chess") {
-        switchView("view-chess");
-        initChess();
-    } else {
-        alert(`Starting ${selectedGame}...`);
-    }
+    if (selectedGame === "Burger Clicker") { switchView("view-burgerclicker"); updateUpgradesUI(); } 
+    else if (selectedGame === "Tic Tac Toe") { switchView("view-tictactoe"); if(typeof initTicTacToe === 'function') initTicTacToe(); } 
+    else if (selectedGame === "Rock Paper Scissors") { switchView("view-rps"); if(typeof initRps === 'function') initRps(); } 
+    else if (selectedGame === "Blackjack") { switchView("view-blackjack"); if(typeof prepBlackjack === 'function') prepBlackjack(); } 
+    else if (selectedGame === "Hangman") { switchView("view-hangman"); if(typeof initHangman === 'function') initHangman(); } 
+    else if (selectedGame === "Connect Four") { switchView("view-connectfour"); if(typeof initConnectFour === 'function') initConnectFour(); } 
+    else if (selectedGame === "Battleship") { switchView("view-battleship"); if(typeof initBattleship === 'function') initBattleship(); } 
+    else if (selectedGame === "Checkers") { switchView("view-checkers"); if(typeof initCheckers === 'function') initCheckers(); } 
+    else if (selectedGame === "Chess") { switchView("view-chess"); if(typeof initChess === 'function') initChess(); } 
+    else { alert(`Starting ${selectedGame}...`); }
 }
 
 // --- GAME 0: BURGER CLICKER LOGIC ---
@@ -376,7 +358,6 @@ function clickBurger() {
     floater.style.left = (Math.random() * 80 + 10) + "%";
     floater.style.top = (Math.random() * 80 + 10) + "%";
     btn.appendChild(floater);
-    
     setTimeout(() => floater.remove(), 1000);
 }
 
@@ -399,38 +380,20 @@ function buyUpgrade(type) {
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     }
-    
-    updateBurgerUI();
-    updateUpgradesUI();
-    saveSessionData();
+    updateBurgerUI(); updateUpgradesUI(); saveSessionData();
 }
 
 function exchangeBurgers() {
-    if (clickerBurgers >= 10000) {
-        clickerBurgers -= 10000;
-        userBurgers += 1;
-        updateBurgerUI();
-        saveSessionData();
-    } else {
-        alert("You need 10,000 Clicker Burgers to make a trade!");
-    }
+    if (clickerBurgers >= 10000) { clickerBurgers -= 10000; userBurgers += 1; updateBurgerUI(); saveSessionData(); } 
+    else { alert("You need 10,000 Clicker Burgers to make a trade!"); }
 }
 
 function rebirth() {
     if (clickerBurgers >= 1000000000000) {
-        clickerBurgers = 0;
-        autoChefs = 0;
-        burgerStands = 0;
-        burgerFactories = 0;
-        clickPower = 1;
-        rebirths++;
+        clickerBurgers = 0; autoChefs = 0; burgerStands = 0; burgerFactories = 0; clickPower = 1; rebirths++;
         alert("You have REBIRTHED! All your progress is reset, but you now earn +100% more burgers permanently!");
-        updateBurgerUI();
-        updateUpgradesUI();
-        saveSessionData();
-    } else {
-        alert("You need 1 Trillion Clicker Burgers to Rebirth!");
-    }
+        updateBurgerUI(); updateUpgradesUI(); saveSessionData();
+    } else { alert("You need 1 Trillion Clicker Burgers to Rebirth!"); }
 }
 
 function updateUpgradesUI() {
@@ -480,13 +443,16 @@ function getAvatarHTML(user) {
 async function fetchAllUsers() {
     const list = document.getElementById("find-people-list");
     if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
+
     try {
         if (firebaseUserId && db) {
             const snapshot = await db.collection("users").get();
             allUsersCache = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                if (doc.id !== firebaseUserId && data.username) { allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "" }); }
+                if (doc.id !== firebaseUserId && data.username) {
+                    allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "" });
+                }
             });
         }
     } catch (err) { console.error("Error fetching real users", err); }
@@ -495,14 +461,16 @@ async function fetchAllUsers() {
 
 function renderFriendsView() {
     const query = document.getElementById("friend-search-input").value.toLowerCase().trim();
-    const findList = document.getElementById("find-people-list"), friendsList = document.getElementById("my-friends-list");
+    const findList = document.getElementById("find-people-list");
+    const friendsList = document.getElementById("my-friends-list");
     if (!findList || !friendsList) return;
     
     findList.innerHTML = ""; friendsList.innerHTML = "";
 
     const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
-    if (activeFriends.length === 0) { friendsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No friends yet.</p>"; } 
-    else {
+    if (activeFriends.length === 0) {
+        friendsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No friends yet.</p>";
+    } else {
         activeFriends.forEach(user => {
             const item = document.createElement("div"); item.className = "friend-item";
             item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div><button class="friend-msg-btn" onclick='openDirectMessage(${JSON.stringify(user)})'>Message</button>`;
@@ -521,8 +489,9 @@ function renderFriendsView() {
 
     if (query) {
         searchResults = allUsersCache.filter(u => u.username.toLowerCase().includes(query) && !myFriends.includes(u.id) && !myRequests.includes(u.id));
-        if (searchResults.length === 0 && incomingReqs.length === 0) { findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No users found.</p>"; } 
-        else {
+        if (searchResults.length === 0 && incomingReqs.length === 0) {
+            findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No users found.</p>";
+        } else {
             searchResults.forEach(user => {
                 const item = document.createElement("div"); item.className = "friend-item";
                 const isSent = mySentRequests.includes(user.id);
@@ -531,7 +500,9 @@ function renderFriendsView() {
                 findList.appendChild(item);
             });
         }
-    } else if (incomingReqs.length === 0) { findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>Search for a username above!</p>"; }
+    } else if (incomingReqs.length === 0) {
+        findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>Search for a username above!</p>";
+    }
 }
 
 async function sendFriendRequest(targetId) {
@@ -562,10 +533,13 @@ function openDirectMessage(user) {
             const data = doc.data(), isMe = data.senderId === firebaseUserId;
             const msgDiv = document.createElement("div"); msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`;
             const contentDiv = document.createElement("div"); contentDiv.className = "dm-message-content";
+            
             if (data.text) { const textSpan = document.createElement("span"); textSpan.className = "dm-message-text"; textSpan.innerText = data.text; contentDiv.appendChild(textSpan); }
             if (data.imageSrc) { const img = document.createElement("img"); img.src = data.imageSrc; img.className = "chat-image"; img.draggable = false; contentDiv.appendChild(img); }
+            
             const avatarObj = isMe ? { username: currentUser, avatar: currentUserAvatar } : currentDmUser;
             const avatarWrapper = document.createElement("div"); avatarWrapper.className = "dm-message-avatar"; avatarWrapper.innerHTML = getAvatarHTML(avatarObj);
+            
             msgDiv.appendChild(avatarWrapper); msgDiv.appendChild(contentDiv); log.appendChild(msgDiv);
         });
         log.scrollTop = log.scrollHeight;
@@ -598,6 +572,7 @@ async function sendDmMessage() {
     const text = input.value.trim();
     if (!text && !pendingDmImageBase64) return;
     if (!activeChatId || !isDM) return;
+    
     input.value = ""; const imageSrc = pendingDmImageSrc; clearDmPendingImage();
     await db.collection("dms").doc(activeChatId).collection("messages").add({ text: text, imageSrc: imageSrc || null, senderId: firebaseUserId, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
 }
@@ -611,6 +586,7 @@ function checkDailyMessageLimit() {
     let lastDate = localStorage.getItem("carl_last_msg_date");
     let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
     if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
+    
     if (count >= 10 && !hasValidApiKey()) {
         alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
         switchView('view-settings'); return false;
@@ -624,7 +600,9 @@ function startNewChat() {
     archiveActiveChat(); activeChatId = "chat_" + Date.now(); chatHistory = [];
     const log = document.getElementById("chat-log"); if (log) log.innerHTML = '';
     const input = document.getElementById("user-input"); if (input) input.value = "";
-    clearPendingImage(); document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
+    
+    clearPendingImage();
+    document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
     showStartupScreen(); saveSessionData(); switchView('view-chat');
 }
 
@@ -635,7 +613,9 @@ function loadChat(chatId) {
     if (target) {
         activeChatId = target.id; const log = document.getElementById("chat-log"); if (log) log.innerHTML = target.html;
         chatHistory = [...target.apiHistory];
-        if (chatHistory.length > 0) hideStartupScreen(); else { document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>'; showStartupScreen(); }
+        
+        if (chatHistory.length > 0) hideStartupScreen();
+        else { document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>'; showStartupScreen(); }
         saveSessionData(); switchView('view-chat');
     }
 }
@@ -655,7 +635,9 @@ async function sendMessage() {
     }
 
     if (!checkDailyMessageLimit()) return;
-    hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
+
+    hideStartupScreen();
+    appendMessage(text, "user", pendingImageSrc);
     
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const payload = { 
@@ -670,6 +652,7 @@ async function sendMessage() {
 
     try {
         const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
                 textNode.innerText = "Error: Invalid API Key provided. Reverting key settings."; alert("The API key provided is invalid! Please check your key in Settings.");
@@ -704,6 +687,7 @@ async function sendMessage() {
             for (let bad_prefix of ["Carl:", "carl:", "Carl - ", "Assistant:"]) { if (fullResponse.startsWith(bad_prefix)) { fullResponse = fullResponse.substring(bad_prefix.length).trimStart(); displayBuffer = ""; } }
             if (!isTypingStream) { isTypingStream = true; renderTypewriter(); }
         }
+
         chatHistory.push({ role: "user", content: text || "Look at this image." }); chatHistory.push({ role: "assistant", content: fullResponse }); saveSessionData();
     } catch (err) { textNode.innerText = "Network error."; }
 }
@@ -730,6 +714,138 @@ function searchChats() {
     setTimeout(() => input.focus(), 100);
 }
 
+function initMobileNavIcons() {
+    const mobileChatBtn = document.getElementById("mobile-nav-chat");
+    const mobileCallBtn = document.getElementById("mobile-nav-call");
+    const mobileGamesBtn = document.getElementById("mobile-nav-games");
+    const mobileSettingsBtn = document.getElementById("mobile-nav-settings");
+    if (mobileChatBtn) mobileChatBtn.onclick = () => startNewChat();
+    if (mobileCallBtn) mobileCallBtn.onclick = () => startCall();
+    if (mobileGamesBtn) mobileGamesBtn.onclick = () => switchView('view-games');
+    if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => switchView('view-settings');
+}
+
+function archiveActiveChat() {
+    const log = document.getElementById("chat-log"); if (!log) return;
+    const bubbles = log.querySelectorAll('.chat-bubble');
+    if (bubbles.length > 0 && activeChatId && !isDM) {
+        let existing = chatsHistory.find(c => c.id === activeChatId);
+        if (existing) { existing.html = log.innerHTML; existing.apiHistory = [...chatHistory]; } 
+        else {
+            const firstMsgText = bubbles[0].innerText || "Chat Session";
+            const newTitle = firstMsgText.length > 20 ? firstMsgText.substring(0, 20) + "..." : firstMsgText;
+            chatsHistory.unshift({ id: activeChatId, title: newTitle, html: log.innerHTML, apiHistory: [...chatHistory], pinned: false });
+        }
+    }
+    saveSessionData(); renderChatHistorySidebar();
+}
+
+function clearPendingImage() {
+    pendingImageBase64 = null; pendingImageMime = null; pendingImageSrc = null;
+    const filePicker = document.getElementById('native-file-picker'); if (filePicker) filePicker.value = "";
+    const box = document.getElementById('image-preview-box'); if (box) box.classList.remove('active');
+}
+
+function renderChatHistorySidebar() {
+    const container = document.getElementById("saved-chats-list"); if (!container) return; container.innerHTML = "";
+    const sortedChats = [...chatsHistory].sort((a, b) => { if (a.pinned && !b.pinned) return -1; if (!a.pinned && b.pinned) return 1; return 0; });
+    sortedChats.forEach(chat => {
+        const item = document.createElement("div"); item.className = "saved-chat-item";
+        const titleContainer = document.createElement("div"); titleContainer.className = "chat-title-text";
+        if (chat.pinned) {
+            const pinIcon = document.createElement("img"); pinIcon.className = "pinned-icon-img";
+            pinIcon.src = "/static/icons/PinIcon.png"; pinIcon.alt = "Pinned"; pinIcon.draggable = false;
+            titleContainer.appendChild(pinIcon);
+        }
+        const titleText = document.createElement("span"); titleText.innerText = chat.title;
+        titleContainer.appendChild(titleText); titleContainer.onclick = () => loadChat(chat.id);
+        const optionsBtn = document.createElement("button"); optionsBtn.className = "chat-options-btn"; optionsBtn.innerText = "⋮";
+        const dropdown = document.createElement("div"); dropdown.className = "chat-dropdown-menu";
+        const editBtn = document.createElement("button"); editBtn.className = "chat-dropdown-item"; editBtn.innerText = "Edit Name";
+        editBtn.onclick = (e) => { e.stopPropagation(); editChatTitle(chat.id); dropdown.classList.remove('active'); };
+        const pinBtn = document.createElement("button"); pinBtn.className = "chat-dropdown-item"; pinBtn.innerText = chat.pinned ? "Unpin Chat" : "Pin Chat";
+        pinBtn.onclick = (e) => { e.stopPropagation(); togglePinChat(chat.id); dropdown.classList.remove('active'); };
+        const deleteBtn = document.createElement("button"); deleteBtn.className = "chat-dropdown-item delete"; deleteBtn.innerText = "Delete";
+        deleteBtn.onclick = (e) => { e.stopPropagation(); deleteChat(chat.id); dropdown.classList.remove('active'); };
+        dropdown.appendChild(editBtn); dropdown.appendChild(pinBtn); dropdown.appendChild(deleteBtn);
+        optionsBtn.onclick = (e) => { e.stopPropagation(); document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => { if (menu !== dropdown) menu.classList.remove('active'); }); dropdown.classList.toggle('active'); };
+        item.appendChild(titleContainer); item.appendChild(optionsBtn); item.appendChild(dropdown); container.appendChild(item);
+    });
+}
+
+document.addEventListener("click", () => { document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => menu.classList.remove('active')); });
+function editChatTitle(chatId) { const chat = chatsHistory.find(c => c.id === chatId); if (!chat) return; const newTitle = prompt("Enter a new name for this chat:", chat.title); if (newTitle && newTitle.trim() !== "") { chat.title = newTitle.trim(); saveSessionData(); renderChatHistorySidebar(); } }
+function togglePinChat(chatId) { const chat = chatsHistory.find(c => c.id === chatId); if (!chat) return; chat.pinned = !chat.pinned; saveSessionData(); renderChatHistorySidebar(); }
+function deleteChat(chatId) { if (confirm("Are you sure you want to delete this chat forever?")) { chatsHistory = chatsHistory.filter(c => c.id !== chatId); if (activeChatId === chatId) startNewChat(); else { saveSessionData(); renderChatHistorySidebar(); } } }
+
+function updateUsageUI() {
+    const fillEl = document.getElementById("usage-fill"), textEl = document.getElementById("usage-text"); if (!fillEl || !textEl) return;
+    if (hasValidApiKey()) { fillEl.style.width = "100%"; textEl.innerText = "Unlimited"; } else {
+        const today = new Date().toISOString().split('T')[0]; let lastDate = localStorage.getItem("carl_last_msg_date"); let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+        if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
+        let percent = (count / 10) * 100; if (percent > 100) percent = 100; fillEl.style.width = `${percent}%`; textEl.innerText = `${count}/10`;
+    }
+}
+
+function processFile(file) {
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            pendingImageSrc = event.target.result; pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1]; pendingImageBase64 = pendingImageSrc.split(',')[1];
+            const imgEl = document.getElementById('image-preview-img'), boxEl = document.getElementById('image-preview-box');
+            if (imgEl && boxEl) { imgEl.src = pendingImageSrc; boxEl.classList.add('active'); }
+        };
+        reader.readAsDataURL(file);
+    } else {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const text = event.target.result, input = document.getElementById("user-input");
+            if (input) input.value += `\n\`\`\`${file.name.split('.').pop() || ''}\n${text}\n\`\`\`\n`;
+        };
+        reader.readAsText(file);
+    }
+}
+
+const filePicker = document.getElementById('native-file-picker');
+if (filePicker) { filePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processFile(file); filePicker.value = ""; }); }
+
+let dragCounter = 0; const dragOverlay = document.getElementById('drag-drop-overlay'), dragChatView = document.getElementById('view-chat');
+if (dragChatView && dragOverlay) {
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => window.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false));
+    window.addEventListener('dragenter', (e) => { if (dragChatView.classList.contains('active')) { dragCounter++; dragOverlay.classList.add('active'); } });
+    window.addEventListener('dragleave', (e) => { if (dragChatView.classList.contains('active')) { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dragOverlay.classList.remove('active'); } } });
+    window.addEventListener('drop', (e) => { dragCounter = 0; dragOverlay.classList.remove('active'); if (dragChatView.classList.contains('active') && e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+}
+
+window.copyCode = function(button) { const code = decodeURIComponent(button.getAttribute("data-code")); navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error("Copy failed", err)); };
+
+function showCopyToast() {
+    let toast = document.getElementById('copy-toast');
+    if (!toast) { toast = document.createElement('div'); toast.id = 'copy-toast'; toast.className = 'copy-toast'; toast.innerHTML = `<img src="/static/icons/CopyIcon.png" alt="Copy"><span>Text Copied</span>`; document.body.appendChild(toast); }
+    toast.classList.add('show'); if (window.copyToastTimeout) clearTimeout(window.copyToastTimeout); window.copyToastTimeout = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function formatMessage(text) {
+    let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
+    safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
+        const displayLang = (lang || "CODE").toUpperCase(), encodedCode = encodeURIComponent(code);
+        let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
+        return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-language">${displayLang}</span><button class="copy-code-btn" data-code="${encodedCode}" onclick="copyCode(this)"><img src="/static/icons/CopyIcon.png" alt="Copy"></button></div><div class="code-block-body">${styledCode.trim()}</div></div>`;
+    });
+    safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
+    return safeText;
+}
+
+function appendMessage(msg, sender, imgSrc = null) {
+    const log = document.getElementById("chat-log"); if (!log) return;
+    const bubble = document.createElement("div"); bubble.className = `chat-bubble ${sender}`;
+    if (msg) { const textNode = document.createElement("div"); textNode.innerText = msg; bubble.appendChild(textNode); }
+    if (imgSrc) { const img = document.createElement("img"); img.src = imgSrc; img.className = "chat-image"; img.draggable = false; bubble.appendChild(img); }
+    log.appendChild(bubble); log.scrollTop = log.scrollHeight;
+}
+
 // --- CALL FEATURE ---
 let isCallActive = false, isCallConnected = false, isMuted = false, isSpeakerOn = true;
 let callTimerInterval = null, callSeconds = 0, ringTimeout = null, ringInterval = null;
@@ -743,632 +859,16 @@ function loadCarlVoice() {
 }
 if ('speechSynthesis' in window) { window.speechSynthesis.onvoiceschanged = loadCarlVoice; loadCarlVoice(); }
 function getAudioContext() { if (!audioCtx) { const AudioContext = window.AudioContext || window.webkitAudioContext; audioCtx = new AudioContext(); } if (audioCtx.state === 'suspended') audioCtx.resume(); return audioCtx; }
-function playToneBurst(freq1, freq2, duration) { try { const ctx = getAudioContext(); const osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator(), gain = ctx.createGain(); osc1.frequency.value = freq1; osc2.frequency.value = freq2; gain.gain.setValueAtTime(0.15, ctx.currentTime); gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05); gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration); osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination); osc1.start(ctx.currentTime); osc2.start(ctx.currentTime); osc1.stop(ctx.currentTime + duration); osc2.stop(ctx.currentTime + duration); } catch (e) {} }
+function playToneBurst(freq1, freq2, duration) { try { const ctx = getAudioContext(), osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator(), gain = ctx.createGain(); osc1.frequency.value = freq1; osc2.frequency.value = freq2; gain.gain.setValueAtTime(0.15, ctx.currentTime); gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05); gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration); osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination); osc1.start(ctx.currentTime); osc2.start(ctx.currentTime); osc1.stop(ctx.currentTime + duration); osc2.stop(ctx.currentTime + duration); } catch (e) {} }
 function startRingingSound() { playToneBurst(440, 480, 2.0); ringInterval = setInterval(() => { if (!isCallActive || isCallConnected) { clearInterval(ringInterval); return; } playToneBurst(440, 480, 2.0); }, 4000); }
 function stopRingingSound() { if (ringInterval) { clearInterval(ringInterval); ringInterval = null; } }
-function playPickupClick() { try { const ctx = getAudioContext(); const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.type = 'triangle'; osc.frequency.setValueAtTime(800, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.08); gain.gain.setValueAtTime(0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.08); } catch (e) {} }
+function playPickupClick() { try { const ctx = getAudioContext(), osc = ctx.createOscillator(), gain = ctx.createGain(); osc.type = 'triangle'; osc.frequency.setValueAtTime(800, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.08); gain.gain.setValueAtTime(0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.08); } catch (e) {} }
 async function toggleFacetime() { const btn = document.getElementById("facetime-btn"); if (!isFacetimeActive) { try { facetimeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false }); let vid = document.getElementById("facetime-video"); if (!vid) { vid = document.createElement("video"); vid.id = "facetime-video"; vid.autoplay = true; vid.playsInline = true; vid.muted = true; vid.style.position = "absolute"; vid.style.top = "0"; vid.style.left = "0"; vid.style.width = "100%"; vid.style.height = "100%"; vid.style.objectFit = "cover"; vid.style.zIndex = "0"; vid.style.borderRadius = "20px"; const callView = document.getElementById("view-call"); if (callView) callView.insertBefore(vid, callView.firstChild); } vid.srcObject = facetimeStream; vid.style.display = "block"; isFacetimeActive = true; if (btn) btn.style.opacity = "1"; } catch (err) { alert("Unable to access camera for FaceTime mode: " + err.message); } } else { stopFacetime(); } }
 function stopFacetime() { isFacetimeActive = false; if (facetimeStream) { facetimeStream.getTracks().forEach(track => track.stop()); facetimeStream = null; } const vid = document.getElementById("facetime-video"); if (vid) vid.style.display = "none"; const btn = document.getElementById("facetime-btn"); if (btn) btn.style.opacity = "0.4"; }
 function captureFacetimeFrame() { if (!isFacetimeActive) return null; const vid = document.getElementById("facetime-video"); if (!vid || vid.readyState < 2) return null; const canvas = document.createElement("canvas"); canvas.width = vid.videoWidth || 320; canvas.height = vid.videoHeight || 240; const ctx = canvas.getContext("2d"); ctx.drawImage(vid, 0, 0, canvas.width, canvas.height); const dataUrl = canvas.toDataURL("image/jpeg", 0.6); return { base64: dataUrl.split(",")[1], mime: "image/jpeg" }; }
-function startCall() { if (!hasValidApiKey()) { alert("Calling Carl requires a valid custom Gemini API Key! Please enter your key in Settings to unlock voice calls."); switchView('view-settings'); return; } switchView('view-call'); isCallActive = true; isCallConnected = false; isMuted = false; callSeconds = 0; const ctx = getAudioContext(); if (ctx.state === 'suspended') ctx.resume(); if ('speechSynthesis' in window) { let wakeUp = new SpeechSynthesisUtterance(''); wakeUp.volume = 0; window.speechSynthesis.speak(wakeUp); } document.getElementById("call-status").innerText = "Calling Carl..."; document.getElementById("call-timer").innerText = "00:00"; document.getElementById("mute-btn").style.opacity = "1"; document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4"; const ftBtn = document.getElementById("facetime-btn"); if (ftBtn) ftBtn.style.opacity = "0.4"; startRingingSound(); const delay = Math.floor(Math.random() * 4000) + 1500; ringTimeout = setTimeout(() => { if (!isCallActive) return; stopRingingSound(); playPickupClick(); isCallConnected = true; document.getElementById("call-status").innerText = "Connected"; callTimerInterval = setInterval(() => { callSeconds++; const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0'); const secs = String(Math.floor(callSeconds % 60)).padStart(2, '0'); document.getElementById("call-timer").innerText = `${mins}:${secs}`; }, 1000); initSpeechRecognition(); speakCarl("Hey! Carl here. What's on your mind?"); }, delay); }
+function startCall() { if (!hasValidApiKey()) { alert("Calling Carl requires a valid API Key!"); switchView('view-settings'); return; } switchView('view-call'); isCallActive = true; isCallConnected = false; isMuted = false; callSeconds = 0; const ctx = getAudioContext(); if (ctx.state === 'suspended') ctx.resume(); if ('speechSynthesis' in window) { let wakeUp = new SpeechSynthesisUtterance(''); wakeUp.volume = 0; window.speechSynthesis.speak(wakeUp); } document.getElementById("call-status").innerText = "Calling Carl..."; document.getElementById("call-timer").innerText = "00:00"; document.getElementById("mute-btn").style.opacity = "1"; document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4"; const ftBtn = document.getElementById("facetime-btn"); if (ftBtn) ftBtn.style.opacity = "0.4"; startRingingSound(); const delay = Math.floor(Math.random() * 4000) + 1500; ringTimeout = setTimeout(() => { if (!isCallActive) return; stopRingingSound(); playPickupClick(); isCallConnected = true; document.getElementById("call-status").innerText = "Connected"; callTimerInterval = setInterval(() => { callSeconds++; const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0'); const secs = String(Math.floor(callSeconds % 60)).padStart(2, '0'); document.getElementById("call-timer").innerText = `${mins}:${secs}`; }, 1000); initSpeechRecognition(); speakCarl("Hey! Carl here. What's on your mind?"); }, delay); }
 function endCall() { try { isCallActive = false; isCallConnected = false; stopFacetime(); if (ringTimeout) clearTimeout(ringTimeout); stopRingingSound(); if (callTimerInterval) clearInterval(callTimerInterval); if ('speechSynthesis' in window) window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; } document.getElementById("call-timer").innerText = "00:00"; document.getElementById("call-status").innerText = "Call Ended"; switchView('view-chat'); } catch (err) { switchView('view-chat'); } }
 function toggleMute() { isMuted = !isMuted; const btn = document.getElementById("mute-btn"); if (isMuted) { btn.style.opacity = "0.4"; if (recognition) try { recognition.stop(); } catch(e) {} } else { btn.style.opacity = "1"; if (recognition && isCallActive && isCallConnected) { try { recognition.start(); } catch(e) {} } } }
 function toggleSpeaker() { isSpeakerOn = !isSpeakerOn; const btn = document.getElementById("speaker-btn"); btn.style.opacity = isSpeakerOn ? "1" : "0.4"; }
 function speakCarl(text) { if (!('speechSynthesis' in window) || !isCallActive) return; let cleanText = text.replace(/```[\s\S]*?```/g, '').replace(/`[^`]*`/g, '').replace(/[*_#~]/g, '').trim(); if (!cleanText) return; const utterance = new SpeechSynthesisUtterance(cleanText); if (!carlVoice) loadCarlVoice(); if (carlVoice) utterance.voice = carlVoice; utterance.rate = 1.05; utterance.pitch = 1.0; utterance.volume = isSpeakerOn ? 1.0 : 0.15; window.speechSynthesis.speak(utterance); }
 function initSpeechRecognition() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) { document.getElementById("call-status").innerText = "Browser doesn't support mic!"; return; } recognition = new SpeechRecognition(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US'; recognition.onresult = async (event) => { if (isMuted || !isCallActive || !isCallConnected) return; let interimTranscript = '', finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript; else interimTranscript += event.results[i][0].transcript; } let combined = finalTranscript + interimTranscript; if (combined.trim().length > 3 && window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); } if (finalTranscript.trim().length > 0) { const userQuery = finalTranscript.trim(); window.speechSynthesis.cancel(); if (callAbortController) callAbortController.abort(); document.getElementById("call-status").innerText = "Carl is thinking..."; await processCallUserMessage(userQuery); } }; recognition.onerror = (e) => { if (e.error === 'not-allowed') { document.getElementById("call-status").innerText = "Mic Permission Denied"; } }; recognition.onend = () => { if (isCallActive && isCallConnected && !isMuted) { try { recognition.start(); } catch(e) {} } }; try { recognition.start(); } catch(e) {} }
-
-// =========================================================================
-// --- GAME IMPLEMENTATIONS ---
-// =========================================================================
-
-// Blackjack State
-let bjDeck = [], bjPlayerHands = [], bjCarlHand = [], bjActiveHand = 0, bjGameOver = false, bjGameActive = false, bjResults = [], bjBet = 10, bjBets = [], bjPayoutsDone = false;
-
-function buildDeck() {
-    const suits = ['♠', '♥', '♦', '♣'], values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-    let deck = [];
-    for (let i = 0; i < 4; i++) for (let suit of suits) for (let value of values) deck.push({ suit, value });
-    return deck.sort(() => Math.random() - 0.5);
-}
-
-function getCardWeight(val) { if (['J', 'Q', 'K'].includes(val)) return 10; if (val === 'A') return 11; return parseInt(val); }
-function getBjScore(hand) {
-    if (!hand || !Array.isArray(hand)) return 0;
-    let score = 0, aces = 0;
-    for (let card of hand) {
-        if (!card) continue;
-        if (['J', 'Q', 'K'].includes(card.value)) score += 10;
-        else if (card.value === 'A') { score += 11; aces += 1; }
-        else score += parseInt(card.value);
-    }
-    while (score > 21 && aces > 0) { score -= 10; aces -= 1; }
-    return score;
-}
-
-function prepBlackjack() {
-    bjGameActive = false; bjGameOver = true; 
-    document.getElementById("bj-status").innerText = "Place your bet and Deal!"; document.getElementById("bj-status").style.color = "#fff";
-    document.getElementById("bj-carl-cards").innerHTML = ""; document.getElementById("bj-player-hands-container").innerHTML = ""; document.getElementById("bj-carl-score").innerText = "?";
-    document.getElementById("bj-controls").style.display = "none";
-    const betInput = document.getElementById("bj-bet-input"); if (betInput) betInput.disabled = false;
-    const resetBtn = document.querySelector("#view-blackjack .reset-btn"); if (resetBtn) resetBtn.innerText = "Deal";
-}
-
-function initBlackjack() {
-    const betInput = document.getElementById("bj-bet-input");
-    if (betInput) {
-        bjBet = parseInt(betInput.value) || 10;
-        if (bjBet < 10) { bjBet = 10; betInput.value = 10; }
-        if (userBurgers < bjBet) { alert("Not enough Burgers! Play Burger Clicker to earn more."); return; }
-        userBurgers -= bjBet; updateBurgerUI(); betInput.disabled = true;
-    }
-    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
-    bjDeck = buildDeck(); bjPlayerHands = [ [bjDeck.pop(), bjDeck.pop()] ]; bjCarlHand = [bjDeck.pop(), bjDeck.pop()];
-    bjActiveHand = 0; bjGameActive = true; bjGameOver = false; bjResults = []; bjBets = [bjBet]; bjPayoutsDone = false;
-    const resetBtn = document.querySelector("#view-blackjack .reset-btn"); if (resetBtn) resetBtn.innerText = "Deal Again";
-    document.getElementById("bj-controls").style.display = "flex";
-    
-    let dealerScore = getBjScore(bjCarlHand), playerScore = getBjScore(bjPlayerHands[0]);
-    if (dealerScore === 21 && playerScore === 21) { bjGameOver = true; bjResults[0] = "Push (Tie)"; } 
-    else if (dealerScore === 21) { bjGameOver = true; bjResults[0] = "Carl Blackjack!"; } 
-    else if (playerScore === 21) { bjGameOver = true; bjResults[0] = "Blackjack! You Win!"; }
-    renderBj();
-}
-
-function processBjPayouts() {
-    if (bjPayoutsDone) return; bjPayoutsDone = true;
-    for (let i = 0; i < bjPlayerHands.length; i++) {
-        let res = bjResults[i] || "", bet = bjBets[i] || 0;
-        if (res.includes("Blackjack! You Win!") || res.includes("Win")) userBurgers += Math.floor(bet * 2); 
-        else if (res.includes("Push")) userBurgers += Math.floor(bet); 
-    }
-    updateBurgerUI(); saveSessionData();
-}
-
-function renderBj() {
-    const cCards = document.getElementById("bj-carl-cards");
-    if (cCards) {
-        cCards.innerHTML = "";
-        bjCarlHand.forEach((card, index) => {
-            if (!card) return;
-            let el = document.createElement("div");
-            if (!bjGameOver && index === 1) { el.className = "bj-card hidden"; el.innerText = ""; } 
-            else { el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`; el.innerText = `${card.value}${card.suit}`; }
-            cCards.appendChild(el);
-        });
-    }
-
-    if (bjGameOver) {
-        document.getElementById("bj-carl-score").innerText = getBjScore(bjCarlHand);
-        document.getElementById("bj-controls").style.display = "none";
-        if (!document.getElementById("bj-status").innerText.includes("Place your bet")) {
-            document.getElementById("bj-status").innerText = "Round Over"; document.getElementById("bj-status").style.color = "#aaa";
-        }
-        const betInput = document.getElementById("bj-bet-input"); if (betInput) betInput.disabled = false;
-        if (bjGameActive) { processBjPayouts(); bjGameActive = false; }
-    } else {
-        document.getElementById("bj-carl-score").innerText = getBjScore([bjCarlHand[0]]);
-        let currentHand = bjPlayerHands[bjActiveHand];
-        if (currentHand) {
-            document.getElementById("bj-controls").style.display = "flex";
-            document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
-            document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
-            let canSplit = currentHand.length === 2 && getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && bjPlayerHands.length < 4;
-            document.getElementById("bj-btn-split").disabled = !canSplit;
-            document.getElementById("bj-status").innerText = bjPlayerHands.length > 1 ? `Playing Hand ${bjActiveHand + 1}...` : `Your Turn!`;
-            document.getElementById("bj-status").style.color = "#fff";
-        } else { document.getElementById("bj-controls").style.display = "none"; }
-    }
-
-    const pHandsContainer = document.getElementById("bj-player-hands-container");
-    if (pHandsContainer) {
-        pHandsContainer.innerHTML = "";
-        bjPlayerHands.forEach((hand, index) => {
-            let handDiv = document.createElement("div"); handDiv.className = `bj-single-hand ${index === bjActiveHand && !bjGameOver ? 'active' : ''}`;
-            let scoreDiv = document.createElement("div"); scoreDiv.className = "bj-hand-score"; scoreDiv.innerText = `Score: ${getBjScore(hand)}`; handDiv.appendChild(scoreDiv);
-            let cardsContainer = document.createElement("div"); cardsContainer.className = "bj-cards";
-            hand.forEach(card => {
-                if (!card) return;
-                let el = document.createElement("div"); el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`; el.innerText = `${card.value}${card.suit}`;
-                cardsContainer.appendChild(el);
-            });
-            handDiv.appendChild(cardsContainer);
-            if (bjResults[index] && bjResults[index] !== "Doubled") {
-                let resDiv = document.createElement("div"); resDiv.className = "bj-hand-result"; let txt = bjResults[index];
-                if (txt.includes("Win") || txt.includes("Blackjack")) resDiv.classList.add("win");
-                else if (txt.includes("Lose") || txt.includes("Bust")) resDiv.classList.add("lose");
-                else resDiv.classList.add("push");
-                resDiv.innerText = txt; handDiv.appendChild(resDiv);
-            }
-            pHandsContainer.appendChild(handDiv);
-        });
-    }
-}
-
-function bjHit() {
-    if (bjGameOver) return;
-    let hand = bjPlayerHands[bjActiveHand]; if (!hand) return;
-    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
-    hand.push(bjDeck.pop());
-    let score = getBjScore(hand);
-    if (score >= 21) document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
-    renderBj();
-    if (score > 21) { bjResults[bjActiveHand] = "Bust"; setTimeout(() => bjNextHand(), 800); } 
-    else if (score === 21) setTimeout(() => bjNextHand(), 800);
-}
-
-function bjStand() { if (bjGameOver) return; document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true); bjNextHand(); }
-
-function bjDouble() {
-    if (bjGameOver) return;
-    let hand = bjPlayerHands[bjActiveHand]; if (!hand || hand.length !== 2) return;
-    let currentBet = bjBets[bjActiveHand];
-    if (userBurgers < currentBet) { alert("Not enough Burgers to double down!"); return; }
-    userBurgers -= currentBet; updateBurgerUI(); bjBets[bjActiveHand] *= 2;
-    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
-    hand.push(bjDeck.pop());
-    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
-    renderBj();
-    bjResults[bjActiveHand] = getBjScore(hand) > 21 ? "Bust" : "Doubled";
-    setTimeout(() => bjNextHand(), 800);
-}
-
-function bjSplit() {
-    if (bjGameOver) return;
-    let hand = bjPlayerHands[bjActiveHand];
-    if (!hand || hand.length !== 2 || getCardWeight(hand[0].value) !== getCardWeight(hand[1].value)) return;
-    let currentBet = bjBets[bjActiveHand];
-    if (userBurgers < currentBet) { alert("Not enough Burgers to split!"); return; }
-    userBurgers -= currentBet; updateBurgerUI();
-    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
-    let splitCard = hand.pop();
-    let newHand = [splitCard, bjDeck.pop()]; hand.push(bjDeck.pop());
-    bjPlayerHands.splice(bjActiveHand + 1, 0, newHand); bjBets.splice(bjActiveHand + 1, 0, currentBet);
-    renderBj();
-}
-
-function bjNextHand() {
-    bjActiveHand++;
-    if (bjActiveHand >= bjPlayerHands.length) { document.getElementById("bj-controls").style.display = "none"; bjDealerTurn(); } 
-    else { document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false); renderBj(); }
-}
-
-function bjDealerTurn() {
-    try {
-        let allBusted = bjPlayerHands.every((_, i) => bjResults[i] === "Bust");
-        const playDealer = () => {
-            try {
-                let score = getBjScore(bjCarlHand);
-                if (score < 17 && !allBusted) {
-                    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
-                    let card = bjDeck.pop(); if (card) bjCarlHand.push(card);
-                    renderBj(); setTimeout(playDealer, 800);
-                } else {
-                    for (let i = 0; i < bjPlayerHands.length; i++) {
-                        if (bjResults[i] === "Bust") continue;
-                        let pScore = getBjScore(bjPlayerHands[i]);
-                        if (score > 21) bjResults[i] = "Win (Carl Busts)";
-                        else if (pScore > score) bjResults[i] = "Win";
-                        else if (score > pScore) bjResults[i] = "Lose";
-                        else bjResults[i] = "Push";
-                    }
-                    bjGameOver = true; renderBj();
-                }
-            } catch (err) { bjGameOver = true; renderBj(); }
-        };
-        document.getElementById("bj-status").innerText = "Carl is dealing..."; document.getElementById("bj-status").style.color = "#eccc68";
-        setTimeout(playDealer, 600);
-    } catch (err) { bjGameOver = true; renderBj(); }
-}
-
-// Rock Paper Scissors
-let rpsScore = { player: 0, carl: 0 }, rpsPlaying = false;
-const rpsCarlHands = { rock: '/static/icons/CarlRock.png', paper: '/static/icons/CarlPaper.png', scissors: '/static/icons/CarlScissors.png' };
-const rpsPlayerHands = { rock: '/static/icons/Rock.png', paper: '/static/icons/Paper.png', scissors: '/static/icons/Scissors.png' };
-
-function initRps() {
-    rpsScore = { player: 0, carl: 0 }; rpsPlaying = false;
-    document.getElementById("rps-status").innerText = "Choose Your Move!"; document.getElementById("rps-status").style.color = "#fff";
-    document.getElementById("rps-carl-hand").src = rpsCarlHands.rock; document.getElementById("rps-player-hand").src = rpsPlayerHands.rock;
-}
-
-function playRps(playerChoice) {
-    if (rpsPlaying) return; rpsPlaying = true;
-    const choices = ['rock', 'paper', 'scissors'];
-    document.getElementById("rps-player-hand").src = rpsPlayerHands[playerChoice];
-    document.getElementById("rps-status").innerText = "Carl is choosing..."; document.getElementById("rps-status").style.color = "#eccc68";
-
-    setTimeout(() => {
-        let carlChoice = choices[Math.floor(Math.random() * choices.length)];
-        document.getElementById("rps-carl-hand").src = rpsCarlHands[carlChoice];
-
-        if (playerChoice === carlChoice) {
-            document.getElementById("rps-status").innerText = `It's a Tie! (${rpsScore.player} - ${rpsScore.carl})`; document.getElementById("rps-status").style.color = "#fff";
-        } else if ((playerChoice === 'rock' && carlChoice === 'scissors') || (playerChoice === 'paper' && carlChoice === 'rock') || (playerChoice === 'scissors' && carlChoice === 'paper')) {
-            rpsScore.player++; document.getElementById("rps-status").innerText = `You Win! (${rpsScore.player} - ${rpsScore.carl})`; document.getElementById("rps-status").style.color = "#84cc16";
-        } else {
-            rpsScore.carl++; document.getElementById("rps-status").innerText = `Carl Wins! (${rpsScore.player} - ${rpsScore.carl})`; document.getElementById("rps-status").style.color = "#ef4444";
-        }
-        rpsPlaying = false;
-    }, 500);
-}
-
-// Tic Tac Toe
-let board = ["", "", "", "", "", "", "", "", ""], playerTurn = true;
-const winCombos = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-
-function initTicTacToe() {
-    board = ["", "", "", "", "", "", "", "", ""]; playerTurn = true;
-    document.getElementById("ttt-status").innerText = "Your Turn (X)"; document.getElementById("ttt-status").style.color = "#fff";
-    document.querySelectorAll(".ttt-cell").forEach(cell => { cell.innerText = ""; cell.className = "ttt-cell"; });
-}
-
-function makeMove(index) {
-    if (board[index] === "" && playerTurn) {
-        board[index] = "X"; updateCell(index, "X");
-        if (checkWin("X")) { document.getElementById("ttt-status").innerText = "You Win!"; document.getElementById("ttt-status").style.color = "#84cc16"; playerTurn = false; return; } 
-        else if (!board.includes("")) { document.getElementById("ttt-status").innerText = "It's a Draw!"; return; }
-        playerTurn = false; document.getElementById("ttt-status").innerText = "Carl is thinking..."; setTimeout(carlMove, 500);
-    }
-}
-
-function updateCell(index, player) { const cell = document.getElementById(`ttt-cell-${index}`); if (cell) { cell.innerText = player; cell.classList.add(player.toLowerCase()); } }
-
-function carlMove() {
-    if (checkWin("X") || checkWin("O") || !board.includes("")) return;
-    let available = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
-    let bestMove = getBestMove();
-    board[bestMove] = "O"; updateCell(bestMove, "O");
-    if (checkWin("O")) { document.getElementById("ttt-status").innerText = "Carl Wins!"; document.getElementById("ttt-status").style.color = "#ef4444"; } 
-    else if (!board.includes("")) { document.getElementById("ttt-status").innerText = "It's a Draw!"; } 
-    else { playerTurn = true; document.getElementById("ttt-status").innerText = "Your Turn (X)"; }
-}
-
-function getBestMove() {
-    for (let combo of winCombos) { let values = combo.map(i => board[i]); if (values.filter(v => v === "O").length === 2 && values.includes("")) return combo[values.indexOf("")]; }
-    for (let combo of winCombos) { let values = combo.map(i => board[i]); if (values.filter(v => v === "X").length === 2 && values.includes("")) return combo[values.indexOf("")]; }
-    if (board[4] === "") return 4;
-    let available = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
-    return available[Math.floor(Math.random() * available.length)];
-}
-
-function checkWin(player) { return winCombos.some(combo => combo.every(i => board[i] === player)); }
-
-// Hangman
-let hmWord = "", hmGuessed = new Set(), hmMistakes = 0, hmPlayerTurn = true, hmGameOver = false;
-const safeDictionary = ["ROBLOX", "MINECRAFT", "DEVELOPER", "PYTHON", "KEYBOARD", "UNITY", "GODOT", "SCRIPTING", "ANIMATION", "PHYSICS", "MULTIPLAYER", "SERVER", "GALAXY", "UNIVERSE", "HELICOPTER", "SPACESHIP"];
-
-function initHangman() {
-    document.getElementById("hm-status").innerText = "Loading word..."; document.getElementById("hm-status").style.color = "#888";
-    hmWord = ""; hmGuessed.clear(); hmMistakes = 0; hmPlayerTurn = true; hmGameOver = false;
-    for(let i=1; i<=6; i++) { const part = document.getElementById(`hm-part-${i}`); if (part) part.style.display = "none"; }
-    document.querySelectorAll(".hm-key").forEach(btn => { btn.className = "hm-key"; btn.disabled = false; });
-    hmWord = safeDictionary[Math.floor(Math.random() * safeDictionary.length)].toUpperCase();
-    document.getElementById("hm-status").innerText = "Your Turn"; document.getElementById("hm-status").style.color = "#fff"; updateHmWordDisplay();
-}
-
-function updateHmWordDisplay() { let display = hmWord.split('').map(c => hmGuessed.has(c) ? c : "_").join(' '); document.getElementById("hm-word").innerText = display; }
-
-function hmGuess(letter) {
-    if (hmGameOver || hmGuessed.has(letter)) return;
-    hmGuessed.add(letter);
-    const btn = Array.from(document.querySelectorAll('.hm-key')).find(b => b.innerText === letter);
-    if (btn) btn.disabled = true;
-    if (hmWord.includes(letter)) {
-        if (btn) btn.classList.add("correct"); updateHmWordDisplay();
-        if (hmWord.split('').every(c => hmGuessed.has(c))) { hmGameOver = true; document.getElementById("hm-status").innerText = hmPlayerTurn ? "You Win!" : "Carl Wins!"; document.getElementById("hm-status").style.color = "#84cc16"; return; }
-        if (!hmPlayerTurn) setTimeout(carlHmMove, 1000);
-    } else {
-        if (btn) btn.classList.add("wrong"); hmMistakes++;
-        const part = document.getElementById(`hm-part-${hmMistakes}`); if (part) part.style.display = "block";
-        if (hmMistakes >= 6) { hmGameOver = true; document.getElementById("hm-status").innerText = "Game Over!"; document.getElementById("hm-status").style.color = "#ef4444"; document.getElementById("hm-word").innerText = hmWord.split('').join(' '); return; }
-        hmPlayerTurn = !hmPlayerTurn;
-        if (!hmPlayerTurn) setTimeout(carlHmMove, 1000);
-        else { document.getElementById("hm-status").innerText = "Your Turn"; document.getElementById("hm-status").style.color = "#fff"; }
-    }
-}
-
-function carlHmMove() {
-    if (hmGameOver) return;
-    const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').filter(c => !hmGuessed.has(c));
-    const correctLeft = hmWord.split('').filter(c => !hmGuessed.has(c));
-    let guess = correctLeft.length > 0 && Math.random() < 0.6 ? correctLeft[Math.floor(Math.random() * correctLeft.length)] : available[Math.floor(Math.random() * available.length)];
-    if (guess) hmGuess(guess);
-}
-
-// Connect Four
-const C4_ROWS = 6, C4_COLS = 7; let c4Board = [], c4PlayerTurn = true, c4GameOver = false;
-
-function initConnectFour() {
-    c4Board = Array(C4_ROWS).fill().map(() => Array(C4_COLS).fill(0));
-    c4PlayerTurn = true; c4GameOver = false;
-    document.getElementById("c4-status").innerText = "Your Turn (Red)"; document.getElementById("c4-status").style.color = "#fff";
-    const boardDiv = document.getElementById("c4-board"); boardDiv.innerHTML = "";
-    for (let r = 0; r < C4_ROWS; r++) for (let c = 0; c < C4_COLS; c++) { const cell = document.createElement("div"); cell.className = "c4-cell"; cell.id = `c4-${r}-${c}`; boardDiv.appendChild(cell); }
-}
-
-function c4HandleClick(col) {
-    if (!c4PlayerTurn || c4GameOver) return;
-    let row = c4DropPiece(col, 1);
-    if (row !== -1) {
-        c4UpdateBoardUI();
-        if (c4CheckWin(1)) { c4GameOver = true; document.getElementById("c4-status").innerText = "You Win!"; document.getElementById("c4-status").style.color = "#ff4757"; return; }
-        else if (c4IsBoardFull()) { c4GameOver = true; document.getElementById("c4-status").innerText = "It's a Draw!"; return; }
-        c4PlayerTurn = false; document.getElementById("c4-status").innerText = "Carl is thinking..."; setTimeout(c4CarlMove, 600);
-    }
-}
-
-function c4DropPiece(col, player) { for (let r = C4_ROWS - 1; r >= 0; r--) { if (c4Board[r][col] === 0) { c4Board[r][col] = player; return r; } } return -1; }
-function c4GetNextOpenRow(col) { for (let r = C4_ROWS - 1; r >= 0; r--) { if (c4Board[r][col] === 0) return r; } return -1; }
-function c4IsBoardFull() { return c4Board[0].every(val => val !== 0); }
-function c4CheckWin(p) {
-    for (let r = 0; r < C4_ROWS; r++) for (let c = 0; c < C4_COLS - 3; c++) if (c4Board[r][c] == p && c4Board[r][c+1] == p && c4Board[r][c+2] == p && c4Board[r][c+3] == p) return true;
-    for (let r = 0; r < C4_ROWS - 3; r++) for (let c = 0; c < C4_COLS; c++) if (c4Board[r][c] == p && c4Board[r+1][c] == p && c4Board[r+2][c] == p && c4Board[r+3][c] == p) return true;
-    for (let r = 3; r < C4_ROWS; r++) for (let c = 0; c < C4_COLS - 3; c++) if (c4Board[r][c] == p && c4Board[r-1][c+1] == p && c4Board[r-2][c+2] == p && c4Board[r-3][c+3] == p) return true;
-    for (let r = 0; r < C4_ROWS - 3; r++) for (let c = 0; c < C4_COLS - 3; c++) if (c4Board[r][c] == p && c4Board[r+1][c+1] == p && c4Board[r+2][c+2] == p && c4Board[r+3][c+3] == p) return true;
-    return false;
-}
-
-function c4CarlMove() {
-    if (c4GameOver) return;
-    let validCols = []; for (let c = 0; c < C4_COLS; c++) if (c4Board[0][c] === 0) validCols.push(c);
-    if (validCols.length === 0) return;
-    let chosenCol = validCols[Math.floor(Math.random() * validCols.length)];
-    c4DropPiece(chosenCol, 2); c4UpdateBoardUI();
-    if (c4CheckWin(2)) { c4GameOver = true; document.getElementById("c4-status").innerText = "Carl Wins!"; document.getElementById("c4-status").style.color = "#eccc68"; }
-    else if (c4IsBoardFull()) { c4GameOver = true; document.getElementById("c4-status").innerText = "It's a Draw!"; }
-    else { c4PlayerTurn = true; document.getElementById("c4-status").innerText = "Your Turn (Red)"; document.getElementById("c4-status").style.color = "#fff"; }
-}
-
-function c4UpdateBoardUI() {
-    for (let r = 0; r < C4_ROWS; r++) for (let c = 0; c < C4_COLS; c++) {
-        const cell = document.getElementById(`c4-${r}-${c}`);
-        if (cell) { let val = c4Board[r][c]; cell.className = val === 1 ? "c4-cell red" : val === 2 ? "c4-cell yellow" : "c4-cell"; }
-    }
-}
-
-// Battleship
-const BS_SIZE = 6;
-let bsPlayerGrid = [], bsEnemyGrid = [], bsEnemyShips = [], bsPlayerTurn = true, bsGameOver = false, bsPlacing = true, bsShipSizes = [4, 3, 2], bsCurrentShipIndex = 0, bsIsHorizontal = true, bsPreviewOrigin = null, bsPreviewCoords = [];
-
-function initBattleship() {
-    bsPlayerGrid = Array(BS_SIZE).fill().map(() => Array(BS_SIZE).fill(0));
-    bsEnemyGrid = Array(BS_SIZE).fill().map(() => Array(BS_SIZE).fill(0));
-    bsEnemyShips = []; bsPlayerTurn = true; bsGameOver = false; bsPlacing = true; bsCurrentShipIndex = 0; bsIsHorizontal = true;
-    document.getElementById("bs-status").innerText = `Place your ${bsShipSizes[bsCurrentShipIndex]}-length ship`;
-    document.getElementById("bs-status").style.color = "#fff"; document.getElementById("bs-placement-controls").style.display = "flex";
-    document.getElementById("bs-enemy-label").style.display = "none"; document.getElementById("bs-enemy-grid").style.display = "none";
-    bsPlaceEnemyShipsRandomly(); bsUpdateBoardsUI();
-}
-
-function bsToggleRotate() { bsIsHorizontal = !bsIsHorizontal; const btn = document.querySelector("#bs-placement-controls .bs-action-btn"); if (btn) btn.innerText = `Rotate: ${bsIsHorizontal ? "Horizontal" : "Vertical"}`; if (bsPreviewOrigin) bsPreviewCoords = bsCalculatePreview(bsPreviewOrigin.r, bsPreviewOrigin.c); bsUpdateBoardsUI(); }
-
-function bsPlaceEnemyShipsRandomly() {
-    for (let size of bsShipSizes) {
-        let placed = false;
-        while (!placed) {
-            let horizontal = Math.random() < 0.5, r = Math.floor(Math.random() * BS_SIZE), c = Math.floor(Math.random() * BS_SIZE), fits = true, tempCoords = [];
-            for (let i = 0; i < size; i++) {
-                let nr = horizontal ? r : r + i, nc = horizontal ? c + i : c;
-                if (nr >= BS_SIZE || nc >= BS_SIZE) { fits = false; break; }
-                tempCoords.push(`${nr},${nc}`);
-            }
-            if (fits && !tempCoords.some(coord => bsEnemyShips.includes(coord))) { tempCoords.forEach(coord => bsEnemyShips.push(coord)); placed = true; }
-        }
-    }
-}
-
-function bsCalculatePreview(r, c) {
-    let size = bsShipSizes[bsCurrentShipIndex], coords = [];
-    for (let i = 0; i < size; i++) {
-        let nr = bsIsHorizontal ? r : r + i, nc = bsIsHorizontal ? c + i : c;
-        if (nr >= BS_SIZE || nc >= BS_SIZE || bsPlayerGrid[nr][nc] === 1) return [];
-        coords.push({r: nr, c: nc});
-    }
-    return coords;
-}
-
-function bsCellClick(r, c) {
-    if (bsGameOver || !bsPlacing) return;
-    let coords = bsCalculatePreview(r, c);
-    if (coords.length > 0) { bsPreviewOrigin = { r, c }; bsPreviewCoords = coords; } else { bsPreviewOrigin = null; bsPreviewCoords = []; }
-    bsUpdateBoardsUI();
-}
-
-function bsConfirmPlacement() {
-    if (!bsPlacing || bsPreviewCoords.length === 0) { alert("Please tap a valid spot first!"); return; }
-    bsPreviewCoords.forEach(coord => { bsPlayerGrid[coord.r][coord.c] = 1; });
-    bsPreviewOrigin = null; bsPreviewCoords = []; bsCurrentShipIndex++;
-    if (bsCurrentShipIndex < bsShipSizes.length) document.getElementById("bs-status").innerText = `Place your ${bsShipSizes[bsCurrentShipIndex]}-length ship`;
-    else { bsPlacing = false; document.getElementById("bs-placement-controls").style.display = "none"; document.getElementById("bs-enemy-label").style.display = "block"; document.getElementById("bs-enemy-grid").style.display = "grid"; document.getElementById("bs-status").innerText = "Your Turn - Fire!"; }
-    bsUpdateBoardsUI();
-}
-
-function bsFire(r, c) {
-    if (bsPlacing || !bsPlayerTurn || bsGameOver || bsEnemyGrid[r][c] !== 0) return;
-    let targetCoord = `${r},${c}`, isHit = bsEnemyShips.includes(targetCoord);
-    bsEnemyGrid[r][c] = isHit ? 3 : 2;
-    document.getElementById("bs-status").innerText = isHit ? "Direct Hit! Fire Again!" : "Miss!";
-    bsUpdateBoardsUI();
-    if (bsEnemyShips.every(coord => { let [tr,tc] = coord.split(',').map(Number); return bsEnemyGrid[tr][tc] === 3; })) {
-        bsGameOver = true; document.getElementById("bs-status").innerText = "You Destroyed Carl's Fleet!"; return;
-    }
-    if (!isHit) { bsPlayerTurn = false; setTimeout(bsCarlTurn, 800); }
-}
-
-function bsCarlTurn() {
-    if (bsGameOver) return;
-    let r, c;
-    do { r = Math.floor(Math.random() * BS_SIZE); c = Math.floor(Math.random() * BS_SIZE); } while (bsPlayerGrid[r][c] === 2 || bsPlayerGrid[r][c] === 3);
-    let isHit = (bsPlayerGrid[r][c] === 1);
-    bsPlayerGrid[r][c] = isHit ? 3 : 2;
-    document.getElementById("bs-status").innerText = isHit ? "Carl hit your ship!" : "Carl missed! Your Turn!";
-    bsUpdateBoardsUI();
-    if (isHit) setTimeout(bsCarlTurn, 800); else bsPlayerTurn = true;
-}
-
-function bsUpdateBoardsUI() {
-    const enemyDiv = document.getElementById("bs-enemy-grid"), playerDiv = document.getElementById("bs-player-grid");
-    if (!enemyDiv || !playerDiv) return;
-    enemyDiv.innerHTML = ""; playerDiv.innerHTML = "";
-    if (!bsPlacing) {
-        for (let r = 0; r < BS_SIZE; r++) for (let c = 0; c < BS_SIZE; c++) {
-            const cell = document.createElement("div"); cell.className = "bs-cell";
-            let val = bsEnemyGrid[r][c]; if (val === 2) cell.classList.add("miss"); else if (val === 3) cell.classList.add("hit");
-            cell.onclick = () => bsFire(r, c); enemyDiv.appendChild(cell);
-        }
-    }
-    for (let r = 0; r < BS_SIZE; r++) for (let c = 0; c < BS_SIZE; c++) {
-        const cell = document.createElement("div"); cell.className = "bs-cell";
-        let val = bsPlayerGrid[r][c], isPreview = bsPreviewCoords.some(coord => coord.r === r && coord.c === c);
-        if (val === 1) cell.classList.add("ship"); else if (val === 2) cell.classList.add("miss"); else if (val === 3) cell.classList.add("hit"); else if (isPreview) cell.classList.add("preview");
-        if (bsPlacing) cell.onclick = () => bsCellClick(r, c); playerDiv.appendChild(cell);
-    }
-}
-
-// Checkers
-const CHK_SIZE = 8; let chkBoard = [], chkSelected = null, chkValidMoves = [], chkPlayerTurn = true, chkGameOver = false;
-
-function initCheckers() {
-    chkBoard = Array(CHK_SIZE).fill().map(() => Array(CHK_SIZE).fill(0)); chkSelected = null; chkValidMoves = []; chkPlayerTurn = true; chkGameOver = false;
-    for (let r = 0; r < CHK_SIZE; r++) for (let c = 0; c < CHK_SIZE; c++) if ((r + c) % 2 === 1) { if (r < 3) chkBoard[r][c] = 2; else if (r > 4) chkBoard[r][c] = 1; }
-    chkRenderBoard();
-}
-
-function chkRenderBoard() {
-    const boardDiv = document.getElementById("chk-board"); if (!boardDiv) return; boardDiv.innerHTML = "";
-    for (let r = 0; r < CHK_SIZE; r++) for (let c = 0; c < CHK_SIZE; c++) {
-        const tile = document.createElement("div"); tile.className = `chk-tile ${(r + c) % 2 === 1 ? "dark" : "light"}`;
-        let pieceVal = chkBoard[r][c];
-        if (chkSelected && chkSelected.r === r && chkSelected.c === c) tile.classList.add("selected");
-        if (chkValidMoves.some(m => m.toR === r && m.toC === c)) tile.classList.add("target");
-        if (pieceVal !== 0) {
-            const piece = document.createElement("div");
-            piece.className = `chk-piece ${pieceVal === 1 || pieceVal === 11 ? "red" : "black"} ${pieceVal === 11 || pieceVal === 22 ? "king" : ""}`;
-            tile.appendChild(piece);
-        }
-        tile.onclick = () => chkTileClick(r, c); boardDiv.appendChild(tile);
-    }
-}
-
-function chkTileClick(r, c) {
-    if (!chkPlayerTurn || chkGameOver) return;
-    let p = chkBoard[r][c];
-    if (p === 1 || p === 11) { chkSelected = { r, c }; chkValidMoves = chkGetMovesForPiece(r, c, chkBoard); chkRenderBoard(); return; }
-    if (chkSelected) {
-        let move = chkValidMoves.find(m => m.toR === r && m.toC === c);
-        if (move) {
-            chkExecuteMove(move); chkSelected = null; chkValidMoves = []; chkRenderBoard();
-            chkPlayerTurn = false; setTimeout(chkCarlTurn, 600);
-        } else { chkSelected = null; chkValidMoves = []; chkRenderBoard(); }
-    }
-}
-
-function chkGetMovesForPiece(r, c, boardState) {
-    let p = boardState[r][c]; if (p === 0) return [];
-    let isRed = p === 1 || p === 11, isKing = p === 11 || p === 22, moves = [], dirs = [];
-    if (isRed || isKing) dirs.push([-1, -1], [-1, 1]);
-    if (!isRed || isKing) dirs.push([1, -1], [1, 1]);
-    for (let [dr, dc] of dirs) {
-        let nr = r + dr, nc = c + dc;
-        if (nr >= 0 && nr < CHK_SIZE && nc >= 0 && nc < CHK_SIZE) {
-            if (boardState[nr][nc] === 0) moves.push({ fromR: r, fromC: c, toR: nr, toC: nc, isJump: false });
-            else {
-                let opp = boardState[nr][nc], isOpp = isRed ? (opp === 2 || opp === 22) : (opp === 1 || opp === 11);
-                if (isOpp) {
-                    let jR = r + 2 * dr, jC = c + 2 * dc;
-                    if (jR >= 0 && jR < CHK_SIZE && jC >= 0 && jC < CHK_SIZE && boardState[jR][jC] === 0) moves.push({ fromR: r, fromC: c, toR: jR, toC: jC, isJump: true, jumpedR: nr, jumpedC: nc });
-                }
-            }
-        }
-    }
-    return moves;
-}
-
-function chkExecuteMove(move) {
-    let p = chkBoard[move.fromR][move.fromC]; chkBoard[move.fromR][move.fromC] = 0;
-    if (move.isJump) chkBoard[move.jumpedR][move.jumpedC] = 0;
-    if (p === 1 && move.toR === 0) p = 11; if (p === 2 && move.toR === 7) p = 22;
-    chkBoard[move.toR][move.toC] = p;
-}
-
-function chkCarlTurn() {
-    if (chkGameOver) return;
-    let allMoves = [];
-    for (let r = 0; r < CHK_SIZE; r++) for (let c = 0; c < CHK_SIZE; c++) if (chkBoard[r][c] === 2 || chkBoard[r][c] === 22) allMoves.push(...chkGetMovesForPiece(r, c, chkBoard));
-    if (allMoves.length === 0) return;
-    let jumps = allMoves.filter(m => m.isJump);
-    chkExecuteMove(jumps.length > 0 ? jumps[0] : allMoves[Math.floor(Math.random() * allMoves.length)]);
-    chkRenderBoard(); chkPlayerTurn = true;
-}
-
-// Chess
-const CHS_SIZE = 8; let chsBoard = [], chsSelected = null, chsValidMoves = [], chsPlayerTurn = true, chsGameOver = false;
-const chsInitialBoard = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']];
-const chsIcons = { 'P': '/static/icons/PawnWhite.png', 'R': '/static/icons/RookWhite.png', 'N': '/static/icons/HorseWhite.png', 'B': '/static/icons/BishopWhite.png', 'Q': '/static/icons/QueenWhite.png', 'K': '/static/icons/KingWhite.png', 'p': '/static/icons/PawnBlack.png', 'r': '/static/icons/RookBlack.png', 'n': '/static/icons/HorseBlack.png', 'b': '/static/icons/BishopBlack.png', 'q': '/static/icons/QueenBlack.png', 'k': '/static/icons/KingBlack.png' };
-
-function initChess() { chsBoard = JSON.parse(JSON.stringify(chsInitialBoard)); chsSelected = null; chsValidMoves = []; chsPlayerTurn = true; chsGameOver = false; chsRenderBoard(); }
-
-function chsRenderBoard() {
-    const boardDiv = document.getElementById("chs-board"); if (!boardDiv) return; boardDiv.innerHTML = "";
-    for (let r = 0; r < CHS_SIZE; r++) for (let c = 0; c < CHS_SIZE; c++) {
-        const tile = document.createElement("div"); tile.className = `chs-tile ${(r + c) % 2 === 1 ? "dark" : "light"}`;
-        let p = chsBoard[r][c];
-        if (chsSelected && chsSelected.r === r && chsSelected.c === c) tile.classList.add("selected");
-        if (chsValidMoves.some(m => m.r === r && m.c === c)) tile.classList.add(p !== '' ? "target-capture" : "target");
-        if (p !== '') { const piece = document.createElement("img"); piece.className = "chs-piece"; piece.src = chsIcons[p]; piece.draggable = false; tile.appendChild(piece); }
-        tile.onclick = () => chsTileClick(r, c); boardDiv.appendChild(tile);
-    }
-}
-
-function chsGetMoves(r, c, board) {
-    let p = board[r][c]; if (p === '') return [];
-    let isPlayer = /^[A-Z]$/.test(p), piece = p.toLowerCase(), moves = [];
-    function addMove(nr, nc) {
-        if (nr < 0 || nr >= CHS_SIZE || nc < 0 || nc >= CHS_SIZE) return false;
-        let target = board[nr][nc];
-        if (target === '') { moves.push({r: nr, c: nc}); return true; }
-        if (isPlayer !== /^[A-Z]$/.test(target)) moves.push({r: nr, c: nc});
-        return false;
-    }
-    if (piece === 'p') {
-        let dir = isPlayer ? -1 : 1;
-        if (r+dir >= 0 && r+dir < CHS_SIZE && board[r+dir][c] === '') moves.push({r: r+dir, c: c});
-        for (let dc of [-1, 1]) { if (r+dir >= 0 && r+dir < CHS_SIZE && c+dc >= 0 && c+dc < CHS_SIZE && board[r+dir][c+dc] !== '' && (/^[A-Z]$/.test(board[r+dir][c+dc]) !== isPlayer)) moves.push({r: r+dir, c: c+dc}); }
-    } else {
-        let dirs = piece === 'r' ? [[-1,0],[1,0],[0,-1],[0,1]] : piece === 'b' ? [[-1,-1],[-1,1],[1,-1],[1,1]] : [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]];
-        for (let [dr, dc] of dirs) { let nr=r, nc=c; while(true) { nr+=dr; nc+=dc; if(!addMove(nr,nc) || piece==='n'||piece==='k') break; } }
-    }
-    return moves;
-}
-
-function chsTileClick(r, c) {
-    if (!chsPlayerTurn || chsGameOver) return;
-    let p = chsBoard[r][c];
-    if (/^[A-Z]$/.test(p)) { chsSelected = { r, c }; chsValidMoves = chsGetMoves(r, c, chsBoard); chsRenderBoard(); return; }
-    if (chsSelected) {
-        let move = chsValidMoves.find(m => m.r === r && m.c === c);
-        if (move) {
-            chsExecuteMove(chsSelected.r, chsSelected.c, move.r, move.c);
-            chsSelected = null; chsValidMoves = []; chsRenderBoard();
-            chsPlayerTurn = false; setTimeout(chsCarlTurn, 800);
-        } else { chsSelected = null; chsValidMoves = []; chsRenderBoard(); }
-    }
-}
-
-function chsExecuteMove(fromR, fromC, toR, toC) {
-    chsBoard[toR][toC] = chsBoard[fromR][fromC]; chsBoard[fromR][fromC] = '';
-}
-
-function chsCarlTurn() {
-    if (chsGameOver) return;
-    let allMoves = [];
-    for (let r = 0; r < CHS_SIZE; r++) for (let c = 0; c < CHS_SIZE; c++) if (/^[a-z]$/.test(chsBoard[r][c])) {
-        let moves = chsGetMoves(r, c, chsBoard);
-        for (let m of moves) allMoves.push({ fr: r, fc: c, tr: m.r, tc: m.c });
-    }
-    if (allMoves.length === 0) return;
-    let chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)];
-    chsExecuteMove(chosenMove.fr, chosenMove.fc, chosenMove.tr, chosenMove.tc);
-    chsRenderBoard(); chsPlayerTurn = true;
-}
