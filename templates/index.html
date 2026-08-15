@@ -218,20 +218,24 @@
 
             <!-- CARL AI CALL VIEW -->
             <div id="view-call" class="view">
-                <div class="call-header">
+                <div class="call-top-section">
                     <h1>Carl AI</h1>
                     <div id="call-timer">00:00</div>
                     <div id="call-status" style="display: none;">Calling Carl...</div>
                 </div>
                 
-                <div class="call-controls">
+                <div class="call-bottom-section">
                     <div class="call-option-row">
-                        <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" draggable="false" />
-                        <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" draggable="false" />
+                        <button class="call-icon-btn" onclick="toggleSpeaker()">
+                            <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" draggable="false" />
+                        </button>
+                        <button class="call-icon-btn" onclick="toggleMute()">
+                            <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" draggable="false" />
+                        </button>
                     </div>
-                    <div class="call-option-row">
-                        <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn wide-end-btn" onclick="endCall()" draggable="false" />
-                    </div>
+                    <button class="call-end-btn" onclick="endCall()">
+                        <img src="/static/icons/EndCallButton.png" alt="End Call" draggable="false" />
+                    </button>
                 </div>
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
@@ -241,21 +245,27 @@
                 <video id="fc-remote-video" autoplay playsinline></video>
                 <video id="fc-local-video" autoplay playsinline muted></video>
                 
-                <div class="call-header">
+                <div class="call-top-section">
                     <h1 id="fc-title">Friend Name</h1>
                     <div id="fc-timer">00:00</div>
                     <div id="fc-status" style="display: none;">Calling...</div>
                 </div>
 
-                <div class="call-controls" id="fc-controls">
+                <div class="call-bottom-section">
                     <div class="call-option-row">
-                        <img src="/static/icons/SpeakerButton.png" id="fc-speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleFcSpeaker()" draggable="false" />
-                        <img src="/static/icons/Facetime.png" id="fc-facetime-btn" alt="Facetime" class="call-img-btn" onclick="toggleFcVideo()" style="opacity: 0.4;" draggable="false" />
-                        <img src="/static/icons/MuteButtonIcon.png" id="fc-mute-btn" alt="Mute" class="call-img-btn" onclick="toggleFcMute()" draggable="false" />
+                        <button class="call-icon-btn" onclick="toggleFcSpeaker()">
+                            <img src="/static/icons/SpeakerButton.png" id="fc-speaker-btn" alt="Speaker" draggable="false" />
+                        </button>
+                        <button class="call-icon-btn" onclick="toggleFcVideo()">
+                            <img src="/static/icons/Facetime.png" id="fc-facetime-btn" alt="Facetime" style="opacity: 0.4;" draggable="false" />
+                        </button>
+                        <button class="call-icon-btn" onclick="toggleFcMute()">
+                            <img src="/static/icons/MuteButtonIcon.png" id="fc-mute-btn" alt="Mute" draggable="false" />
+                        </button>
                     </div>
-                    <div class="call-option-row">
-                        <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn wide-end-btn" onclick="endFriendCall()" draggable="false" />
-                    </div>
+                    <button class="call-end-btn" onclick="endFriendCall()">
+                        <img src="/static/icons/EndCallButton.png" alt="End Call" draggable="false" />
+                    </button>
                 </div>
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
@@ -446,8 +456,8 @@
         </div>
     </div>
     
-    <!-- Hidden element to route friend audio safely -->
-    <audio id="remote-audio" autoplay playsinline style="position: absolute; width: 0; height: 0; visibility: hidden;"></audio>
+    <!-- Hidden element to route friend audio safely without dropping the microphone -->
+    <audio id="remote-audio" autoplay playsinline style="position: absolute; width: 0; height: 0; visibility: hidden; pointer-events: none;"></audio>
 
     <script src="/static/script.js"></script>
     <script src="/static/games.js"></script>
