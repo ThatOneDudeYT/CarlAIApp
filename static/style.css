@@ -179,15 +179,19 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .call-btn.accept { background-color: #84cc16; color: #111; }
 .call-btn.decline { background-color: #ef4444; }
 
-/* FRIEND CALL VIEW (WebRTC Fullscreen) */
-#view-friend-call { padding: 24px 20px 12px 20px; display: flex; flex-direction: column; height: 100%; position: relative; }
+/* SHARED CALL UI (Friend & Carl AI) */
+#view-call, #view-friend-call { padding: 24px 20px 12px 20px; display: flex; flex-direction: column; height: 100%; position: relative; }
 #fc-remote-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; display: none; }
 #fc-local-video { position: absolute; top: 20px; right: 20px; width: 100px; height: 150px; object-fit: cover; z-index: 5; border-radius: 12px; border: 2px solid #fff; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-#view-friend-call .call-header, #view-friend-call .call-controls, #view-friend-call .copyright { position: relative; z-index: 2; text-align: center; margin-top: 45px; }
-#view-friend-call .call-header h1 { font-size: 52px; letter-spacing: 1px; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-#fc-timer { color: var(--text-sub); font-size: 28px; margin-top: 6px; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-#fc-status { font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-#fc-controls { margin-top: auto; margin-bottom: 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+.call-header, .call-controls, #view-call .copyright, #view-friend-call .copyright { position: relative; z-index: 2; text-align: center; margin-top: 45px; }
+.call-header h1 { font-size: 52px; letter-spacing: 1px; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+#call-timer, #fc-timer { color: var(--text-sub); font-size: 28px; margin-top: 6px; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+#call-status, #fc-status { font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+.call-controls { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; margin-top: auto; margin-bottom: 24px; padding: 0 20px; }
+.call-option-row { display: flex; gap: 14px; width: 100%; justify-content: center; }
+.call-img-btn { flex: 1; max-width: 120px; height: auto; object-fit: contain; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
+.call-img-btn.wide-end-btn { max-width: 300px; width: 100%; }
+.call-img-btn:active { transform: scale(0.96); }
 
 /* --- DIRECT MESSAGE VIEW --- */
 #view-dm { padding: 0; height: 100%; width: 100%; display: flex; flex-direction: column; }
@@ -213,16 +217,6 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .dm-input-wrapper { padding: 0 20px 20px 20px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 800px; margin: 0 auto; }
 #dm-input { width: 100%; background: transparent; border: none; color: var(--text-main); font-size: 16px; outline: none; letter-spacing: 0.5px; }
 #dm-input::placeholder { color: var(--text-sub); }
-
-#view-call { padding: 24px 20px 12px 20px; display: flex; flex-direction: column; height: 100%; position: relative; }
-.call-header { text-align: center; margin-top: 45px; position: relative; z-index: 2; }
-.call-header h1 { font-size: 62px; letter-spacing: 1px; line-height: 1; }
-#call-timer { color: var(--text-sub); font-size: 28px; margin-top: 6px; letter-spacing: 1px; }
-.call-controls { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; margin-top: auto; margin-bottom: 24px; position: relative; z-index: 2; }
-.call-option-row { display: flex; gap: 14px; width: 100%; justify-content: center; }
-.call-img-btn { width: 45%; max-width: 150px; height: auto; object-fit: contain; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
-.call-img-btn:active { transform: scale(0.96); }
-#view-call .copyright { margin-top: 0 !important; position: relative; z-index: 2; }
 
 .games-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--text-sub); margin-top: 45px; }
 .back-btn { margin-left: 45px; background: transparent; border: 3px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; color: var(--text-sub); font-size: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer; flex-shrink: 0; }
