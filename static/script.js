@@ -236,7 +236,7 @@ async function startFriendCall() {
         localStream=await navigator.mediaDevices.getUserMedia({audio:true, video:false});
         peerConnection=new RTCPeerConnection(rtcServers);
         
-        peerConnection.addTransceiver('video', { direction: 'recvonly' }); 
+        peerConnection.addTransceiver('video', { direction: 'sendrecv' }); 
         localStream.getTracks().forEach(t=>peerConnection.addTrack(t, localStream));
         
         peerConnection.ontrack=(e)=>{ 
@@ -264,7 +264,7 @@ async function startFriendCall() {
             if(d?.status==="ended") endFriendCall(false); 
         });
         ac.onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const cnd=new RTCIceCandidate(c.doc.data()); peerConnection.addIceCandidate(cnd); } }); });
-    } catch(e) { alert("Mic required for calling. Please enable microphone permissions."); }
+    } catch(e) { alert("Mic required for calling. Please check your browser permissions."); }
 }
 
 function showIncomingCallUI(cId, d) { activeCallDocId=cId; document.getElementById("friend-call-name").innerText=d.callerName; document.getElementById("friend-call-status").innerText="Incoming Voice Call..."; document.getElementById("friend-call-avatar").innerHTML=getAvatarHTML({username:d.callerName, avatar:d.callerAvatar}); document.getElementById("accept-call-btn").style.display="inline-block"; document.getElementById("friend-call-modal").classList.remove("hidden"); }
@@ -274,7 +274,7 @@ async function answerFriendCall() {
         localStream=await navigator.mediaDevices.getUserMedia({audio:true, video:false});
         peerConnection=new RTCPeerConnection(rtcServers);
         
-        peerConnection.addTransceiver('video', { direction: 'recvonly' }); 
+        peerConnection.addTransceiver('video', { direction: 'sendrecv' }); 
         localStream.getTracks().forEach(t=>peerConnection.addTrack(t, localStream));
         
         peerConnection.ontrack=(e)=>{ 
@@ -298,7 +298,7 @@ async function answerFriendCall() {
         oc.onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const cnd=new RTCIceCandidate(c.doc.data()); peerConnection.addIceCandidate(cnd); } }); });
         
         callListenerUnsubscribe=cd.onSnapshot(sn=>{ const d=sn.data(); if(d?.status==="ended") endFriendCall(false); });
-    } catch(e) { alert("Mic required. Please enable microphone permissions."); endFriendCall(); }
+    } catch(e) { alert("Mic required. Please check your browser permissions."); endFriendCall(); }
 }
 
 async function endFriendCall(notify=true) {
@@ -378,3 +378,99 @@ function searchChats() {
     inpt.oninput=(e)=>{ res.innerHTML=""; const q=e.target.value.toLowerCase().trim(); if(!q) return; const m=chatsHistory.filter(c=>c.title.toLowerCase().includes(q)||c.apiHistory.some(m=>m.content.toLowerCase().includes(q))); if(m.length===0) res.innerHTML="<div style='color:var(--text-sub);text-align:center;'>No results.</div>"; m.forEach(ch=>{ const i=document.createElement("div"); i.innerText=ch.title; i.style.padding="14px"; i.style.background="var(--bg-input)"; i.style.borderRadius="12px"; i.style.cursor="pointer"; i.style.transition="background-color 0.2s"; i.onmouseover=()=>i.style.backgroundColor="#9333ea"; i.onmouseleave=()=>i.style.backgroundColor="var(--bg-input)"; i.onclick=()=>{ loadChat(ch.id); md.remove(); }; res.appendChild(i); }); };
     bx.appendChild(tl); bx.appendChild(inpt); bx.appendChild(res); bx.appendChild(cB); md.appendChild(bx); document.body.appendChild(md); setTimeout(()=>inpt.focus(),100);
 }
+
+function initMobileNavIcons() {
+    const mc=document.getElementById("mobile-nav-chat"), ml=document.getElementById("mobile-nav-call"), mg=document.getElementById("mobile-nav-games"), ms=document.getElementById("mobile-nav-settings");
+    if(mc) mc.onclick=()=>startNewChat(); if(ml) ml.onclick=()=>startCall(); if(mg) mg.onclick=()=>switchView('view-games'); if(ms) ms.onclick=()=>switchView('view-settings');
+}
+
+function archiveActiveChat() {
+    const l=document.getElementById("chat-log"); if(!l) return; const b=l.querySelectorAll('.chat-bubble');
+    if(b.length>0 && activeChatId && !isDM) {
+        let ex=chatsHistory.find(c=>c.id===activeChatId); if(ex) { ex.html=l.innerHTML; ex.apiHistory=[...chatHistory]; }
+        else { const t=b[0].innerText||"Chat Session", nT=t.length>20?t.substring(0,20)+"...":t; chatsHistory.unshift({id:activeChatId,title:nT,html:l.innerHTML,apiHistory:[...chatHistory],pinned:false}); }
+    } saveSessionData(); renderChatHistorySidebar();
+}
+
+function clearPendingImage() { pendingImageBase64=null; pendingImageMime=null; pendingImageSrc=null; const fp=document.getElementById('native-file-picker'); if(fp) fp.value=""; const b=document.getElementById('image-preview-box'); if(b) b.classList.remove('active'); }
+
+function renderChatHistorySidebar() {
+    const ct=document.getElementById("saved-chats-list"); if(!ct) return; ct.innerHTML="";
+    const sc=[...chatsHistory].sort((a,b)=>{ if(a.pinned&&!b.pinned) return -1; if(!a.pinned&&b.pinned) return 1; return 0; });
+    sc.forEach(ch=>{
+        const it=document.createElement("div"); it.className="saved-chat-item";
+        const tc=document.createElement("div"); tc.className="chat-title-text";
+        if(ch.pinned){ const pi=document.createElement("img"); pi.className="pinned-icon-img"; pi.src="/static/icons/PinIcon.png"; pi.draggable=false; tc.appendChild(pi); }
+        const tt=document.createElement("span"); tt.innerText=ch.title; tc.appendChild(tt); tc.onclick=()=>loadChat(ch.id);
+        const ob=document.createElement("button"); ob.className="chat-options-btn"; ob.innerText="⋮";
+        const dd=document.createElement("div"); dd.className="chat-dropdown-menu";
+        const eb=document.createElement("button"); eb.className="chat-dropdown-item"; eb.innerText="Edit Name"; eb.onclick=(e)=>{e.stopPropagation(); editChatTitle(ch.id); dd.classList.remove('active');};
+        const pb=document.createElement("button"); pb.className="chat-dropdown-item"; pb.innerText=ch.pinned?"Unpin Chat":"Pin Chat"; pb.onclick=(e)=>{e.stopPropagation(); togglePinChat(ch.id); dd.classList.remove('active');};
+        const db=document.createElement("button"); db.className="chat-dropdown-item delete"; db.innerText="Delete"; db.onclick=(e)=>{e.stopPropagation(); deleteChat(ch.id); dd.classList.remove('active');};
+        dd.appendChild(eb); dd.appendChild(pb); dd.appendChild(db);
+        ob.onclick=(e)=>{ e.stopPropagation(); document.querySelectorAll('.chat-dropdown-menu.active').forEach(m=>{if(m!==dd)m.classList.remove('active');}); dd.classList.toggle('active'); };
+        it.appendChild(tc); it.appendChild(ob); it.appendChild(dd); ct.appendChild(it);
+    });
+}
+
+document.addEventListener("click", () => document.querySelectorAll('.chat-dropdown-menu.active').forEach(m => m.classList.remove('active')));
+function editChatTitle(id) { const c=chatsHistory.find(x=>x.id===id); if(!c) return; const n=prompt("New name:",c.title); if(n&&n.trim()!=="") { c.title=n.trim(); saveSessionData(); renderChatHistorySidebar(); } }
+function togglePinChat(id) { const c=chatsHistory.find(x=>x.id===id); if(!c) return; c.pinned=!c.pinned; saveSessionData(); renderChatHistorySidebar(); }
+function deleteChat(id) { if(confirm("Are you sure you want to delete this chat forever?")) { chatsHistory=chatsHistory.filter(x=>x.id!==id); if(activeChatId===id) startNewChat(); else { saveSessionData(); renderChatHistorySidebar(); } } }
+
+function updateUsageUI() {
+    const f=document.getElementById("usage-fill"), t=document.getElementById("usage-text"); if(!f||!t) return;
+    if(hasValidApiKey()) { f.style.width="100%"; t.innerText="Unlimited"; } else {
+        const td=new Date().toISOString().split('T')[0]; let ld=localStorage.getItem("carl_last_msg_date"), ct=parseInt(localStorage.getItem("carl_msg_count")||"0",10);
+        if(ld!==td) { ld=td; ct=0; localStorage.setItem("carl_last_msg_date",td); localStorage.setItem("carl_msg_count","0"); }
+        let p=(ct/10)*100; if(p>100) p=100; f.style.width=`${p}%`; t.innerText=`${ct}/10`;
+    }
+}
+
+function processFile(f) {
+    if(f.type.startsWith('image/')) { const r=new FileReader(); r.onload=function(e){ pendingImageSrc=e.target.result; pendingImageMime=pendingImageSrc.split(';')[0].split(':')[1]; pendingImageBase64=pendingImageSrc.split(',')[1]; const i=document.getElementById('image-preview-img'), b=document.getElementById('image-preview-box'); if(i&&b){ i.src=pendingImageSrc; b.classList.add('active'); } }; r.readAsDataURL(f); }
+    else { const r=new FileReader(); r.onload=function(e){ const t=e.target.result, i=document.getElementById("user-input"); if(i) i.value+=`\n\`\`\`${f.name.split('.').pop()||''}\n${t}\n\`\`\`\n`; }; r.readAsText(f); }
+}
+const nfp=document.getElementById('native-file-picker'); if(nfp) nfp.addEventListener('change', e=>{ const f=e.target.files[0]; if(!f) return; processFile(f); nfp.value=""; });
+
+let dc=0; const dro=document.getElementById('drag-drop-overlay'), dcv=document.getElementById('view-chat');
+if(dcv&&dro) {
+    ['dragenter','dragover','dragleave','drop'].forEach(en=>window.addEventListener(en,e=>{e.preventDefault(); e.stopPropagation();},false));
+    window.addEventListener('dragenter',e=>{if(dcv.classList.contains('active')){dc++; dro.classList.add('active');}});
+    window.addEventListener('dragleave',e=>{if(dcv.classList.contains('active')){dc--; if(dc<=0){dc=0; dro.classList.remove('active');}}});
+    window.addEventListener('drop',e=>{dc=0; dro.classList.remove('active'); if(dcv.classList.contains('active')&&e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);});
+}
+
+window.copyCode=function(b){ const c=decodeURIComponent(b.getAttribute("data-code")); navigator.clipboard.writeText(c).then(()=>showCopyToast()).catch(e=>console.error(e)); };
+function showCopyToast() {
+    let t=document.getElementById('copy-toast'); if(!t){ t=document.createElement('div'); t.id='copy-toast'; t.className='copy-toast'; t.innerHTML=`<img src="/static/icons/CopyIcon.png" alt="Copy"><span>Text Copied</span>`; document.body.appendChild(t); }
+    t.classList.add('show'); if(window.copyToastTimeout) clearTimeout(window.copyToastTimeout); window.copyToastTimeout=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function formatMessage(txt) {
+    let s=txt.replace(/</g,"&lt;").replace(/>/g,"&gt;"); const cb=/```(\w*)\n([\s\S]*?)(```|$)/g;
+    s=s.replace(cb, (m,l,c)=>{ const dl=(l||"CODE").toUpperCase(), ec=encodeURIComponent(c); let sc=c.replace(/(["'])(.*?)\1/g,'<span style="color: #4ade80;">"$2"</span>'); return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-language">${dl}</span><button class="copy-code-btn" data-code="${ec}" onclick="copyCode(this)"><img src="/static/icons/CopyIcon.png"></button></div><div class="code-block-body">${sc.trim()}</div></div>`; });
+    s=s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>'); s=s.replace(/`([^`]+)`/g,'<span class="inline-code">$1</span>'); return s;
+}
+
+function appendMessage(m, s, i=null) {
+    const l=document.getElementById("chat-log"); if(!l) return; const b=document.createElement("div"); b.className=`chat-bubble ${s}`;
+    if(m) { const tn=document.createElement("div"); tn.innerText=m; b.appendChild(tn); } if(i) { const im=document.createElement("img"); im.src=i; im.className="chat-image"; im.draggable=false; b.appendChild(im); }
+    l.appendChild(b); l.scrollTop=l.scrollHeight;
+}
+
+// --- CALL FEATURE (Carl AI) ---
+function loadCarlVoice() { if(!('speechSynthesis' in window)) return; const v=window.speechSynthesis.getVoices(); if(v.length===0) return; carlVoice=v.find(x=>x.lang.includes('en')&&(x.name.includes('Google US English')||x.name.includes('Aaron')||x.name.includes('Guy')||x.name.includes('Male')))||v.find(x=>x.lang.startsWith('en'))||v[0]; }
+if('speechSynthesis' in window) { window.speechSynthesis.onvoiceschanged=loadCarlVoice; loadCarlVoice(); }
+function getAudioContext() { if(!audioCtx) { const AC=window.AudioContext||window.webkitAudioContext; audioCtx=new AC(); } if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
+function playToneBurst(f1, f2, d) { try{ const cx=getAudioContext(), o1=cx.createOscillator(), o2=cx.createOscillator(), g=cx.createGain(); o1.frequency.value=f1; o2.frequency.value=f2; g.gain.setValueAtTime(0.15,cx.currentTime); g.gain.setValueAtTime(0.15,cx.currentTime+d-0.05); g.gain.linearRampToValueAtTime(0.001,cx.currentTime+d); o1.connect(g); o2.connect(g); g.connect(cx.destination); o1.start(cx.currentTime); o2.start(cx.currentTime); o1.stop(cx.currentTime+d); o2.stop(cx.currentTime+d); }catch(e){} }
+function startRingingSound() { playToneBurst(440,480,2.0); ringInterval=setInterval(()=>{if(!isCallActive||isCallConnected){clearInterval(ringInterval);return;}playToneBurst(440,480,2.0);},4000); }
+function stopRingingSound() { if(ringInterval){clearInterval(ringInterval); ringInterval=null;} }
+function playPickupClick() { try{ const cx=getAudioContext(), o=cx.createOscillator(), g=cx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(800,cx.currentTime); o.frequency.exponentialRampToValueAtTime(150,cx.currentTime+0.08); g.gain.setValueAtTime(0.3,cx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,cx.currentTime+0.08); o.connect(g); g.connect(cx.destination); o.start(); o.stop(cx.currentTime+0.08); }catch(e){} }
+function startCall() { if(!hasValidApiKey()) { alert("Requires valid API Key."); switchView('view-settings'); return; } switchView('view-call'); isCallActive=true; isCallConnected=false; isMuted=false; callSeconds=0; getAudioContext(); if('speechSynthesis' in window) { let w=new SpeechSynthesisUtterance(''); w.volume=0; window.speechSynthesis.speak(w); } document.getElementById("call-status").innerText="Calling Carl..."; document.getElementById("call-status").style.display="block"; document.getElementById("call-timer").innerText="00:00"; document.getElementById("mute-btn").style.opacity="1"; document.getElementById("speaker-btn").style.opacity=isSpeakerOn?"1":"0.4"; startRingingSound(); const d=Math.floor(Math.random()*4000)+1500; ringTimeout=setTimeout(()=>{ if(!isCallActive) return; stopRingingSound(); playPickupClick(); isCallConnected=true; document.getElementById("call-status").style.display="none"; callTimerInterval=setInterval(()=>{ callSeconds++; const m=String(Math.floor(callSeconds/60)).padStart(2,'0'), s=String(Math.floor(callSeconds%60)).padStart(2,'0'); document.getElementById("call-timer").innerText=`${m}:${s}`; },1000); initSpeechRecognition(); speakCarl("Hey! Carl here. What's on your mind?"); }, d); }
+function endCall() { try{ isCallActive=false; isCallConnected=false; stopFacetime(); if(ringTimeout) clearTimeout(ringTimeout); stopRingingSound(); if(callTimerInterval) clearInterval(callTimerInterval); if('speechSynthesis' in window) window.speechSynthesis.cancel(); if(callAbortController) callAbortController.abort(); if(recognition) { try{ recognition.stop(); }catch(e){} recognition=null; } document.getElementById("call-timer").innerText="00:00"; document.getElementById("call-status").style.display="none"; switchView('view-chat'); }catch(e){switchView('view-chat');} }
+function toggleMute() { isMuted=!isMuted; const b=document.getElementById("mute-btn"); if(isMuted) { b.style.opacity="0.4"; if(recognition) try{recognition.stop();}catch(e){} } else { b.style.opacity="1"; if(recognition&&isCallActive&&isCallConnected) try{recognition.start();}catch(e){} } }
+function toggleSpeaker() { isSpeakerOn=!isSpeakerOn; document.getElementById("speaker-btn").style.opacity=isSpeakerOn?"1":"0.4"; }
+function speakCarl(txt) { if(!('speechSynthesis' in window)||!isCallActive) return; let ct=txt.replace(/```[\s\S]*?```/g,'').replace(/`[^`]*`/g,'').replace(/[*_#~]/g,'').trim(); if(!ct) return; const u=new SpeechSynthesisUtterance(ct); if(!carlVoice) loadCarlVoice(); if(carlVoice) u.voice=carlVoice; u.rate=1.05; u.volume=isSpeakerOn?1.0:0.15; window.speechSynthesis.speak(u); }
+function initSpeechRecognition() { const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) { document.getElementById("call-status").innerText="Browser doesn't support mic!"; document.getElementById("call-status").style.display="block"; return; } recognition=new SR(); recognition.continuous=true; recognition.interimResults=true; recognition.lang='en-US'; recognition.onresult=async(e)=>{ if(isMuted||!isCallActive||!isCallConnected) return; let iT='', fT=''; for(let i=e.resultIndex; i<e.results.length; ++i) { if(e.results[i].isFinal) fT+=e.results[i][0].transcript; else iT+=e.results[i][0].transcript; } let cb=fT+iT; if(cb.trim().length>3 && window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); if(callAbortController) callAbortController.abort(); } if(fT.trim().length>0) { const uq=fT.trim(); window.speechSynthesis.cancel(); if(callAbortController) callAbortController.abort(); document.getElementById("call-status").innerText="Carl is thinking..."; document.getElementById("call-status").style.display="block"; await processCallUserMessage(uq); } }; recognition.onerror=(e)=>{ if(e.error==='not-allowed') { document.getElementById("call-status").innerText="Mic Permission Denied"; document.getElementById("call-status").style.display="block"; } }; recognition.onend=()=>{ if(isCallActive&&isCallConnected&&!isMuted) try{recognition.start();}catch(e){} }; try{recognition.start();}catch(e){} }
+async function processCallUserMessage(t) { if(!isCallActive) return; callAbortController=new AbortController(); chatHistory.push({role:"user",content:t}); const uLT=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit',hour12:true}), uTZ=Intl.DateTimeFormat().resolvedOptions().timeZone, ftF=captureFacetimeFrame(); const p={ message:t, history:chatHistory, image_b64:ftF?ftF.base64:null, image_mime:ftF?ftF.mime:null, api_key:customApiKey, user_time:uLT, user_timezone:uTZ, client_time:`${uLT} (${uTZ})` }; try{ const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p),signal:callAbortController.signal}); if(!res.ok) return; const rdr=res.body.getReader(), dcd=new TextDecoder(); let fR="", sB=""; document.getElementById("call-status").style.display="none"; while(true) { const {done,value}=await rdr.read(); if(done) break; const chk=dcd.decode(value,{stream:true}); fR+=chk; sB+=chk; let m; while((m=sB.match(/([^.!?]+[.!?])/))) { let s=m[0].trim(); sB=sB.substring(m[0].length); for(let px of ["Carl:","carl:","Carl - "]) if(s.startsWith(px)) s=s.replace(px,"").trim(); if(s) speakCarl(s); } } if(sB.trim()) { let lo=sB.trim(); for(let px of ["Carl:","carl:","Carl - "]) if(lo.startsWith(px)) lo=lo.replace(px,"").trim(); speakCarl(lo); } chatHistory.push({role:"assistant",content:fR}); } catch(e){} }
