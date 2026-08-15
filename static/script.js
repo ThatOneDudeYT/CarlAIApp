@@ -112,7 +112,7 @@ function toggleTheme() { const b=document.body, ts=document.getElementById('them
 function updateProfileUI() { const a=document.getElementById("header-user-avatar"), n=document.getElementById("header-user-name"); if(a) a.src=currentUserAvatar; if(n) n.innerText=currentUser||"Guest"; }
 function updateUsernameFromSettings() { const inp=document.getElementById("settings-username-input"); if(!inp||!currentUser) return; const nn=inp.value.trim(); if(nn.length>=3 && nn.length<=20){ currentUser=nn; updateProfileUI(); saveSessionData(); } else { alert("Username must be between 3 and 20 characters!"); inp.value=currentUser||""; } }
 function handleAvatarUpload(e) { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(ev){ currentUserAvatar=ev.target.result; updateProfileUI(); saveSessionData(); }; r.readAsDataURL(f); }
-function saveSettings() { const ki=document.getElementById('user-api-key'); if(ki) customApiKey=ki.value.trim(); const np=document.getElementById('settings-new-pass').value, cp=document.getElementById('settings-confirm-pass').value; if(np||cp){ if(np===cp){ auth.currentUser.updatePassword(np).then(()=>{ alert("Password updated."); document.getElementById('settings-new-pass').value=""; document.getElementById('settings-confirm-pass').value=""; }).catch(e=>alert(e.message)); } else alert("Passwords do not match!"); } saveSessionData(); updateUsageUI(); }
+function saveSettings() { const ki=document.getElementById('user-api-key'); if(ki) customApiKey=ki.value.trim(); const np=document.getElementById('settings-new-pass').value, cp=document.getElementById('settings-confirm-pass').value; if(np||cp){ if(np===cp){ auth.currentUser.updatePassword(np).then(()=>{ alert("Password updated successfully."); document.getElementById('settings-new-pass').value=""; document.getElementById('settings-confirm-pass').value=""; }).catch(e=>alert(e.message)); } else alert("Passwords do not match!"); } saveSessionData(); updateUsageUI(); }
 function toggleApiKeyHelp() { const hb=document.getElementById('api-key-help-box'); if(hb) hb.classList.toggle('hidden'); }
 function toggleSidebar() { const sb=document.getElementById('desktop-sidebar'), btn=document.getElementById('sidebar-toggle-btn'); if(!sb) return; if(sb.classList.contains('expanded')){ sb.classList.remove('expanded'); sb.classList.add('collapsed'); if(btn) btn.innerText="❯"; } else { sb.classList.remove('collapsed'); sb.classList.add('expanded'); if(btn) btn.innerText="❮"; } }
 function getDifficulty() { const s=document.getElementById("difficulty-select"); return s?s.value:"medium"; }
@@ -236,13 +236,12 @@ async function startFriendCall() {
         localStream=await navigator.mediaDevices.getUserMedia({audio:true, video:false});
         peerConnection=new RTCPeerConnection(rtcServers);
         
-        peerConnection.addTransceiver('video', { direction: 'sendrecv' }); 
+        peerConnection.addTransceiver('video', { direction: 'recvonly' }); 
         localStream.getTracks().forEach(t=>peerConnection.addTrack(t, localStream));
         
         peerConnection.ontrack=(e)=>{ 
-            const rv = document.getElementById("fc-remote-video");
-            if (rv.srcObject !== e.streams[0]) rv.srcObject = e.streams[0];
-            if (e.track.kind === 'video') rv.style.display = "block";
+            if(e.track.kind === 'video') { const rv = document.getElementById("fc-remote-video"); rv.srcObject=e.streams[0]; rv.style.display = "block"; } 
+            else document.getElementById("remote-audio").srcObject=e.streams[0]; 
         };
         
         const cd=db.collection("calls").doc(); activeCallDocId=cd.id;
@@ -265,7 +264,7 @@ async function startFriendCall() {
             if(d?.status==="ended") endFriendCall(false); 
         });
         ac.onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const cnd=new RTCIceCandidate(c.doc.data()); peerConnection.addIceCandidate(cnd); } }); });
-    } catch(e) { alert("Mic required for calling."); }
+    } catch(e) { alert("Mic required for calling. Please enable microphone permissions."); }
 }
 
 function showIncomingCallUI(cId, d) { activeCallDocId=cId; document.getElementById("friend-call-name").innerText=d.callerName; document.getElementById("friend-call-status").innerText="Incoming Voice Call..."; document.getElementById("friend-call-avatar").innerHTML=getAvatarHTML({username:d.callerName, avatar:d.callerAvatar}); document.getElementById("accept-call-btn").style.display="inline-block"; document.getElementById("friend-call-modal").classList.remove("hidden"); }
@@ -275,13 +274,12 @@ async function answerFriendCall() {
         localStream=await navigator.mediaDevices.getUserMedia({audio:true, video:false});
         peerConnection=new RTCPeerConnection(rtcServers);
         
-        peerConnection.addTransceiver('video', { direction: 'sendrecv' }); 
+        peerConnection.addTransceiver('video', { direction: 'recvonly' }); 
         localStream.getTracks().forEach(t=>peerConnection.addTrack(t, localStream));
         
         peerConnection.ontrack=(e)=>{ 
-            const rv = document.getElementById("fc-remote-video");
-            if (rv.srcObject !== e.streams[0]) rv.srcObject = e.streams[0];
-            if (e.track.kind === 'video') rv.style.display = "block";
+            if(e.track.kind === 'video') { const rv = document.getElementById("fc-remote-video"); rv.srcObject=e.streams[0]; rv.style.display = "block"; } 
+            else document.getElementById("remote-audio").srcObject=e.streams[0]; 
         };
         
         const cd=db.collection("calls").doc(activeCallDocId), ac=cd.collection("answerCandidates"), oc=cd.collection("offerCandidates");
@@ -300,12 +298,13 @@ async function answerFriendCall() {
         oc.onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const cnd=new RTCIceCandidate(c.doc.data()); peerConnection.addIceCandidate(cnd); } }); });
         
         callListenerUnsubscribe=cd.onSnapshot(sn=>{ const d=sn.data(); if(d?.status==="ended") endFriendCall(false); });
-    } catch(e) { alert("Mic required."); endFriendCall(); }
+    } catch(e) { alert("Mic required. Please enable microphone permissions."); endFriendCall(); }
 }
 
 async function endFriendCall(notify=true) {
     if(notify&&activeCallDocId) await db.collection("calls").doc(activeCallDocId).update({status:"ended"}).catch(()=>{});
     if(localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+    if(window.localVideoTrack) { window.localVideoTrack.stop(); window.localVideoTrack=null; }
     if(peerConnection) { peerConnection.close(); peerConnection=null; }
     if(callListenerUnsubscribe) { callListenerUnsubscribe(); callListenerUnsubscribe=null; }
     if(callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval=null; }
@@ -320,25 +319,23 @@ async function endFriendCall(notify=true) {
 function declineFriendCall() { if(activeCallDocId) db.collection("calls").doc(activeCallDocId).update({status:"ended"}).catch(()=>{}); activeCallDocId=null; document.getElementById("friend-call-modal").classList.add("hidden"); }
 
 let isFcVideoActive = false;
+window.localVideoTrack = null;
 async function toggleFcVideo() {
     const btn = document.getElementById("fc-facetime-btn"), localVid = document.getElementById("fc-local-video");
     if (!isFcVideoActive) {
         try {
             const videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            const videoTrack = videoStream.getVideoTracks()[0];
-            localStream.addTrack(videoTrack); localVid.srcObject = new MediaStream([videoTrack]); localVid.style.display = "block";
+            window.localVideoTrack = videoStream.getVideoTracks()[0];
+            localVid.srcObject = new MediaStream([window.localVideoTrack]); localVid.style.display = "block";
             if (peerConnection) {
                 const vt = peerConnection.getTransceivers().find(t => t.receiver.track.kind === 'video');
-                if (vt) { vt.sender.replaceTrack(videoTrack); vt.direction = 'sendrecv'; }
+                if (vt) { vt.direction = 'sendrecv'; vt.sender.replaceTrack(window.localVideoTrack); }
             }
             isFcVideoActive = true; if (btn) btn.style.opacity = "1";
         } catch (e) { alert("Camera access denied."); }
     } else {
-        const videoTrack = localStream.getVideoTracks()[0];
-        if (videoTrack) { 
-            videoTrack.stop(); localStream.removeTrack(videoTrack); 
-            if (peerConnection) { const vt = peerConnection.getTransceivers().find(t => t.receiver.track.kind === 'video'); if (vt) vt.sender.replaceTrack(null); }
-        }
+        if (window.localVideoTrack) { window.localVideoTrack.stop(); window.localVideoTrack = null; }
+        if (peerConnection) { const vt = peerConnection.getTransceivers().find(t => t.receiver.track.kind === 'video'); if (vt) { vt.direction = 'recvonly'; vt.sender.replaceTrack(null); } }
         localVid.style.display = "none"; isFcVideoActive = false; if (btn) btn.style.opacity = "0.4";
     }
 }
@@ -346,7 +343,7 @@ async function toggleFcVideo() {
 let isFcMuted = false;
 function toggleFcMute() { isFcMuted = !isFcMuted; const btn = document.getElementById("fc-mute-btn"); if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = !isFcMuted); if (btn) btn.style.opacity = isFcMuted ? "0.4" : "1"; }
 let isFcSpeakerOn = true;
-function toggleFcSpeaker() { isFcSpeakerOn = !isFcSpeakerOn; const remoteVid = document.getElementById("fc-remote-video"); if (remoteVid) remoteVid.muted = !isFcSpeakerOn; const btn = document.getElementById("fc-speaker-btn"); if (btn) btn.style.opacity = isFcSpeakerOn ? "1" : "0.4"; }
+function toggleFcSpeaker() { isFcSpeakerOn = !isFcSpeakerOn; const remoteVid = document.getElementById("fc-remote-video"), remoteAud = document.getElementById("remote-audio"); if (remoteVid) remoteVid.muted = !isFcSpeakerOn; if (remoteAud) remoteAud.muted = !isFcSpeakerOn; const btn = document.getElementById("fc-speaker-btn"); if (btn) btn.style.opacity = isFcSpeakerOn ? "1" : "0.4"; }
 
 // --- CHAT LOGIC ---
 function startNewChat() { isDM=false; if(currentDmUnsubscribe){ currentDmUnsubscribe(); currentDmUnsubscribe=null; } archiveActiveChat(); activeChatId="chat_"+Date.now(); chatHistory=[]; const log=document.getElementById("chat-log"); if(log) log.innerHTML=''; const input=document.getElementById("user-input"); if(input) input.value=""; clearPendingImage(); document.getElementById("startup-title").innerHTML='Ask Away!<span class="typing-cursor"></span>'; showStartupScreen(); saveSessionData(); switchView('view-chat'); }
@@ -378,6 +375,6 @@ function searchChats() {
     const inpt=document.createElement("input"); inpt.type="text"; inpt.placeholder="Search messages..."; inpt.style.width="100%"; inpt.style.padding="12px"; inpt.style.borderRadius="12px"; inpt.style.background="var(--bg-input)"; inpt.style.color="var(--text-main)"; inpt.style.border="1px solid var(--border-color)"; inpt.style.marginBottom="16px";
     const res=document.createElement("div"); res.style.maxHeight="250px"; res.style.overflowY="auto"; res.style.display="flex"; res.style.flexDirection="column"; res.style.gap="8px";
     const cB=document.createElement("button"); cB.innerText="Close"; cB.className="call-btn decline"; cB.style.width="100%"; cB.style.marginTop="16px"; cB.onclick=()=>md.remove();
-    inpt.oninput=(e)=>{ res.innerHTML=""; const q=e.target.value.toLowerCase().trim(); if(!q) return; const m=chatsHistory.filter(c=>c.title.toLowerCase().includes(q)||c.apiHistory.some(m=>m.content.toLowerCase().includes(q))); if(m.length===0) res.innerHTML="<div style='color:var(--text-sub);text-align:center;'>No results.</div>"; m.forEach(ch=>{ const i=document.createElement("div"); i.innerText=ch.title; i.style.padding="14px"; i.style.background="var(--bg-input)"; i.style.borderRadius="12px"; i.style.cursor="pointer"; i.onclick=()=>{ loadChat(ch.id); md.remove(); }; res.appendChild(i); }); };
+    inpt.oninput=(e)=>{ res.innerHTML=""; const q=e.target.value.toLowerCase().trim(); if(!q) return; const m=chatsHistory.filter(c=>c.title.toLowerCase().includes(q)||c.apiHistory.some(m=>m.content.toLowerCase().includes(q))); if(m.length===0) res.innerHTML="<div style='color:var(--text-sub);text-align:center;'>No results.</div>"; m.forEach(ch=>{ const i=document.createElement("div"); i.innerText=ch.title; i.style.padding="14px"; i.style.background="var(--bg-input)"; i.style.borderRadius="12px"; i.style.cursor="pointer"; i.style.transition="background-color 0.2s"; i.onmouseover=()=>i.style.backgroundColor="#9333ea"; i.onmouseleave=()=>i.style.backgroundColor="var(--bg-input)"; i.onclick=()=>{ loadChat(ch.id); md.remove(); }; res.appendChild(i); }); };
     bx.appendChild(tl); bx.appendChild(inpt); bx.appendChild(res); bx.appendChild(cB); md.appendChild(bx); document.body.appendChild(md); setTimeout(()=>inpt.focus(),100);
 }
