@@ -229,47 +229,110 @@ function listenForIncomingCalls() {
     if(!firebaseUserId) return;
     db.collection("calls").where("receiverId","==",firebaseUserId).where("status","==","calling").onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const d=c.doc.data(); showIncomingCallUI(c.doc.id, d); } }); });
 }
+
 async function startFriendCall() {
     if(!currentDmUser||!firebaseUserId) return;
     try {
         localStream=await navigator.mediaDevices.getUserMedia({audio:true, video:false});
         peerConnection=new RTCPeerConnection(rtcServers);
         localStream.getTracks().forEach(t=>peerConnection.addTrack(t, localStream));
-        peerConnection.ontrack=(e)=>{ document.getElementById("remote-audio").srcObject=e.streams[0]; };
+        peerConnection.ontrack=(e)=>{ 
+            if(e.track.kind === 'video') { const rv = document.getElementById("fc-remote-video"); rv.srcObject=e.streams[0]; rv.style.display = "block"; } 
+            else document.getElementById("remote-audio").srcObject=e.streams[0]; 
+        };
         const cd=db.collection("calls").doc(); activeCallDocId=cd.id;
         const oc=cd.collection("offerCandidates"), ac=cd.collection("answerCandidates");
         peerConnection.onicecandidate=(e)=>{ if(e.candidate) oc.add(e.candidate.toJSON()); };
         const oDesc=await peerConnection.createOffer(); await peerConnection.setLocalDescription(oDesc);
         await cd.set({ callerId:firebaseUserId, callerName:currentUser, callerAvatar:currentUserAvatar, receiverId:currentDmUser.id, status:"calling", offer:{ type:oDesc.type, sdp:oDesc.sdp } });
-        document.getElementById("friend-call-name").innerText=currentDmUser.username; document.getElementById("friend-call-status").innerText="Calling..."; document.getElementById("friend-call-avatar").innerHTML=getAvatarHTML(currentDmUser); document.getElementById("accept-call-btn").style.display="none"; document.getElementById("friend-call-modal").classList.remove("hidden");
-        callListenerUnsubscribe=cd.onSnapshot(sn=>{ const d=sn.data(); if(d?.answer && !peerConnection.currentRemoteDescription){ const aDesc=new RTCSessionDescription(d.answer); peerConnection.setRemoteDescription(aDesc); document.getElementById("friend-call-status").innerText="Connected"; } if(d?.status==="ended"){ endFriendCall(false); } });
+        
+        document.getElementById("fc-title").innerText=currentDmUser.username; document.getElementById("fc-status").innerText="Calling..."; document.getElementById("fc-status").style.display="block"; document.getElementById("fc-timer").innerText="00:00";
+        callSeconds = 0; switchView('view-friend-call');
+        
+        callListenerUnsubscribe=cd.onSnapshot(sn=>{ 
+            const d=sn.data(); 
+            if(d?.answer && !peerConnection.currentRemoteDescription){ 
+                const aDesc=new RTCSessionDescription(d.answer); peerConnection.setRemoteDescription(aDesc); 
+                document.getElementById("fc-status").style.display="none"; 
+                if (callTimerInterval) clearInterval(callTimerInterval);
+                callTimerInterval = setInterval(() => { callSeconds++; const m = String(Math.floor(callSeconds / 60)).padStart(2, '0'); const s = String(Math.floor(callSeconds % 60)).padStart(2, '0'); document.getElementById("fc-timer").innerText = `${m}:${s}`; }, 1000);
+            } 
+            if(d?.status==="ended") endFriendCall(false); 
+        });
         ac.onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const cnd=new RTCIceCandidate(c.doc.data()); peerConnection.addIceCandidate(cnd); } }); });
     } catch(e) { alert("Mic required for calling."); }
 }
+
 function showIncomingCallUI(cId, d) { activeCallDocId=cId; document.getElementById("friend-call-name").innerText=d.callerName; document.getElementById("friend-call-status").innerText="Incoming Voice Call..."; document.getElementById("friend-call-avatar").innerHTML=getAvatarHTML({username:d.callerName, avatar:d.callerAvatar}); document.getElementById("accept-call-btn").style.display="inline-block"; document.getElementById("friend-call-modal").classList.remove("hidden"); }
+
 async function answerFriendCall() {
     try {
         localStream=await navigator.mediaDevices.getUserMedia({audio:true, video:false});
         peerConnection=new RTCPeerConnection(rtcServers);
         localStream.getTracks().forEach(t=>peerConnection.addTrack(t, localStream));
-        peerConnection.ontrack=(e)=>{ document.getElementById("remote-audio").srcObject=e.streams[0]; };
+        peerConnection.ontrack=(e)=>{ 
+            if(e.track.kind === 'video') { const rv = document.getElementById("fc-remote-video"); rv.srcObject=e.streams[0]; rv.style.display = "block"; } 
+            else document.getElementById("remote-audio").srcObject=e.streams[0]; 
+        };
         const cd=db.collection("calls").doc(activeCallDocId), ac=cd.collection("answerCandidates"), oc=cd.collection("offerCandidates");
         peerConnection.onicecandidate=(e)=>{ if(e.candidate) ac.add(e.candidate.toJSON()); };
         const cSn=await cd.get(), cD=cSn.data(); await peerConnection.setRemoteDescription(new RTCSessionDescription(cD.offer));
         const aDesc=await peerConnection.createAnswer(); await peerConnection.setLocalDescription(aDesc);
         await cd.update({ status:"connected", answer:{ type:aDesc.type, sdp:aDesc.sdp } });
-        document.getElementById("friend-call-status").innerText="Connected"; document.getElementById("accept-call-btn").style.display="none";
+        
+        document.getElementById("friend-call-modal").classList.add("hidden");
+        document.getElementById("fc-title").innerText=cD.callerName; document.getElementById("fc-status").style.display="none"; document.getElementById("fc-timer").innerText="00:00";
+        callSeconds = 0; switchView('view-friend-call');
+        
+        if (callTimerInterval) clearInterval(callTimerInterval);
+        callTimerInterval = setInterval(() => { callSeconds++; const m = String(Math.floor(callSeconds / 60)).padStart(2, '0'); const s = String(Math.floor(callSeconds % 60)).padStart(2, '0'); document.getElementById("fc-timer").innerText = `${m}:${s}`; }, 1000);
+        
         oc.onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const cnd=new RTCIceCandidate(c.doc.data()); peerConnection.addIceCandidate(cnd); } }); });
     } catch(e) { alert("Mic required."); endFriendCall(); }
 }
+
 async function endFriendCall(notify=true) {
     if(notify&&activeCallDocId) await db.collection("calls").doc(activeCallDocId).update({status:"ended"}).catch(()=>{});
     if(localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
     if(peerConnection) { peerConnection.close(); peerConnection=null; }
     if(callListenerUnsubscribe) { callListenerUnsubscribe(); callListenerUnsubscribe=null; }
-    activeCallDocId=null; document.getElementById("friend-call-modal").classList.add("hidden");
+    if(callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval=null; }
+    
+    isFcVideoActive = false;
+    const localVid = document.getElementById("fc-local-video"), remoteVid = document.getElementById("fc-remote-video");
+    if(localVid) localVid.style.display = "none"; if(remoteVid) remoteVid.style.display = "none";
+    
+    activeCallDocId=null; document.getElementById("friend-call-modal").classList.add("hidden"); switchView('view-dm');
+}
+function declineFriendCall() { if(activeCallDocId) db.collection("calls").doc(activeCallDocId).update({status:"ended"}).catch(()=>{}); activeCallDocId=null; document.getElementById("friend-call-modal").classList.add("hidden"); }
+
+let isFcVideoActive = false;
+async function toggleFcVideo() {
+    const btn = document.getElementById("fc-facetime-btn"), localVid = document.getElementById("fc-local-video");
+    if (!isFcVideoActive) {
+        try {
+            const videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            const videoTrack = videoStream.getVideoTracks()[0];
+            localStream.addTrack(videoTrack); localVid.srcObject = new MediaStream([videoTrack]); localVid.style.display = "block";
+            if (peerConnection) {
+                const senders = peerConnection.getSenders(), videoSender = senders.find(s => s.track && s.track.kind === 'video');
+                if (videoSender) videoSender.replaceTrack(videoTrack); else peerConnection.addTrack(videoTrack, localStream);
+            }
+            isFcVideoActive = true; if (btn) btn.style.opacity = "1";
+        } catch (e) { alert("Camera access denied."); }
+    } else {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) { videoTrack.stop(); localStream.removeTrack(videoTrack); }
+        localVid.style.display = "none"; isFcVideoActive = false; if (btn) btn.style.opacity = "0.4";
+    }
 }
 
+let isFcMuted = false;
+function toggleFcMute() { isFcMuted = !isFcMuted; const btn = document.getElementById("fc-mute-btn"); if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = !isFcMuted); if (btn) btn.style.opacity = isFcMuted ? "0.4" : "1"; }
+let isFcSpeakerOn = true;
+function toggleFcSpeaker() { isFcSpeakerOn = !isFcSpeakerOn; const remoteAudio = document.getElementById("remote-audio"), remoteVid = document.getElementById("fc-remote-video"); if (remoteAudio) remoteAudio.muted = !isFcSpeakerOn; if (remoteVid) remoteVid.muted = !isFcSpeakerOn; const btn = document.getElementById("fc-speaker-btn"); if (btn) btn.style.opacity = isFcSpeakerOn ? "1" : "0.4"; }
+
+// --- CHAT LOGIC ---
 function checkDailyMessageLimit() {
     const today=new Date().toISOString().split('T')[0]; let lastDate=localStorage.getItem("carl_last_msg_date"), count=parseInt(localStorage.getItem("carl_msg_count")||"0",10);
     if(lastDate!==today) { lastDate=today; count=0; localStorage.setItem("carl_last_msg_date",today); localStorage.setItem("carl_msg_count","0"); }
@@ -400,7 +463,7 @@ function playPickupClick() { try{ const cx=getAudioContext(), o=cx.createOscilla
 async function toggleFacetime() { const b=document.getElementById("facetime-btn"); if(!isFacetimeActive){ try{ facetimeStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false}); let v=document.getElementById("facetime-video"); if(!v){ v=document.createElement("video"); v.id="facetime-video"; v.autoplay=true; v.playsInline=true; v.muted=true; v.style.cssText="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;border-radius:20px;"; const cv=document.getElementById("view-call"); if(cv) cv.insertBefore(v,cv.firstChild); } v.srcObject=facetimeStream; v.style.display="block"; isFacetimeActive=true; if(b) b.style.opacity="1"; }catch(e){alert("No camera.");} } else stopFacetime(); }
 function stopFacetime() { isFacetimeActive=false; if(facetimeStream){ facetimeStream.getTracks().forEach(t=>t.stop()); facetimeStream=null; } const v=document.getElementById("facetime-video"); if(v) v.style.display="none"; const b=document.getElementById("facetime-btn"); if(b) b.style.opacity="0.4"; }
 function captureFacetimeFrame() { if(!isFacetimeActive) return null; const v=document.getElementById("facetime-video"); if(!v||v.readyState<2) return null; const c=document.createElement("canvas"); c.width=v.videoWidth||320; c.height=v.videoHeight||240; const cx=c.getContext("2d"); cx.drawImage(v,0,0,c.width,c.height); return { base64:c.toDataURL("image/jpeg",0.6).split(",")[1], mime:"image/jpeg" }; }
-function startCall() { if(!hasValidApiKey()) { alert("Requires valid API Key."); switchView('view-settings'); return; } switchView('view-call'); isCallActive=true; isCallConnected=false; isMuted=false; callSeconds=0; getAudioContext(); if('speechSynthesis' in window) { let w=new SpeechSynthesisUtterance(''); w.volume=0; window.speechSynthesis.speak(w); } document.getElementById("call-status").innerText="Calling Carl..."; document.getElementById("call-timer").innerText="00:00"; document.getElementById("mute-btn").style.opacity="1"; document.getElementById("speaker-btn").style.opacity=isSpeakerOn?"1":"0.4"; const fb=document.getElementById("facetime-btn"); if(fb) fb.style.opacity="0.4"; startRingingSound(); const d=Math.floor(Math.random()*4000)+1500; ringTimeout=setTimeout(()=>{ if(!isCallActive) return; stopRingingSound(); playPickupClick(); isCallConnected=true; document.getElementById("call-status").innerText="Connected"; callTimerInterval=setInterval(()=>{ callSeconds++; const m=String(Math.floor(callSeconds/60)).padStart(2,'0'), s=String(Math.floor(callSeconds%60)).padStart(2,'0'); document.getElementById("call-timer").innerText=`${m}:${s}`; },1000); initSpeechRecognition(); speakCarl("Hey! Carl here. What's on your mind?"); }, d); }
+function startCall() { if(!hasValidApiKey()) { alert("Requires valid API Key."); switchView('view-settings'); return; } switchView('view-call'); isCallActive=true; isCallConnected=false; isMuted=false; callSeconds=0; getAudioContext(); if('speechSynthesis' in window) { let w=new SpeechSynthesisUtterance(''); w.volume=0; window.speechSynthesis.speak(w); } document.getElementById("call-status").innerText="Calling Carl..."; document.getElementById("call-status").style.display="none"; document.getElementById("call-timer").innerText="00:00"; document.getElementById("mute-btn").style.opacity="1"; document.getElementById("speaker-btn").style.opacity=isSpeakerOn?"1":"0.4"; const fb=document.getElementById("facetime-btn"); if(fb) fb.style.opacity="0.4"; startRingingSound(); const d=Math.floor(Math.random()*4000)+1500; ringTimeout=setTimeout(()=>{ if(!isCallActive) return; stopRingingSound(); playPickupClick(); isCallConnected=true; document.getElementById("call-status").innerText="Connected"; callTimerInterval=setInterval(()=>{ callSeconds++; const m=String(Math.floor(callSeconds/60)).padStart(2,'0'), s=String(Math.floor(callSeconds%60)).padStart(2,'0'); document.getElementById("call-timer").innerText=`${m}:${s}`; },1000); initSpeechRecognition(); speakCarl("Hey! Carl here. What's on your mind?"); }, d); }
 function endCall() { try{ isCallActive=false; isCallConnected=false; stopFacetime(); if(ringTimeout) clearTimeout(ringTimeout); stopRingingSound(); if(callTimerInterval) clearInterval(callTimerInterval); if('speechSynthesis' in window) window.speechSynthesis.cancel(); if(callAbortController) callAbortController.abort(); if(recognition) { try{ recognition.stop(); }catch(e){} recognition=null; } document.getElementById("call-timer").innerText="00:00"; document.getElementById("call-status").innerText="Call Ended"; switchView('view-chat'); }catch(e){switchView('view-chat');} }
 function toggleMute() { isMuted=!isMuted; const b=document.getElementById("mute-btn"); if(isMuted) { b.style.opacity="0.4"; if(recognition) try{recognition.stop();}catch(e){} } else { b.style.opacity="1"; if(recognition&&isCallActive&&isCallConnected) try{recognition.start();}catch(e){} } }
 function toggleSpeaker() { isSpeakerOn=!isSpeakerOn; document.getElementById("speaker-btn").style.opacity=isSpeakerOn?"1":"0.4"; }
