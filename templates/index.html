@@ -51,8 +51,9 @@
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
                     <img src="/static/icons/Friends.png" class="pc-nav-btn" onclick="switchView('view-friends')" alt="Friends" draggable="false">
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
-                    <img src="/static/icons/Shop .png" class="pc-nav-btn" onclick="switchView('view-shop')" alt="Shop" draggable="false">
                     <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call" draggable="false">
+                    <img src="/static/icons/Shop .png" class="pc-nav-btn" onclick="switchView('view-shop')" alt="Shop" draggable="false">
+                    <img src="/static/icons/Inventory.png" class="pc-nav-btn" onclick="switchView('view-inventory')" alt="Inventory" draggable="false">
                 </div>
                 
                 <!-- Collapsed PC Buttons -->
@@ -61,8 +62,9 @@
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search" draggable="false">
                     <img src="/static/icons/FriendsIcon.png" class="mini-nav-btn" onclick="switchView('view-friends')" alt="Friends" title="Friends" draggable="false">
                     <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games" draggable="false">
-                    <img src="/static/icons/ShopIcon.png" class="mini-nav-btn" onclick="switchView('view-shop')" alt="Shop" title="Shop" draggable="false">
                     <img src="/static/icons/CallIcon.png" class="mini-nav-btn" onclick="startCall()" alt="Call" title="Call" draggable="false">
+                    <img src="/static/icons/ShopIcon.png" class="mini-nav-btn" onclick="switchView('view-shop')" alt="Shop" title="Shop" draggable="false">
+                    <img src="/static/icons/InventoryIcon.png" class="mini-nav-btn" onclick="switchView('view-inventory')" alt="Inventory" title="Inventory" draggable="false">
                 </div>
             </div>
 
@@ -125,6 +127,7 @@
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
                     <div id="dm-header-avatar" class="dm-header-avatar-container"></div>
                     <h1 id="dm-header-name">Friend</h1>
+                    <button class="dm-call-btn" onclick="startFriendCall()" title="Start Voice Call">📞</button>
                 </div>
                 <div id="dm-chat-log" class="dm-chat-log"></div>
                 <div class="dm-input-wrapper">
@@ -177,6 +180,27 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
+            <!-- INVENTORY VIEW -->
+            <div id="view-inventory" class="view">
+                <div class="inventory-layout">
+                    <!-- Left: Main Items -->
+                    <div class="inv-main">
+                        <button class="back-btn" onclick="switchView('view-chat')">←</button>
+                        <div class="inv-grid" id="inventory-items-container">
+                            <!-- Items load here. If empty, the text below shows via JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Saved Presets Panel -->
+                    <div class="inv-presets-panel">
+                        <h1 class="inv-title">Inventory</h1>
+                        <h2 class="inv-presets-title">Saved Presets</h2>
+                        <button class="inv-add-preset-btn" onclick="addPreset()">+ Add New Preset</button>
+                        <div id="presets-list" class="presets-list"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- SETTINGS VIEW TAB -->
             <div id="view-settings" class="view">
                 <div class="settings-header"><h1>Settings</h1></div>
@@ -203,7 +227,7 @@
                             1. Go to Google AI Studio (aistudio.google.com).<br>
                             2. Sign in with your Google account.<br>
                             3. Click on <strong>Get API key</strong> in the top left corner.<br>
-                            4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats and calling!
+                            4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats!
                         </p>
                     </div>
                     <div class="settings-row vertical-on-mobile">
@@ -243,26 +267,6 @@
                     <div class="social-link"><img src="/static/icons/YouTubeIcon.png" alt="YouTube" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> @CarlAIApp</div>
                     <div class="social-link"><img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> https://discord.gg/kkq7gPPqMB</div>
                 </div>
-            </div>
-
-            <!-- CARL AI CALL VIEW -->
-            <div id="view-call" class="view">
-                <div class="call-top-section">
-                    <h1>Carl AI</h1>
-                    <div id="call-timer">00:00</div>
-                    <div id="call-status" style="display: none;">Calling Carl...</div>
-                </div>
-                
-                <div class="call-bottom-section">
-                    <div class="call-option-row">
-                        <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" draggable="false" />
-                        <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" draggable="false" />
-                    </div>
-                    <div class="call-option-row">
-                        <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn wide-end-btn" onclick="endCall()" draggable="false" />
-                    </div>
-                </div>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
             <!-- GAMES VIEW -->
