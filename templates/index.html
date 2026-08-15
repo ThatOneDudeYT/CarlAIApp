@@ -220,13 +220,13 @@
             <div id="view-call" class="view">
                 <div class="call-header">
                     <h1>Carl AI</h1>
-                    <div id="call-status" style="display: none;">Calling Carl...</div>
                     <div id="call-timer">00:00</div>
                 </div>
+                <div id="call-status" style="display: none;">Calling Carl...</div>
+                
                 <div class="call-controls">
                     <div class="call-option-row">
                         <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" draggable="false" />
-                        <img src="/static/icons/Facetime.png" id="facetime-btn" alt="Facetime" class="call-img-btn" onclick="toggleFacetime()" style="opacity: 0.4;" draggable="false" />
                         <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" draggable="false" />
                     </div>
                     <div class="call-option-row">
@@ -242,9 +242,10 @@
                 <video id="fc-local-video" autoplay playsinline muted></video>
                 <div class="call-header">
                     <h1 id="fc-title">Friend Name</h1>
-                    <div id="fc-status" style="display: none;">Calling...</div>
                     <div id="fc-timer">00:00</div>
                 </div>
+                <div id="fc-status" style="display: none;">Calling...</div>
+
                 <div class="call-controls" id="fc-controls">
                     <div class="call-option-row">
                         <img src="/static/icons/SpeakerButton.png" id="fc-speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleFcSpeaker()" draggable="false" />
