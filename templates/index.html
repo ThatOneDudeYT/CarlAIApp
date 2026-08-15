@@ -13,6 +13,7 @@
 </head>
 <body class="dark-mode">
 
+    <!-- AUTH / SIGN-IN OVERLAY -->
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">
             <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo" draggable="false">
@@ -31,7 +32,10 @@
         </div>
     </div>
 
+    <!-- MAIN APP CONTAINER -->
     <div class="app-container">
+        
+        <!-- DESKTOP SIDEBAR -->
         <aside class="desktop-sidebar expanded" id="desktop-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
@@ -39,39 +43,46 @@
                 </div>
                 <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn">❮</button>
             </div>
+            
             <div class="sidebar-nav">
+                <!-- Expanded PC Buttons -->
                 <div class="full-nav-items">
                     <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat" draggable="false">
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
                     <img src="/static/icons/Friends.png" class="pc-nav-btn" onclick="switchView('view-friends')" alt="Friends" draggable="false">
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
-                    <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call" draggable="false">
                 </div>
+                
+                <!-- Collapsed PC Buttons -->
                 <div class="mini-nav-items">
                     <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat" draggable="false">
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search" draggable="false">
                     <img src="/static/icons/FriendsIcon.png" class="mini-nav-btn" onclick="switchView('view-friends')" alt="Friends" title="Friends" draggable="false">
                     <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games" draggable="false">
-                    <img src="/static/icons/CallIcon.png" class="mini-nav-btn" onclick="startCall()" alt="Call" title="Call" draggable="false">
                 </div>
             </div>
+
             <div class="sidebar-chats">
                 <h3 class="chats-header">Chats</h3>
                 <div id="saved-chats-list"></div>
             </div>
+            
             <div class="sidebar-footer">
                 <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="switchView('view-settings')" draggable="false">
             </div>
         </aside>
 
+        <!-- MAIN CONTENT AREA -->
         <main class="main-content">
+            
+            <!-- TOP-RIGHT PROFILE WIDGET -->
             <div class="top-profile-bar" id="top-profile-bar">
                 <div class="burger-wallet">🍔 <span id="burger-count">100</span></div>
                 <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar" draggable="false">
                 <span id="header-user-name" class="top-profile-name">Guest</span>
             </div>
 
-            <!-- CHAT VIEW -->
+            <!-- CHAT VIEW (For Carl AI) -->
             <div id="view-chat" class="view active startup-active">
                 <div id="glow-bg" class="glow-bg"></div>
                 <div id="startup-screen" class="startup-screen">
@@ -101,13 +112,12 @@
                 </div>
             </div>
 
-            <!-- DM VIEW -->
+            <!-- DIRECT MESSAGING VIEW (For Friends) -->
             <div id="view-dm" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
                     <div id="dm-header-avatar" class="dm-header-avatar-container"></div>
                     <h1 id="dm-header-name">Friend</h1>
-                    <button class="dm-call-btn" onclick="startFriendCall()" title="Start Voice Call">📞</button>
                 </div>
                 <div id="dm-chat-log" class="dm-chat-log"></div>
                 <div class="dm-input-wrapper">
@@ -148,7 +158,7 @@
                 </div>
             </div>
 
-            <!-- SETTINGS VIEW -->
+            <!-- SETTINGS VIEW TAB -->
             <div id="view-settings" class="view">
                 <div class="settings-header"><h1>Settings</h1></div>
                 <div class="settings-content-grid">
@@ -174,7 +184,7 @@
                             1. Go to Google AI Studio (aistudio.google.com).<br>
                             2. Sign in with your Google account.<br>
                             3. Click on <strong>Get API key</strong> in the top left corner.<br>
-                            4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats and voice calling!
+                            4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats!
                         </p>
                     </div>
                     <div class="settings-row vertical-on-mobile">
@@ -216,61 +226,7 @@
                 </div>
             </div>
 
-            <!-- CARL AI CALL VIEW -->
-            <div id="view-call" class="view">
-                <div class="call-top-section">
-                    <h1>Carl AI</h1>
-                    <div id="call-timer">00:00</div>
-                    <div id="call-status" style="display: none;">Calling Carl...</div>
-                </div>
-                
-                <div class="call-bottom-section">
-                    <div class="call-option-row">
-                        <button class="call-icon-btn" onclick="toggleSpeaker()">
-                            <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" draggable="false" />
-                        </button>
-                        <button class="call-icon-btn" onclick="toggleMute()">
-                            <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" draggable="false" />
-                        </button>
-                    </div>
-                    <button class="call-end-btn" onclick="endCall()">
-                        <img src="/static/icons/EndCallButton.png" alt="End Call" draggable="false" />
-                    </button>
-                </div>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
-            </div>
-
-            <!-- FRIEND CALL VIEW (WebRTC) -->
-            <div id="view-friend-call" class="view">
-                <video id="fc-remote-video" autoplay playsinline></video>
-                <video id="fc-local-video" autoplay playsinline muted></video>
-                
-                <div class="call-top-section">
-                    <h1 id="fc-title">Friend Name</h1>
-                    <div id="fc-timer">00:00</div>
-                    <div id="fc-status" style="display: none;">Calling...</div>
-                </div>
-
-                <div class="call-bottom-section">
-                    <div class="call-option-row">
-                        <button class="call-icon-btn" onclick="toggleFcSpeaker()">
-                            <img src="/static/icons/SpeakerButton.png" id="fc-speaker-btn" alt="Speaker" draggable="false" />
-                        </button>
-                        <button class="call-icon-btn" onclick="toggleFcVideo()">
-                            <img src="/static/icons/Facetime.png" id="fc-facetime-btn" alt="Facetime" style="opacity: 0.4;" draggable="false" />
-                        </button>
-                        <button class="call-icon-btn" onclick="toggleFcMute()">
-                            <img src="/static/icons/MuteButtonIcon.png" id="fc-mute-btn" alt="Mute" draggable="false" />
-                        </button>
-                    </div>
-                    <button class="call-end-btn" onclick="endFriendCall()">
-                        <img src="/static/icons/EndCallButton.png" alt="End Call" draggable="false" />
-                    </button>
-                </div>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
-            </div>
-
-            <!-- GAMES MENU VIEW -->
+            <!-- GAMES VIEW -->
             <div id="view-games" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
@@ -303,7 +259,7 @@
                 </div>
             </div>
 
-            <!-- BURGER CLICKER -->
+            <!-- BURGER CLICKER VIEW -->
             <div id="view-burgerclicker" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Burger Clicker</h1></div>
                 <div class="clicker-arena">
@@ -327,7 +283,7 @@
                 </div>
             </div>
 
-            <!-- BLACKJACK -->
+            <!-- BLACKJACK VIEW -->
             <div id="view-blackjack" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Blackjack</h1></div>
                 <div id="bj-status" class="game-status">Place your bet and Deal!</div>
@@ -343,7 +299,7 @@
                 <button class="reset-btn" onclick="initBlackjack()">Deal</button>
             </div>
 
-            <!-- ROCK PAPER SCISSORS -->
+            <!-- ROCK PAPER SCISSORS VIEW -->
             <div id="view-rps" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Rock Paper Scissors</h1></div>
                 <div id="rps-status" class="game-status">Choose Your Move!</div>
@@ -360,7 +316,7 @@
                 <button class="reset-btn" onclick="initRps()">Reset Score</button>
             </div>
 
-            <!-- TIC TAC TOE -->
+            <!-- TIC TAC TOE VIEW -->
             <div id="view-tictactoe" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Tic Tac Toe</h1></div>
                 <div id="ttt-status" class="game-status">Your Turn (X)</div>
@@ -372,7 +328,7 @@
                 <button class="reset-btn" onclick="initTicTacToe()">Restart Game</button>
             </div>
 
-            <!-- HANGMAN -->
+            <!-- HANGMAN VIEW -->
             <div id="view-hangman" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Hangman</h1></div>
                 <div id="hm-status" class="game-status">Loading Word...</div>
@@ -399,7 +355,7 @@
                 <button class="reset-btn" onclick="initHangman()">Restart Game</button>
             </div>
 
-            <!-- CONNECT FOUR -->
+            <!-- CONNECT FOUR VIEW -->
             <div id="view-connectfour" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Connect Four</h1></div>
                 <div id="c4-status" class="game-status">Your Turn (Red)</div>
@@ -412,7 +368,7 @@
                 <button class="reset-btn" onclick="initConnectFour()">Restart Game</button>
             </div>
 
-            <!-- BATTLESHIP -->
+            <!-- BATTLESHIP VIEW -->
             <div id="view-battleship" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Battleship</h1></div>
                 <div id="bs-status" class="game-status">Place your 4-length ship</div>
@@ -424,7 +380,7 @@
                 <button class="reset-btn" onclick="initBattleship()">Restart Game</button>
             </div>
 
-            <!-- CHECKERS -->
+            <!-- CHECKERS VIEW -->
             <div id="view-checkers" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Checkers</h1></div>
                 <div id="chk-status" class="game-status">Your Turn (Red)</div>
@@ -432,7 +388,7 @@
                 <button class="reset-btn" onclick="initCheckers()">Restart Game</button>
             </div>
 
-            <!-- CHESS -->
+            <!-- CHESS VIEW -->
             <div id="view-chess" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Chess</h1></div>
                 <div id="chs-status" class="game-status">Your Turn (White)</div>
@@ -442,22 +398,6 @@
 
         </main>
     </div>
-
-    <!-- FRIEND INCOMING CALL MODAL -->
-    <div id="friend-call-modal" class="friend-call-modal hidden">
-        <div class="call-box">
-            <div id="friend-call-avatar" class="call-avatar"></div>
-            <h2 id="friend-call-name">Calling...</h2>
-            <p id="friend-call-status">Connecting...</p>
-            <div class="friend-call-actions">
-                <button id="accept-call-btn" class="call-btn accept" onclick="answerFriendCall()">Answer</button>
-                <button id="decline-call-btn" class="call-btn decline" onclick="declineFriendCall()">Decline</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Hidden element to route friend audio safely without dropping the microphone -->
-    <audio id="remote-audio" autoplay playsinline style="position: absolute; width: 0; height: 0; visibility: hidden; pointer-events: none;"></audio>
 
     <script src="/static/script.js"></script>
     <script src="/static/games.js"></script>
