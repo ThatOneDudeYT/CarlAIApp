@@ -32,9 +32,7 @@ let pendingImageBase64 = null, pendingImageMime = null, pendingImageSrc = null;
 let pendingDmImageBase64 = null, pendingDmImageMime = null, pendingDmImageSrc = null, currentDmUser = null; 
 let isDM = false, currentDmUnsubscribe = null;
 
-// --- BURGER ECONOMY STATE ---
 let userBurgers = 100, clickerBurgers = 0, rebirths = 0, clickPower = 1, autoChefs = 0, burgerStands = 0, burgerFactories = 0;   
-
 function getMultiplier() { return 1 + (rebirths * 1.0); }
 function getClickValue() { return (clickPower * Math.floor(1 + (clickPower * 0.1))) * getMultiplier(); }
 function getChefPower() { return Math.floor(1 + (autoChefs * 0.1)); }
@@ -43,28 +41,18 @@ function getFactoryPower() { return Math.floor(100 + (burgerFactories * 1)); }
 function getBps() { return ((autoChefs * getChefPower()) + (burgerStands * getStandPower()) + (burgerFactories * getFactoryPower())) * getMultiplier(); }
 
 function updateBurgerUI() {
-    const headerCount = document.getElementById("burger-count");
-    if(headerCount) headerCount.innerText = Math.floor(userBurgers).toLocaleString();
-    const clickerCount = document.getElementById("clicker-score-text");
-    if(clickerCount) clickerCount.innerText = Math.floor(clickerBurgers).toLocaleString();
+    const headerCount = document.getElementById("burger-count"); if(headerCount) headerCount.innerText = Math.floor(userBurgers).toLocaleString();
+    const clickerCount = document.getElementById("clicker-score-text"); if(clickerCount) clickerCount.innerText = Math.floor(clickerBurgers).toLocaleString();
 }
 
-setInterval(() => {
-    let bps = getBps();
-    if (bps > 0) { clickerBurgers += bps; updateBurgerUI(); }
-}, 1000);
-
-// =========================================================================
-// --- START-UP SCREEN TYPING ANIMATION ---
-// =========================================================================
+setInterval(() => { let bps = getBps(); if (bps > 0) { clickerBurgers += bps; updateBurgerUI(); } }, 1000);
 
 const normalPhrases = ["Ready When You Are", "What Time Is It?", "I Need Help With Math", "The Floor Is Yours!"];
 const rarePhrases = ["Mmmm Burgers", "I weigh 700 pounds", "67"];
 let typingTimeout = null;
 
 function initTypingAnimation() {
-    const titleEl = document.getElementById("startup-title");
-    if (!titleEl) return;
+    const titleEl = document.getElementById("startup-title"); if (!titleEl) return;
     if (typingTimeout) clearTimeout(typingTimeout);
     let isDeleting = false, currentText = "Ask Away!", charIndex = currentText.length; 
     titleEl.innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
@@ -75,30 +63,23 @@ function typeLoop(titleEl, currentText, charIndex, isDeleting) {
     let typingSpeed = isDeleting ? 45 : 65 + Math.random() * 40; 
     if (isDeleting) charIndex--; else charIndex++;
     titleEl.innerHTML = currentText.substring(0, charIndex) + '<span class="typing-cursor"></span>';
-    
-    if (!isDeleting && charIndex === currentText.length) {
-        typingSpeed = 2400; isDeleting = true;
-    } else if (isDeleting && charIndex === 0) {
-        isDeleting = false;
-        const pool = Math.random() < 0.10 ? rarePhrases : normalPhrases;
-        let newPhrase = currentText;
-        while (newPhrase === currentText) newPhrase = pool[Math.floor(Math.random() * pool.length)];
+    if (!isDeleting && charIndex === currentText.length) { typingSpeed = 2400; isDeleting = true; } 
+    else if (isDeleting && charIndex === 0) {
+        isDeleting = false; const pool = Math.random() < 0.10 ? rarePhrases : normalPhrases;
+        let newPhrase = currentText; while (newPhrase === currentText) newPhrase = pool[Math.floor(Math.random() * pool.length)];
         currentText = newPhrase; typingSpeed = 400;
     }
     typingTimeout = setTimeout(() => typeLoop(titleEl, currentText, charIndex, isDeleting), typingSpeed);
 }
 
 function hideStartupScreen() {
-    const startupScreen = document.getElementById("startup-screen");
-    const viewChat = document.getElementById("view-chat");
-    if (startupScreen) startupScreen.classList.add("hidden");
-    if (viewChat) viewChat.classList.remove("startup-active");
+    const startupScreen = document.getElementById("startup-screen"), viewChat = document.getElementById("view-chat");
+    if (startupScreen) startupScreen.classList.add("hidden"); if (viewChat) viewChat.classList.remove("startup-active");
     if (typingTimeout) clearTimeout(typingTimeout);
 }
 
 function showStartupScreen() {
-    const startupScreen = document.getElementById("startup-screen");
-    const viewChat = document.getElementById("view-chat");
+    const startupScreen = document.getElementById("startup-screen"), viewChat = document.getElementById("view-chat");
     if (startupScreen) { startupScreen.classList.remove("hidden"); initTypingAnimation(); }
     if (viewChat) viewChat.classList.add("startup-active");
 }
@@ -106,80 +87,46 @@ function showStartupScreen() {
 function hasValidApiKey() { return customApiKey && customApiKey.trim().length > 20; }
 
 window.addEventListener("DOMContentLoaded", () => {
-    initMobileNavIcons();
-    initTypingAnimation();
-    updateUsageUI();
-    updateBurgerUI();
-    
-    const oldNav = document.querySelector('.bottom-nav');
-    if (oldNav) oldNav.style.display = 'none';
-
+    initMobileNavIcons(); initTypingAnimation(); updateUsageUI(); updateBurgerUI();
+    const oldNav = document.querySelector('.bottom-nav'); if (oldNav) oldNav.style.display = 'none';
     if (!document.getElementById("mobile-hamburger-btn")) {
-        const hamburgerBtn = document.createElement("button");
-        hamburgerBtn.id = "mobile-hamburger-btn";
-        hamburgerBtn.className = "mobile-top-header";
+        const hamburgerBtn = document.createElement("button"); hamburgerBtn.id = "mobile-hamburger-btn"; hamburgerBtn.className = "mobile-top-header";
         hamburgerBtn.innerHTML = `<div class="hamburger-line"></div><div class="hamburger-line"></div><div class="hamburger-line"></div>`;
-        hamburgerBtn.onclick = toggleMobileSidebar; 
-        document.body.appendChild(hamburgerBtn);
+        hamburgerBtn.onclick = toggleMobileSidebar; document.body.appendChild(hamburgerBtn);
     }
-
     if (!document.getElementById("sidebar-overlay")) {
-        const overlay = document.createElement("div");
-        overlay.id = "sidebar-overlay"; overlay.className = "sidebar-overlay";
-        overlay.onclick = toggleMobileSidebar;
-        document.body.appendChild(overlay);
+        const overlay = document.createElement("div"); overlay.id = "sidebar-overlay"; overlay.className = "sidebar-overlay"; overlay.onclick = toggleMobileSidebar; document.body.appendChild(overlay);
     }
-    
-    const dmInput = document.getElementById("dm-input");
-    if (dmInput) dmInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendDmMessage(); });
-
-    const sendBtn = document.getElementById("send-btn");
-    if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-    const userInput = document.getElementById("user-input");
-    if (userInput) userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
+    const dmInput = document.getElementById("dm-input"); if (dmInput) dmInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendDmMessage(); });
+    const sendBtn = document.getElementById("send-btn"); if (sendBtn) sendBtn.addEventListener("click", sendMessage);
+    const userInput = document.getElementById("user-input"); if (userInput) userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 });
 
 function toggleMobileSidebar() {
-    const sidebar = document.querySelector('.desktop-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    if (sidebar) sidebar.classList.toggle('open');
-    if (overlay) overlay.classList.toggle('active');
+    const sidebar = document.querySelector('.desktop-sidebar'), overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.toggle('open'); if (overlay) overlay.classList.toggle('active');
 }
 
-// --- AUTHENTICATION ---
 auth.onAuthStateChanged(async (user) => {
     const overlay = document.getElementById('auth-overlay');
     if (user) {
-        firebaseUserId = user.uid;
-        currentUser = user.displayName || user.email.split('@')[0];
-        currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
-        if (overlay) overlay.classList.add('hidden');
-        await loadUserDataFromCloud();
-    } else {
-        firebaseUserId = null;
-        if (overlay) overlay.classList.remove('hidden');
-    }
+        firebaseUserId = user.uid; currentUser = user.displayName || user.email.split('@')[0]; currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
+        if (overlay) overlay.classList.add('hidden'); await loadUserDataFromCloud();
+    } else { firebaseUserId = null; if (overlay) overlay.classList.remove('hidden'); }
 });
 
-function signInWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(error => alert("Google Sign-In Error: " + error.message));
-}
+function signInWithGoogle() { const provider = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(provider).catch(error => alert("Google Sign-In Error: " + error.message)); }
 
 function handleLogin(e) {
     if (e) e.preventDefault();
-    const email = document.getElementById('auth-username').value.trim();
-    const pass = document.getElementById('auth-password').value;
-    
-    auth.signInWithEmailAndPassword(email, pass)
-        .then((userCredential) => { if (!userCredential.user.emailVerified) alert("Please check your inbox to verify your email address."); })
-        .catch(error => {
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
-                auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => {
-                    userCredential.user.sendEmailVerification().then(() => alert("Account created! Verification link sent to your email. Check your spam folder."));
-                }).catch(err => alert("Sign Up Error: " + err.message));
-            } else alert(error.message);
-        });
+    const email = document.getElementById('auth-username').value.trim(), pass = document.getElementById('auth-password').value;
+    auth.signInWithEmailAndPassword(email, pass).then((userCredential) => { if (!userCredential.user.emailVerified) alert("Please check your inbox to verify your email address."); })
+    .catch(error => {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
+            auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => { userCredential.user.sendEmailVerification().then(() => alert("Account created! Verification link sent to your email. Check your spam folder just in case.")); })
+            .catch(err => alert("Sign Up Error: " + err.message));
+        } else alert(error.message);
+    });
 }
 
 function handleSignOut() {
@@ -191,10 +138,7 @@ function handleSignOut() {
     });
 }
 
-// --- CLOUD DATABASE ---
-let myFriends = [];
-let myRequests = [];
-let mySentRequests = [];
+let myFriends = []; let myRequests = []; let mySentRequests = [];
 
 async function loadUserDataFromCloud() {
     if (!firebaseUserId) return;
@@ -204,26 +148,17 @@ async function loadUserDataFromCloud() {
             customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
             if (!isDM) activeChatId = data.activeChatId || null;
             applyTheme(data.theme || "dark");
-            
             userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0;
-            autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0;
-            clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
+            autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0; clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
             myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || [];
-            
             updateBurgerUI();
-            
-            if (data.avatar) currentUserAvatar = data.avatar;
-            if (data.username) currentUser = data.username;
+            if (data.avatar) currentUserAvatar = data.avatar; if (data.username) currentUser = data.username;
             updateProfileUI();
-            
             const keyInput = document.getElementById('user-api-key'); if (keyInput) keyInput.value = customApiKey;
             const usernameInput = document.getElementById('settings-username-input'); if (usernameInput) usernameInput.value = currentUser;
-            
             renderChatHistorySidebar(); updateUsageUI();
             if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
-        } else {
-            saveSessionData(); startNewChat();
-        }
+        } else { saveSessionData(); startNewChat(); }
     }, (error) => console.error("Error listening to user data:", error));
 }
 
@@ -237,7 +172,6 @@ function saveSessionData() {
     }, { merge: true }).catch(e => console.error("Error saving data:", e));
 }
 
-// --- USER PROFILE & SETTINGS ---
 function applyTheme(theme) {
     const body = document.body, themeSwitch = document.getElementById('theme-toggle-switch');
     if (theme === "light") { body.classList.remove("dark-mode"); body.classList.add("light-mode"); if (themeSwitch) themeSwitch.checked = true; } 
@@ -257,19 +191,15 @@ function updateProfileUI() {
 }
 
 function updateUsernameFromSettings() {
-    const input = document.getElementById("settings-username-input");
-    if (!input || !currentUser) return;
+    const input = document.getElementById("settings-username-input"); if (!input || !currentUser) return;
     const newName = input.value.trim();
     if (newName.length >= 3 && newName.length <= 20) { currentUser = newName; updateProfileUI(); saveSessionData(); } 
     else { alert("Username must be between 3 and 20 characters!"); input.value = currentUser || ""; }
 }
 
 function handleAvatarUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) { currentUserAvatar = e.target.result; updateProfileUI(); saveSessionData(); };
-    reader.readAsDataURL(file);
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader(); reader.onload = function(e) { currentUserAvatar = e.target.result; updateProfileUI(); saveSessionData(); }; reader.readAsDataURL(file);
 }
 
 function saveSettings() {
@@ -295,41 +225,25 @@ function getDifficulty() { const select = document.getElementById("difficulty-se
 
 function switchView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    const target = document.getElementById(viewId);
-    if (target) target.classList.add('active');
-
-    const sidebar = document.querySelector('.desktop-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
+    const target = document.getElementById(viewId); if (target) target.classList.add('active');
+    const sidebar = document.querySelector('.desktop-sidebar'), overlay = document.getElementById('sidebar-overlay');
     if (sidebar && sidebar.classList.contains('open')) sidebar.classList.remove('open');
     if (overlay && overlay.classList.contains('active')) overlay.classList.remove('active');
     
-    if (viewId !== 'view-dm') {
-        isDM = false;
-        if(currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
-    }
-
+    if (viewId !== 'view-dm') { isDM = false; if(currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; } }
     if (viewId === 'view-games') updateDifficultyPickerVisibility();
     else if (viewId === 'view-friends') fetchAllUsers();
     else if (viewId === 'view-burgerclicker') updateUpgradesUI();
 }
 
-// =========================================================================
-// --- GAMES LAUNCHER ROUTING ---
-// =========================================================================
-
 function selectGame(element, gameName) {
     document.querySelectorAll('.game-card-img').forEach(card => card.classList.remove('selected'));
-    element.classList.add('selected');
-    selectedGame = gameName;
-    updateDifficultyPickerVisibility();
+    element.classList.add('selected'); selectedGame = gameName; updateDifficultyPickerVisibility();
 }
 
 function updateDifficultyPickerVisibility() {
     const diffPicker = document.getElementById("difficulty-picker");
-    if (diffPicker) {
-        if (gamesWithDifficulty.includes(selectedGame)) diffPicker.style.display = "flex"; 
-        else diffPicker.style.display = "none"; 
-    }
+    if (diffPicker) diffPicker.style.display = gamesWithDifficulty.includes(selectedGame) ? "flex" : "none";
 }
 
 function launchGame() {
@@ -342,49 +256,28 @@ function launchGame() {
     else if (selectedGame === "Battleship") { switchView("view-battleship"); if(typeof initBattleship === 'function') initBattleship(); } 
     else if (selectedGame === "Checkers") { switchView("view-checkers"); if(typeof initCheckers === 'function') initCheckers(); } 
     else if (selectedGame === "Chess") { switchView("view-chess"); if(typeof initChess === 'function') initChess(); } 
-    else { alert(`Starting ${selectedGame}...`); }
+    else alert(`Starting ${selectedGame}...`);
 }
 
-// =========================================================================
-// --- BURGER CLICKER LOGIC ---
-// =========================================================================
-
 function clickBurger() {
-    let amount = getClickValue();
-    clickerBurgers += amount;
-    updateBurgerUI();
-    
-    const btn = document.getElementById("carl-clicker-btn");
-    const floater = document.createElement("div");
-    floater.className = "floating-number";
-    floater.innerText = "+" + amount.toLocaleString();
-    floater.style.left = (Math.random() * 80 + 10) + "%";
-    floater.style.top = (Math.random() * 80 + 10) + "%";
-    btn.appendChild(floater);
-    setTimeout(() => floater.remove(), 1000);
+    let amount = getClickValue(); clickerBurgers += amount; updateBurgerUI();
+    const btn = document.getElementById("carl-clicker-btn"), floater = document.createElement("div");
+    floater.className = "floating-number"; floater.innerText = "+" + amount.toLocaleString();
+    floater.style.left = (Math.random() * 80 + 10) + "%"; floater.style.top = (Math.random() * 80 + 10) + "%";
+    btn.appendChild(floater); setTimeout(() => floater.remove(), 1000);
 }
 
 function buyUpgrade(type) {
     let cost = 0;
-    if (type === 'click') {
-        cost = Math.floor(100 * Math.pow(1.5, clickPower - 1));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; } else { alert("Not enough Clicker Burgers!"); return; }
-    } else if (type === 'chef') {
-        cost = Math.floor(50 * Math.pow(1.15, autoChefs));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; } else { alert("Not enough Clicker Burgers!"); return; }
-    } else if (type === 'stand') {
-        cost = Math.floor(500 * Math.pow(1.15, burgerStands));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; } else { alert("Not enough Clicker Burgers!"); return; }
-    } else if (type === 'factory') {
-        cost = Math.floor(5000 * Math.pow(1.15, burgerFactories));
-        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; } else { alert("Not enough Clicker Burgers!"); return; }
-    }
+    if (type === 'click') { cost = Math.floor(100 * Math.pow(1.5, clickPower - 1)); if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; } else { alert("Not enough Burgers!"); return; } } 
+    else if (type === 'chef') { cost = Math.floor(50 * Math.pow(1.15, autoChefs)); if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; } else { alert("Not enough Burgers!"); return; } } 
+    else if (type === 'stand') { cost = Math.floor(500 * Math.pow(1.15, burgerStands)); if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; } else { alert("Not enough Burgers!"); return; } } 
+    else if (type === 'factory') { cost = Math.floor(5000 * Math.pow(1.15, burgerFactories)); if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; } else { alert("Not enough Burgers!"); return; } }
     updateBurgerUI(); updateUpgradesUI(); saveSessionData();
 }
 
 function exchangeBurgers() {
-    if (clickerBurgers >= 10000) { clickerBurgers -= 10000; userBurgers += 1; updateBurgerUI(); saveSessionData(); } 
-    else alert("You need 10,000 Clicker Burgers to make a trade!"); 
+    if (clickerBurgers >= 10000) { clickerBurgers -= 10000; userBurgers += 1; updateBurgerUI(); saveSessionData(); } else alert("You need 10,000 Clicker Burgers to make a trade!"); 
 }
 
 function rebirth() {
@@ -407,66 +300,54 @@ function updateUpgradesUI() {
     if(document.getElementById("factory-cost")) document.getElementById("factory-cost").innerText = Math.floor(5000 * Math.pow(1.15, burgerFactories)).toLocaleString();
     if(document.getElementById("factory-count")) document.getElementById("factory-count").innerText = burgerFactories.toLocaleString();
     if(document.getElementById("factory-output")) document.getElementById("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
-
     let bpsText = document.getElementById("bps-text"); if(bpsText) bpsText.innerText = getBps().toLocaleString();
     let rebirthsText = document.getElementById("rebirth-count"); if(rebirthsText) rebirthsText.innerText = rebirths.toLocaleString();
 }
 
-// =========================================================================
-// --- FRIENDS & CONTACTS SYSTEM ---
-// =========================================================================
+// --- FRIENDS & CONTACTS ---
 const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
-
-function getAvatarColor(str) {
-    let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    return avatarColors[Math.abs(hash) % avatarColors.length];
-}
-
+function getAvatarColor(str) { let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash); return avatarColors[Math.abs(hash) % avatarColors.length]; }
 function getAvatarHTML(user) {
     if (!user.avatar || user.avatar.includes('default-avatar.png')) {
-        const color = getAvatarColor(user.username);
-        const initial = user.username.charAt(0).toUpperCase();
+        const color = getAvatarColor(user.username), initial = user.username.charAt(0).toUpperCase();
         return `<div class="text-avatar" style="background-color: ${color};">${initial}</div>`;
     }
     return `<img class="friend-avatar" src="${user.avatar}" draggable="false">`;
 }
 
+let allUsersCache = [];
 async function fetchAllUsers() {
-    const list = document.getElementById("find-people-list");
-    if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
+    const list = document.getElementById("find-people-list"); if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
     try {
         if (firebaseUserId && db) {
-            const snapshot = await db.collection("users").get();
-            allUsersCache = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (doc.id !== firebaseUserId && data.username) {
-                    allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "" });
-                }
-            });
+            const snapshot = await db.collection("users").get(); allUsersCache = [];
+            snapshot.forEach(doc => { const data = doc.data(); if (doc.id !== firebaseUserId && data.username) allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "" }); });
         }
-    } catch (err) { console.error("Error fetching real users", err); }
+    } catch (err) { console.error("Error fetching users", err); }
     renderFriendsView();
 }
 
 function renderFriendsView() {
     const query = document.getElementById("friend-search-input").value.toLowerCase().trim();
     const findList = document.getElementById("find-people-list"), friendsList = document.getElementById("my-friends-list");
-    if (!findList || !friendsList) return;
-    
-    findList.innerHTML = ""; friendsList.innerHTML = "";
+    if (!findList || !friendsList) return; findList.innerHTML = ""; friendsList.innerHTML = "";
 
     const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
-    if (activeFriends.length === 0) { friendsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No friends yet.</p>"; } 
+    if (activeFriends.length === 0) friendsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No friends yet.</p>";
     else {
         activeFriends.forEach(user => {
             const item = document.createElement("div"); item.className = "friend-item";
-            item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div><button class="friend-msg-btn" onclick='openDirectMessage(${JSON.stringify(user)})'>Message</button>`;
+            item.innerHTML = `
+                <div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div>
+                <div style="display:flex; gap:8px;">
+                    <button class="friend-msg-btn" onclick='openDirectMessage(${JSON.stringify(user)})'>Message</button>
+                    <button class="friend-req-btn" style="border-color:#ef4444; color:#ef4444;" onclick="unfriendUser('${user.id}')">Unfriend</button>
+                </div>
+            `;
             friendsList.appendChild(item);
         });
     }
 
-    let searchResults = [];
     const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
     incomingReqs.forEach(user => {
         const item = document.createElement("div"); item.className = "friend-item";
@@ -475,32 +356,35 @@ function renderFriendsView() {
     });
 
     if (query) {
-        searchResults = allUsersCache.filter(u => u.username.toLowerCase().includes(query) && !myFriends.includes(u.id) && !myRequests.includes(u.id));
-        if (searchResults.length === 0 && incomingReqs.length === 0) { findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No users found.</p>"; } 
-        else {
-            searchResults.forEach(user => {
-                const item = document.createElement("div"); item.className = "friend-item";
-                const isSent = mySentRequests.includes(user.id);
-                const btnHTML = isSent ? `<button class="friend-msg-btn" style="opacity: 0.5;" disabled>Sent!</button>` : `<button class="friend-msg-btn" onclick="sendFriendRequest('${user.id}')">Add Friend</button>`;
-                item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div>${btnHTML}`;
-                findList.appendChild(item);
-            });
-        }
-    } else if (incomingReqs.length === 0) { findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>Search for a username above!</p>"; }
+        let searchResults = allUsersCache.filter(u => u.username.toLowerCase().includes(query) && !myFriends.includes(u.id) && !myRequests.includes(u.id));
+        if (searchResults.length === 0 && incomingReqs.length === 0) findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No users found.</p>";
+        else searchResults.forEach(user => {
+            const item = document.createElement("div"); item.className = "friend-item";
+            const isSent = mySentRequests.includes(user.id);
+            const btnHTML = isSent ? `<button class="friend-msg-btn" style="opacity: 0.5;" disabled>Sent!</button>` : `<button class="friend-msg-btn" onclick="sendFriendRequest('${user.id}')">Add Friend</button>`;
+            item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div>${btnHTML}`;
+            findList.appendChild(item);
+        });
+    } else if (incomingReqs.length === 0) findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>Search for a username above!</p>";
 }
 
 async function sendFriendRequest(targetId) {
-    if (!firebaseUserId) return;
-    mySentRequests.push(targetId); renderFriendsView();
+    if (!firebaseUserId) return; mySentRequests.push(targetId); renderFriendsView();
     await db.collection("users").doc(targetId).update({ friendRequests: firebase.firestore.FieldValue.arrayUnion(firebaseUserId) });
     await db.collection("users").doc(firebaseUserId).update({ sentRequests: firebase.firestore.FieldValue.arrayUnion(targetId) });
 }
 
 async function acceptRequest(requesterId) {
-    if (!firebaseUserId) return;
-    myRequests = myRequests.filter(id => id !== requesterId); myFriends.push(requesterId); renderFriendsView();
+    if (!firebaseUserId) return; myRequests = myRequests.filter(id => id !== requesterId); myFriends.push(requesterId); renderFriendsView();
     await db.collection("users").doc(firebaseUserId).update({ friendRequests: firebase.firestore.FieldValue.arrayRemove(requesterId), friends: firebase.firestore.FieldValue.arrayUnion(requesterId) });
     await db.collection("users").doc(requesterId).update({ sentRequests: firebase.firestore.FieldValue.arrayRemove(firebaseUserId), friends: firebase.firestore.FieldValue.arrayUnion(firebaseUserId) });
+}
+
+async function unfriendUser(targetId) {
+    if (!confirm("Are you sure you want to unfriend this user?")) return;
+    myFriends = myFriends.filter(id => id !== targetId); renderFriendsView();
+    await db.collection("users").doc(firebaseUserId).update({ friends: firebase.firestore.FieldValue.arrayRemove(targetId) });
+    await db.collection("users").doc(targetId).update({ friends: firebase.firestore.FieldValue.arrayRemove(firebaseUserId) });
 }
 
 function openDirectMessage(user) {
@@ -515,20 +399,34 @@ function openDirectMessage(user) {
         const log = document.getElementById("dm-chat-log"); log.innerHTML = "";
         snapshot.forEach(doc => {
             const data = doc.data(), isMe = data.senderId === firebaseUserId;
-            const msgDiv = document.createElement("div"); msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`;
+            const msgDiv = document.createElement("div"); msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`; msgDiv.dataset.id = doc.id;
             const contentDiv = document.createElement("div"); contentDiv.className = "dm-message-content";
             
             if (data.text) { const textSpan = document.createElement("span"); textSpan.className = "dm-message-text"; textSpan.innerText = data.text; contentDiv.appendChild(textSpan); }
             if (data.imageSrc) { const img = document.createElement("img"); img.src = data.imageSrc; img.className = "chat-image"; img.draggable = false; contentDiv.appendChild(img); }
             
+            const msgWrapper = document.createElement("div");
+            msgWrapper.style.display = "flex"; msgWrapper.style.alignItems = "center"; msgWrapper.style.gap = "8px";
+
+            if (isMe) {
+                const delBtn = document.createElement("button");
+                delBtn.innerHTML = "✕"; delBtn.className = "dm-del-btn"; delBtn.title = "Delete Message";
+                delBtn.onclick = () => deleteDmMessage(doc.id);
+                msgWrapper.appendChild(delBtn); msgWrapper.appendChild(contentDiv);
+            } else { msgWrapper.appendChild(contentDiv); }
+
             const avatarObj = isMe ? { username: currentUser, avatar: currentUserAvatar } : currentDmUser;
             const avatarWrapper = document.createElement("div"); avatarWrapper.className = "dm-message-avatar"; avatarWrapper.innerHTML = getAvatarHTML(avatarObj);
             
-            msgDiv.appendChild(avatarWrapper); msgDiv.appendChild(contentDiv); log.appendChild(msgDiv);
+            msgDiv.appendChild(avatarWrapper); msgDiv.appendChild(msgWrapper); log.appendChild(msgDiv);
         });
         log.scrollTop = log.scrollHeight;
     });
     switchView('view-dm');
+}
+
+async function deleteDmMessage(msgId) {
+    if(confirm("Delete this message?")) await db.collection("dms").doc(activeChatId).collection("messages").doc(msgId).delete();
 }
 
 function processDmFile(file) {
@@ -561,20 +459,14 @@ async function sendDmMessage() {
     await db.collection("dms").doc(activeChatId).collection("messages").add({ text: text, imageSrc: imageSrc || null, senderId: firebaseUserId, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
 }
 
-// =========================================================================
-// --- GENERAL APP LOGIC & CHAT ---
-// =========================================================================
-
+// --- CHAT LOGIC ---
 function checkDailyMessageLimit() {
     const today = new Date().toISOString().split('T')[0];
     let lastDate = localStorage.getItem("carl_last_msg_date");
     let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
     if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
     
-    if (count >= 10 && !hasValidApiKey()) {
-        alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
-        switchView('view-settings'); return false;
-    }
+    if (count >= 10 && !hasValidApiKey()) { alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!"); switchView('view-settings'); return false; }
     return true;
 }
 
@@ -585,8 +477,7 @@ function startNewChat() {
     const log = document.getElementById("chat-log"); if (log) log.innerHTML = '';
     const input = document.getElementById("user-input"); if (input) input.value = "";
     
-    clearPendingImage();
-    document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
+    clearPendingImage(); document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
     showStartupScreen(); saveSessionData(); switchView('view-chat');
 }
 
@@ -597,35 +488,22 @@ function loadChat(chatId) {
     if (target) {
         activeChatId = target.id; const log = document.getElementById("chat-log"); if (log) log.innerHTML = target.html;
         chatHistory = [...target.apiHistory];
-        
-        if (chatHistory.length > 0) hideStartupScreen();
-        else { document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>'; showStartupScreen(); }
+        if (chatHistory.length > 0) hideStartupScreen(); else { document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>'; showStartupScreen(); }
         saveSessionData(); switchView('view-chat');
     }
 }
 
 async function sendMessage() {
-    const input = document.getElementById("user-input");
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text && !pendingImageBase64) return;
+    const input = document.getElementById("user-input"); if (!input) return;
+    const text = input.value.trim(); if (!text && !pendingImageBase64) return;
 
-    if (text.toLowerCase().trim() === "/whomadeyou") {
-        hideStartupScreen();
-        appendMessage(text, "user", pendingImageSrc);
-        appendMessage("Emmett Breen", "carl");
-        input.value = ""; clearPendingImage();
-        return;
-    }
-
+    if (text.toLowerCase().trim() === "/whomadeyou") { hideStartupScreen(); appendMessage(text, "user", pendingImageSrc); appendMessage("Emmett Breen", "carl"); input.value = ""; clearPendingImage(); return; }
     if (!checkDailyMessageLimit()) return;
+
     hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
     
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const payload = { 
-        message: text || "Look at this image.", history: chatHistory, image_b64: pendingImageBase64, image_mime: pendingImageMime, 
-        api_key: customApiKey, user_time: userLocalTime, user_timezone: userTimezone, client_time: `${userLocalTime} (${userTimezone})`
-    };
+    const payload = { message: text || "Look at this image.", history: chatHistory, image_b64: pendingImageBase64, image_mime: pendingImageMime, api_key: customApiKey, user_time: userLocalTime, user_timezone: userTimezone, client_time: `${userLocalTime} (${userTimezone})` };
 
     input.value = ""; clearPendingImage();
     const log = document.getElementById("chat-log"), carlBubble = document.createElement("div");
@@ -663,8 +541,7 @@ async function sendMessage() {
         }
 
         while (true) {
-            const { done, value } = await reader.read();
-            if (done) { streamFinished = true; break; }
+            const { done, value } = await reader.read(); if (done) { streamFinished = true; break; }
             const chunk = decoder.decode(value, { stream: true }); fullResponse += chunk;
             for (let bad_prefix of ["Carl:", "carl:", "Carl - ", "Assistant:"]) { if (fullResponse.startsWith(bad_prefix)) { fullResponse = fullResponse.substring(bad_prefix.length).trimStart(); displayBuffer = ""; } }
             if (!isTypingStream) { isTypingStream = true; renderTypewriter(); }
@@ -682,6 +559,7 @@ function searchChats() {
     const input = document.createElement("input"); input.type = "text"; input.placeholder = "Search messages or titles..."; input.style.width = "100%"; input.style.padding = "14px"; input.style.borderRadius = "12px"; input.style.border = "1px solid var(--border-color)"; input.style.backgroundColor = "var(--bg-input)"; input.style.color = "var(--text-main)"; input.style.outline = "none"; input.style.fontSize = "16px"; input.style.marginBottom = "16px";
     const results = document.createElement("div"); results.style.maxHeight = "250px"; results.style.overflowY = "auto"; results.style.display = "flex"; results.style.flexDirection = "column"; results.style.gap = "8px";
     const closeBtn = document.createElement("button"); closeBtn.innerText = "Close"; closeBtn.style.padding = "12px"; closeBtn.style.width = "100%"; closeBtn.style.marginTop = "16px"; closeBtn.style.borderRadius = "12px"; closeBtn.style.border = "none"; closeBtn.style.backgroundColor = "#ef4444"; closeBtn.style.color = "#fff"; closeBtn.style.fontSize = "18px"; closeBtn.style.cursor = "pointer"; closeBtn.onclick = () => modal.remove();
+
     input.oninput = (e) => {
         results.innerHTML = ""; const q = e.target.value.toLowerCase().trim(); if (!q) return;
         const matched = chatsHistory.filter(c => c.title.toLowerCase().includes(q) || c.apiHistory.some(m => m.content.toLowerCase().includes(q)));
@@ -697,14 +575,8 @@ function searchChats() {
 }
 
 function initMobileNavIcons() {
-    const mobileChatBtn = document.getElementById("mobile-nav-chat");
-    const mobileCallBtn = document.getElementById("mobile-nav-call");
-    const mobileGamesBtn = document.getElementById("mobile-nav-games");
-    const mobileSettingsBtn = document.getElementById("mobile-nav-settings");
-    if (mobileChatBtn) mobileChatBtn.onclick = () => startNewChat();
-    if (mobileCallBtn) mobileCallBtn.onclick = () => startCall();
-    if (mobileGamesBtn) mobileGamesBtn.onclick = () => switchView('view-games');
-    if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => switchView('view-settings');
+    const mobileChatBtn = document.getElementById("mobile-nav-chat"), mobileCallBtn = document.getElementById("mobile-nav-call"), mobileGamesBtn = document.getElementById("mobile-nav-games"), mobileSettingsBtn = document.getElementById("mobile-nav-settings");
+    if (mobileChatBtn) mobileChatBtn.onclick = () => startNewChat(); if (mobileCallBtn) mobileCallBtn.onclick = () => startCall(); if (mobileGamesBtn) mobileGamesBtn.onclick = () => switchView('view-games'); if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => switchView('view-settings');
 }
 
 function archiveActiveChat() {
@@ -714,8 +586,7 @@ function archiveActiveChat() {
         let existing = chatsHistory.find(c => c.id === activeChatId);
         if (existing) { existing.html = log.innerHTML; existing.apiHistory = [...chatHistory]; } 
         else {
-            const firstMsgText = bubbles[0].innerText || "Chat Session";
-            const newTitle = firstMsgText.length > 20 ? firstMsgText.substring(0, 20) + "..." : firstMsgText;
+            const firstMsgText = bubbles[0].innerText || "Chat Session"; const newTitle = firstMsgText.length > 20 ? firstMsgText.substring(0, 20) + "..." : firstMsgText;
             chatsHistory.unshift({ id: activeChatId, title: newTitle, html: log.innerHTML, apiHistory: [...chatHistory], pinned: false });
         }
     }
@@ -734,21 +605,13 @@ function renderChatHistorySidebar() {
     sortedChats.forEach(chat => {
         const item = document.createElement("div"); item.className = "saved-chat-item";
         const titleContainer = document.createElement("div"); titleContainer.className = "chat-title-text";
-        if (chat.pinned) {
-            const pinIcon = document.createElement("img"); pinIcon.className = "pinned-icon-img";
-            pinIcon.src = "/static/icons/PinIcon.png"; pinIcon.alt = "Pinned"; pinIcon.draggable = false;
-            titleContainer.appendChild(pinIcon);
-        }
-        const titleText = document.createElement("span"); titleText.innerText = chat.title;
-        titleContainer.appendChild(titleText); titleContainer.onclick = () => loadChat(chat.id);
+        if (chat.pinned) { const pinIcon = document.createElement("img"); pinIcon.className = "pinned-icon-img"; pinIcon.src = "/static/icons/PinIcon.png"; pinIcon.alt = "Pinned"; pinIcon.draggable = false; titleContainer.appendChild(pinIcon); }
+        const titleText = document.createElement("span"); titleText.innerText = chat.title; titleContainer.appendChild(titleText); titleContainer.onclick = () => loadChat(chat.id);
         const optionsBtn = document.createElement("button"); optionsBtn.className = "chat-options-btn"; optionsBtn.innerText = "⋮";
         const dropdown = document.createElement("div"); dropdown.className = "chat-dropdown-menu";
-        const editBtn = document.createElement("button"); editBtn.className = "chat-dropdown-item"; editBtn.innerText = "Edit Name";
-        editBtn.onclick = (e) => { e.stopPropagation(); editChatTitle(chat.id); dropdown.classList.remove('active'); };
-        const pinBtn = document.createElement("button"); pinBtn.className = "chat-dropdown-item"; pinBtn.innerText = chat.pinned ? "Unpin Chat" : "Pin Chat";
-        pinBtn.onclick = (e) => { e.stopPropagation(); togglePinChat(chat.id); dropdown.classList.remove('active'); };
-        const deleteBtn = document.createElement("button"); deleteBtn.className = "chat-dropdown-item delete"; deleteBtn.innerText = "Delete";
-        deleteBtn.onclick = (e) => { e.stopPropagation(); deleteChat(chat.id); dropdown.classList.remove('active'); };
+        const editBtn = document.createElement("button"); editBtn.className = "chat-dropdown-item"; editBtn.innerText = "Edit Name"; editBtn.onclick = (e) => { e.stopPropagation(); editChatTitle(chat.id); dropdown.classList.remove('active'); };
+        const pinBtn = document.createElement("button"); pinBtn.className = "chat-dropdown-item"; pinBtn.innerText = chat.pinned ? "Unpin Chat" : "Pin Chat"; pinBtn.onclick = (e) => { e.stopPropagation(); togglePinChat(chat.id); dropdown.classList.remove('active'); };
+        const deleteBtn = document.createElement("button"); deleteBtn.className = "chat-dropdown-item delete"; deleteBtn.innerText = "Delete"; deleteBtn.onclick = (e) => { e.stopPropagation(); deleteChat(chat.id); dropdown.classList.remove('active'); };
         dropdown.appendChild(editBtn); dropdown.appendChild(pinBtn); dropdown.appendChild(deleteBtn);
         optionsBtn.onclick = (e) => { e.stopPropagation(); document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => { if (menu !== dropdown) menu.classList.remove('active'); }); dropdown.classList.toggle('active'); };
         item.appendChild(titleContainer); item.appendChild(optionsBtn); item.appendChild(dropdown); container.appendChild(item);
@@ -780,10 +643,7 @@ function processFile(file) {
         reader.readAsDataURL(file);
     } else {
         const reader = new FileReader();
-        reader.onload = function(event) {
-            const text = event.target.result, input = document.getElementById("user-input");
-            if (input) input.value += `\n\`\`\`${file.name.split('.').pop() || ''}\n${text}\n\`\`\`\n`;
-        };
+        reader.onload = function(event) { const text = event.target.result, input = document.getElementById("user-input"); if (input) input.value += `\n\`\`\`${file.name.split('.').pop() || ''}\n${text}\n\`\`\`\n`; };
         reader.readAsText(file);
     }
 }
@@ -808,16 +668,13 @@ function showCopyToast() {
 }
 
 function formatMessage(text) {
-    let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
+    let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
     safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
         const displayLang = (lang || "CODE").toUpperCase(), encodedCode = encodeURIComponent(code);
         let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
         return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-language">${displayLang}</span><button class="copy-code-btn" data-code="${encodedCode}" onclick="copyCode(this)"><img src="/static/icons/CopyIcon.png" alt="Copy"></button></div><div class="code-block-body">${styledCode.trim()}</div></div>`;
     });
-    safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
-    return safeText;
+    safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>'); return safeText;
 }
 
 function appendMessage(msg, sender, imgSrc = null) {
@@ -835,8 +692,7 @@ let audioCtx = null, recognition = null, callAbortController = null, carlVoice =
 let isFacetimeActive = false, facetimeStream = null;
 
 function loadCarlVoice() {
-    if (!('speechSynthesis' in window)) return;
-    const voices = window.speechSynthesis.getVoices(); if (voices.length === 0) return;
+    if (!('speechSynthesis' in window)) return; const voices = window.speechSynthesis.getVoices(); if (voices.length === 0) return;
     carlVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google US English') || v.name.includes('Aaron') || v.name.includes('Daniel') || v.name.includes('Guy') || v.name.includes('Natural') || v.name.includes('Male'))) || voices.find(v => v.lang.startsWith('en')) || voices[0];
 }
 if ('speechSynthesis' in window) { window.speechSynthesis.onvoiceschanged = loadCarlVoice; loadCarlVoice(); }
