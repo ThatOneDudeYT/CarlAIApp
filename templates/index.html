@@ -236,6 +236,28 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
+            <!-- FRIEND CALL VIEW (WebRTC) -->
+            <div id="view-friend-call" class="view">
+                <video id="fc-remote-video" autoplay playsinline></video>
+                <video id="fc-local-video" autoplay playsinline muted></video>
+                <div class="call-header">
+                    <h1 id="fc-title">Friend Name</h1>
+                    <div id="fc-status">Calling...</div>
+                    <div id="fc-timer">00:00</div>
+                </div>
+                <div class="call-controls" id="fc-controls">
+                    <div class="call-option-row">
+                        <img src="/static/icons/SpeakerButton.png" id="fc-speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleFcSpeaker()" draggable="false" />
+                        <img src="/static/icons/MuteButtonIcon.png" id="fc-mute-btn" alt="Mute" class="call-img-btn" onclick="toggleFcMute()" draggable="false" />
+                    </div>
+                    <div class="call-option-row">
+                        <img src="/static/icons/Facetime.png" id="fc-facetime-btn" alt="Facetime" class="call-img-btn" onclick="toggleFcVideo()" style="opacity: 0.4;" draggable="false" />
+                        <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn" onclick="endFriendCall()" draggable="false" />
+                    </div>
+                </div>
+                <div class="copyright">@Dalted Copyright Issued 2026</div>
+            </div>
+
             <!-- GAMES MENU VIEW -->
             <div id="view-games" class="view">
                 <div class="games-header">
@@ -409,16 +431,15 @@
         </main>
     </div>
 
-    <!-- FRIEND CALL OVERLAY -->
+    <!-- FRIEND INCOMING CALL MODAL -->
     <div id="friend-call-modal" class="friend-call-modal hidden">
         <div class="call-box">
             <div id="friend-call-avatar" class="call-avatar"></div>
             <h2 id="friend-call-name">Calling...</h2>
             <p id="friend-call-status">Connecting...</p>
-            <audio id="remote-audio" autoplay playsinline></audio>
             <div class="friend-call-actions">
                 <button id="accept-call-btn" class="call-btn accept" onclick="answerFriendCall()">Answer</button>
-                <button id="decline-call-btn" class="call-btn decline" onclick="endFriendCall()">End Call</button>
+                <button id="decline-call-btn" class="call-btn decline" onclick="declineFriendCall()">Decline</button>
             </div>
         </div>
     </div>
