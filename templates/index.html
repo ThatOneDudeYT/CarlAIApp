@@ -51,6 +51,7 @@
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
                     <img src="/static/icons/Friends.png" class="pc-nav-btn" onclick="switchView('view-friends')" alt="Friends" draggable="false">
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
+                    <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call" draggable="false">
                 </div>
                 
                 <!-- Collapsed PC Buttons -->
@@ -59,6 +60,7 @@
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search" draggable="false">
                     <img src="/static/icons/FriendsIcon.png" class="mini-nav-btn" onclick="switchView('view-friends')" alt="Friends" title="Friends" draggable="false">
                     <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games" draggable="false">
+                    <img src="/static/icons/CallIcon.png" class="mini-nav-btn" onclick="startCall()" alt="Call" title="Call" draggable="false">
                 </div>
             </div>
 
@@ -184,7 +186,7 @@
                             1. Go to Google AI Studio (aistudio.google.com).<br>
                             2. Sign in with your Google account.<br>
                             3. Click on <strong>Get API key</strong> in the top left corner.<br>
-                            4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats!
+                            4. Generate a new API key, copy it, and paste it above to unlock unlimited chats and calling!
                         </p>
                     </div>
                     <div class="settings-row vertical-on-mobile">
@@ -224,6 +226,28 @@
                     <div class="social-link"><img src="/static/icons/YouTubeIcon.png" alt="YouTube" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> @CarlAIApp</div>
                     <div class="social-link"><img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> https://discord.gg/kkq7gPPqMB</div>
                 </div>
+            </div>
+
+            <!-- CARL AI CALL VIEW -->
+            <div id="view-call" class="view">
+                <video id="facetime-video" autoplay playsinline muted></video>
+                <div class="call-top-section">
+                    <h1>Carl AI</h1>
+                    <div id="call-timer">00:00</div>
+                    <div id="call-status" style="display: none;">Calling Carl...</div>
+                </div>
+                
+                <div class="call-bottom-section">
+                    <div class="call-option-row">
+                        <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" draggable="false" />
+                        <img src="/static/icons/Facetime.png" id="facetime-btn" alt="Facetime" class="call-img-btn" onclick="toggleFacetime()" style="opacity: 0.4;" draggable="false" />
+                        <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" draggable="false" />
+                    </div>
+                    <div class="call-option-row">
+                        <img src="/static/icons/EndCallButton.png" alt="End Call" class="call-img-btn wide-end-btn" onclick="endCall()" draggable="false" />
+                    </div>
+                </div>
+                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
             <!-- GAMES VIEW -->
