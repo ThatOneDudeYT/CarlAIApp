@@ -51,6 +51,7 @@
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
                     <img src="/static/icons/Friends.png" class="pc-nav-btn" onclick="switchView('view-friends')" alt="Friends" draggable="false">
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
+                    <img src="/static/icons/Shop .png" class="pc-nav-btn" onclick="switchView('view-shop')" alt="Shop" draggable="false">
                     <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call" draggable="false">
                 </div>
                 
@@ -60,6 +61,7 @@
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search" draggable="false">
                     <img src="/static/icons/FriendsIcon.png" class="mini-nav-btn" onclick="switchView('view-friends')" alt="Friends" title="Friends" draggable="false">
                     <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games" draggable="false">
+                    <img src="/static/icons/ShopIcon.png" class="mini-nav-btn" onclick="switchView('view-shop')" alt="Shop" title="Shop" draggable="false">
                     <img src="/static/icons/CallIcon.png" class="mini-nav-btn" onclick="startCall()" alt="Call" title="Call" draggable="false">
                 </div>
             </div>
@@ -79,9 +81,12 @@
             
             <!-- TOP-RIGHT PROFILE WIDGET -->
             <div class="top-profile-bar" id="top-profile-bar">
-                <div class="burger-wallet">🍔 <span id="burger-count">100</span></div>
-                <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar" draggable="false">
+                <div class="burger-wallet" onclick="switchView('view-shop')" style="cursor:pointer;" title="Visit Shop">🍔 <span id="burger-count">100</span></div>
+                <div class="avatar-frame-wrapper" id="header-avatar-wrapper">
+                    <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar" draggable="false">
+                </div>
                 <span id="header-user-name" class="top-profile-name">Guest</span>
+                <span id="header-user-badge" class="user-title-badge"></span>
             </div>
 
             <!-- CHAT VIEW (For Carl AI) -->
@@ -160,6 +165,18 @@
                 </div>
             </div>
 
+            <!-- SHOP VIEW -->
+            <div id="view-shop" class="view">
+                <div class="games-header">
+                    <button class="back-btn" onclick="switchView('view-chat')">←</button>
+                    <h1>Burger Shop</h1>
+                </div>
+                <div class="shop-content-scroll">
+                    <div class="shop-grid" id="shop-items-container"></div>
+                </div>
+                <div class="copyright">@Dalted Copyright Issued 2026</div>
+            </div>
+
             <!-- SETTINGS VIEW TAB -->
             <div id="view-settings" class="view">
                 <div class="settings-header"><h1>Settings</h1></div>
@@ -186,7 +203,7 @@
                             1. Go to Google AI Studio (aistudio.google.com).<br>
                             2. Sign in with your Google account.<br>
                             3. Click on <strong>Get API key</strong> in the top left corner.<br>
-                            4. Generate a new API key, copy it, and paste it above to unlock unlimited chats and calling!
+                            4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats and calling!
                         </p>
                     </div>
                     <div class="settings-row vertical-on-mobile">
@@ -230,7 +247,6 @@
 
             <!-- CARL AI CALL VIEW -->
             <div id="view-call" class="view">
-                <video id="facetime-video" autoplay playsinline muted></video>
                 <div class="call-top-section">
                     <h1>Carl AI</h1>
                     <div id="call-timer">00:00</div>
@@ -240,7 +256,6 @@
                 <div class="call-bottom-section">
                     <div class="call-option-row">
                         <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" draggable="false" />
-                        <img src="/static/icons/Facetime.png" id="facetime-btn" alt="Facetime" class="call-img-btn" onclick="toggleFacetime()" style="opacity: 0.4;" draggable="false" />
                         <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" class="call-img-btn" onclick="toggleMute()" draggable="false" />
                     </div>
                     <div class="call-option-row">
@@ -312,7 +327,7 @@
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Blackjack</h1></div>
                 <div id="bj-status" class="game-status">Place your bet and Deal!</div>
                 <div id="bj-bet-area" class="bj-bet-area"><label>Bet (🍔): </label><input type="number" id="bj-bet-input" value="10" min="10" max="10000"></div>
-                <div class="bj-arena">
+                <div class="bj-arena" id="bj-felt-arena">
                     <div class="bj-area"><div class="bj-label">Carl's Hand (<span id="bj-carl-score">?</span>)</div><div class="bj-cards" id="bj-carl-cards"></div></div>
                     <div class="bj-area"><div class="bj-label">Your Hand(s)</div><div id="bj-player-hands-container" class="bj-hands-container"></div></div>
                 </div>
