@@ -11,6 +11,7 @@ let isDM=false, currentDmUnsubscribe=null;
 // --- BURGER ECONOMY & SHOP INVENTORY ---
 let userBurgers=100, clickerBurgers=0, rebirths=0, clickPower=1, autoChefs=0, burgerStands=0, burgerFactories=0;   
 let inventory = [];
+let userPresets = [];
 let equipped = {
     persona: "default",
     bubble: "default",
@@ -24,7 +25,7 @@ let equipped = {
 
 function getMultiplier() { 
     let mult = 1 + (rebirths * 1.0);
-    if (equipped.goldenSpatula) mult *= 1.5; // Golden Spatula gives +50% passive boost!
+    if (equipped.goldenSpatula) mult *= 1.5; 
     return mult;
 }
 function getClickValue() { return (clickPower * Math.floor(1 + (clickPower * 0.1))) * getMultiplier(); }
@@ -39,7 +40,6 @@ function updateBurgerUI() {
 }
 setInterval(() => { let bps = getBps(); if (bps > 0) { clickerBurgers += bps; updateBurgerUI(); } }, 1000);
 
-// --- TYPING ANIMATION ---
 const normalPhrases=["Ready When You Are", "What Time Is It?", "I Need Help With Math", "The Floor Is Yours!"], rarePhrases=["Mmmm Burgers", "I weigh 700 pounds", "67"];
 let typingTimeout=null;
 function initTypingAnimation() {
@@ -76,7 +76,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
 function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
 
-// --- AUTHENTICATION ---
 auth.onAuthStateChanged(async (user) => {
     const ov = document.getElementById('auth-overlay');
     if (user) {
@@ -91,7 +90,7 @@ function handleLogin(e) {
     auth.signInWithEmailAndPassword(email, pass).then(c => { if (!c.user.emailVerified) alert("Please check your inbox to verify your email address."); })
     .catch(err => {
         if(err.code==='auth/user-not-found'||err.code==='auth/invalid-login-credentials'||err.code==='auth/invalid-credential') {
-            auth.createUserWithEmailAndPassword(email,pass).then(c=>{ c.user.sendEmailVerification().then(()=>alert("Account created! Verification link sent to your email. Check your spam folder.")); }).catch(e=>alert("Sign Up Error: "+e.message));
+            auth.createUserWithEmailAndPassword(email,pass).then(c=>{ c.user.sendEmailVerification().then(()=>alert("Account created! Verification link sent to your email.")); }).catch(e=>alert("Sign Up Error: "+e.message));
         } else alert(err.message);
     });
 }
@@ -100,7 +99,7 @@ function handleSignOut() {
         currentUser=null; currentUserAvatar="/static/icons/default-avatar.png"; customApiKey="";
         chatsHistory=[]; chatHistory=[]; activeChatId=null; myFriends=[]; myRequests=[]; mySentRequests=[]; currentDmUser=null;
         userBurgers=100; clickerBurgers=0; autoChefs=0; burgerStands=0; burgerFactories=0; clickPower=1; rebirths=0;
-        inventory=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
+        inventory=[]; userPresets=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
         updateBurgerUI(); updateProfileUI(); applyEquippedCosmetics(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
     });
 }
@@ -116,6 +115,7 @@ async function loadUserDataFromCloud() {
             userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0; autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0; clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
             myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || []; 
             inventory = data.inventory || [];
+            userPresets = data.presets || [];
             if (data.equipped) equipped = { ...equipped, ...data.equipped };
             updateBurgerUI();
             if (data.avatar) currentUserAvatar = data.avatar; if (data.username) currentUser = data.username;
@@ -124,6 +124,7 @@ async function loadUserDataFromCloud() {
             renderChatHistorySidebar(); updateUsageUI(); 
             if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
             if (document.getElementById('view-shop').classList.contains('active')) renderShopView();
+            if (document.getElementById('view-inventory').classList.contains('active')) renderInventoryView();
         } else { saveSessionData(); startNewChat(); }
     }, e => console.error("Error:", e));
 }
@@ -132,7 +133,7 @@ function saveSessionData() {
     db.collection("users").doc(firebaseUserId).set({
         apiKey: customApiKey, chats: chatsHistory, activeChatId: cur, theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
         avatar: currentUserAvatar, username: currentUser, burgers: userBurgers, clickerBurgers: clickerBurgers, autoChefs: autoChefs, burgerStands: burgerStands, burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths,
-        inventory: inventory, equipped: equipped
+        inventory: inventory, equipped: equipped, presets: userPresets
     }, { merge: true }).catch(e => console.error("Error saving:", e));
 }
 
@@ -157,12 +158,20 @@ function applyEquippedCosmetics() {
         if (equipped.title) { bBadge.innerText = equipped.title; bBadge.style.display = "inline-block"; }
         else { bBadge.style.display = "none"; }
     }
-    // Background Glow
+    // Background Glow & Title Colors
     const glow = document.getElementById("glow-bg");
+    const startupText = document.getElementById("startup-title");
     if (glow) {
-        if (equipped.background === "gold") glow.style.background = "radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 60%)";
-        else if (equipped.background === "cyber") glow.style.background = "radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 60%)";
-        else glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)";
+        if (equipped.background === "gold") {
+            glow.style.background = "radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 60%)";
+            if(startupText) startupText.style.color = "#fcd34d";
+        } else if (equipped.background === "cyber") {
+            glow.style.background = "radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 60%)";
+            if(startupText) startupText.style.color = "#f472b6";
+        } else {
+            glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)";
+            if(startupText) startupText.style.color = "#d8b4fe";
+        }
     }
     // Blackjack Felts
     const bjArena = document.getElementById("bj-felt-arena");
@@ -187,43 +196,33 @@ function switchView(viewId) {
     else if(viewId==='view-friends') fetchAllUsers(); 
     else if(viewId==='view-burgerclicker') updateUpgradesUI();
     else if(viewId==='view-shop') renderShopView();
+    else if(viewId==='view-inventory') renderInventoryView();
 }
 
 // =========================================================================
-// --- BURGER SHOP SYSTEM ---
+// --- BURGER SHOP & INVENTORY SYSTEM ---
 // =========================================================================
 const shopCatalog = [
-    // Personas
-    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 25, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
-    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 30, desc: "Carl reviews your questions like a furious five-star culinary chef." },
-    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", icon: "🤖", cost: 40, desc: "Carl talks in cool dystopian cyberpunk terminology." },
-    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", icon: "😏", cost: 20, desc: "Carl answers your questions with maximum sarcasm and wit." },
-
-    // Bubbles
-    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 15, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
-    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 35, desc: "Wraps your chat messages in shiny luxury gold." },
-    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", icon: "🔮", cost: 25, desc: "Deep purple-pink retro synthwave gradient." },
-
-    // Profile Frames
-    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 50, desc: "Surrounds your profile avatar with an aura of pure gold." },
-    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 45, desc: "Animated pulsing cyber frame around your picture." },
-    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", icon: "🔥", cost: 60, desc: "Fiery red & orange border around your avatar." },
-
-    // Titles / Badges
-    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 20, desc: "Displays the [BURGER BARON] badge next to your name." },
-    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 50, desc: "Displays the [GRANDMASTER] badge next to your name." },
-    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", icon: "🐐", cost: 100, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
-
-    // Backgrounds
-    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 40, desc: "Changes the startup radial glow to ambient gold." },
-    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 40, desc: "Changes the ambient background to magenta & purple." },
-
-    // Minigame Skins & Boosts
-    { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", icon: "🍟", cost: 30, desc: "Play Connect Four using real Burger & French Fry tokens!" },
-    { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", icon: "🃏", cost: 25, desc: "Changes the Blackjack table to rich Velvet Crimson." },
-    { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", icon: "🎲", cost: 25, desc: "Luxury dark emerald green Blackjack felt." },
-    { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", icon: "🔮", cost: 25, desc: "Deep cosmic purple Blackjack felt." },
-    { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", icon: "🍳", cost: 75, desc: "Permanent +50% production boost across all Burger Clicker businesses!" }
+    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
+    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 2000, desc: "Carl reviews your questions like a furious five-star culinary chef." },
+    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", icon: "🤖", cost: 2500, desc: "Carl talks in cool dystopian cyberpunk terminology." },
+    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", icon: "😏", cost: 1800, desc: "Carl answers your questions with maximum sarcasm and wit." },
+    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
+    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
+    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", icon: "🔮", cost: 2500, desc: "Deep purple-pink retro synthwave gradient." },
+    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
+    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
+    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", icon: "🔥", cost: 3500, desc: "Fiery red & orange border around your avatar." },
+    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
+    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
+    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", icon: "🐐", cost: 3000, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
+    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
+    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
+    { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", icon: "🍟", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
+    { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", icon: "🃏", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
+    { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", icon: "🎲", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
+    { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", icon: "🔮", cost: 1500, desc: "Deep cosmic purple Blackjack felt." },
+    { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", icon: "🍳", cost: 5000, desc: "Permanent +50% production boost across all Burger Clicker businesses!" }
 ];
 
 function renderShopView() {
@@ -233,22 +232,19 @@ function renderShopView() {
 
     shopCatalog.forEach(item => {
         const owned = inventory.includes(item.id);
-        let isEquipped = false;
+        let isEq = false;
+        if (item.type === "goldenSpatula") isEq = equipped.goldenSpatula;
+        else if (item.type === "title") isEq = (equipped.title === item.val);
+        else isEq = (equipped[item.type] === item.val);
 
-        if (item.type === "goldenSpatula") isEquipped = equipped.goldenSpatula;
-        else if (item.type === "title") isEquipped = (equipped.title === item.val);
-        else isEquipped = (equipped[item.type] === item.val);
-
-        const card = document.createElement("div");
-        card.className = "shop-card";
-
+        const card = document.createElement("div"); card.className = "shop-card";
         let btnHTML = "";
         if (!owned) {
-            btnHTML = `<button class="shop-buy-btn buy" onclick="buyShopItem('${item.id}')">Buy (${item.cost} 🍔)</button>`;
-        } else if (isEquipped) {
+            btnHTML = `<button class="shop-buy-btn buy" onclick="buyShopItem('${item.id}')">Buy (${item.cost.toLocaleString()} 🍔)</button>`;
+        } else if (isEq) {
             btnHTML = `<button class="shop-buy-btn equipped">Equipped ✓</button>`;
         } else {
-            btnHTML = `<button class="shop-buy-btn equip" onclick="equipShopItem('${item.id}')">Equip</button>`;
+            btnHTML = `<button class="shop-buy-btn equip" onclick="equipShopItem('${item.id}', true)">Equip</button>`;
         }
 
         card.innerHTML = `
@@ -260,7 +256,7 @@ function renderShopView() {
                 <div class="shop-item-desc">${item.desc}</div>
             </div>
             <div>
-                <div class="shop-item-cost">Price: ${item.cost} Burgers</div>
+                <div class="shop-item-cost">Price: ${item.cost.toLocaleString()} Burgers</div>
                 ${btnHTML}
             </div>
         `;
@@ -269,47 +265,113 @@ function renderShopView() {
 }
 
 function buyShopItem(itemId) {
-    const item = shopCatalog.find(i => i.id === itemId);
-    if (!item) return;
-
-    if (userBurgers < item.cost) {
-        alert("You do not have enough Burgers! Play Burger Clicker to trade for real burgers!");
-        return;
-    }
-
-    userBurgers -= item.cost;
-    inventory.push(item.id);
-    
-    // Auto equip upon buying
-    equipShopItem(itemId, false);
-
-    updateBurgerUI();
-    saveSessionData();
-    renderShopView();
+    const item = shopCatalog.find(i => i.id === itemId); if (!item) return;
+    if (userBurgers < item.cost) { alert("You do not have enough Burgers! Play Burger Clicker to earn more."); return; }
+    userBurgers -= item.cost; inventory.push(item.id);
+    equipShopItem(itemId, false); updateBurgerUI(); saveSessionData(); renderShopView();
 }
 
-function equipShopItem(itemId, notify = true) {
-    const item = shopCatalog.find(i => i.id === itemId);
-    if (!item) return;
+function equipShopItem(itemId, isFromShop = false) {
+    const item = shopCatalog.find(i => i.id === itemId); if (!item) return;
+    if (item.type === "goldenSpatula") equipped.goldenSpatula = true;
+    else if (item.type === "title") equipped.title = item.val;
+    else equipped[item.type] = item.val;
 
-    if (item.type === "goldenSpatula") {
-        equipped.goldenSpatula = true;
-    } else if (item.type === "title") {
-        equipped.title = item.val;
+    applyEquippedCosmetics(); saveSessionData();
+    if (document.getElementById('view-shop').classList.contains('active')) renderShopView();
+    if (document.getElementById('view-inventory').classList.contains('active')) renderInventoryView();
+    if (isFromShop) alert(`Equipped ${item.name}!`);
+}
+
+function toggleInventoryItem(itemId) {
+    const item = shopCatalog.find(i => i.id === itemId); if(!item) return;
+    let isEq = false;
+    if (item.type === "goldenSpatula") isEq = equipped.goldenSpatula;
+    else if (item.type === "title") isEq = (equipped.title === item.val);
+    else isEq = (equipped[item.type] === item.val);
+
+    if (isEq) {
+        if (item.type === "goldenSpatula") equipped.goldenSpatula = false;
+        else if (item.type === "title") equipped.title = "";
+        else equipped[item.type] = "default";
     } else {
-        equipped[item.type] = item.val;
+        if (item.type === "goldenSpatula") equipped.goldenSpatula = true;
+        else if (item.type === "title") equipped.title = item.val;
+        else equipped[item.type] = item.val;
     }
-
-    applyEquippedCosmetics();
-    saveSessionData();
-    renderShopView();
-    if (notify) alert(`Equipped ${item.name}!`);
+    applyEquippedCosmetics(); saveSessionData(); renderInventoryView();
 }
+
+function renderInventoryView() {
+    const container = document.getElementById("inventory-items-container"); if(!container) return;
+    container.innerHTML = "";
+    
+    if(inventory.length === 0) {
+        container.innerHTML = `<div class="inv-empty-text">*owned things can be toggled here</div>`;
+        container.style.display = "flex";
+    } else {
+        container.style.display = "grid";
+        inventory.forEach(itemId => {
+            const item = shopCatalog.find(i => i.id === itemId); if(!item) return;
+            let isEq = false;
+            if (item.type === "goldenSpatula") isEq = equipped.goldenSpatula;
+            else if (item.type === "title") isEq = (equipped.title === item.val);
+            else isEq = (equipped[item.type] === item.val);
+
+            const card = document.createElement("div"); card.className = "shop-card";
+            const btnClass = isEq ? "equipped-active" : "equip";
+            const btnText = isEq ? "Unequip" : "Equip";
+
+            card.innerHTML = `
+                <div>
+                    <div class="shop-card-header"><span class="shop-item-title">${item.name}</span><span class="shop-item-icon">${item.icon}</span></div>
+                    <div class="shop-item-desc">${item.desc}</div>
+                </div>
+                <button class="shop-buy-btn ${btnClass}" onclick="toggleInventoryItem('${item.id}')">${btnText}</button>
+            `;
+            container.appendChild(card);
+        });
+    }
+    renderPresetsList();
+}
+
+function addPreset() {
+    if(userPresets.length >= 5) { alert("Max 5 presets allowed!"); return; }
+    const pName = prompt("Enter a name for this preset:"); if(!pName) return;
+    userPresets.push({ name: pName, equipped: JSON.parse(JSON.stringify(equipped)) });
+    saveSessionData(); renderPresetsList();
+}
+
+function renderPresetsList() {
+    const list = document.getElementById("presets-list"); if(!list) return;
+    list.innerHTML = "";
+    userPresets.forEach((p, idx) => {
+        const el = document.createElement("div"); el.className = "preset-item";
+        el.innerHTML = `
+            <span class="preset-name">${p.name}</span>
+            <div>
+                <button class="preset-load-btn" onclick="loadPreset(${idx})">Load</button>
+                <button class="preset-del-btn" onclick="deletePreset(${idx})">✕</button>
+            </div>
+        `;
+        list.appendChild(el);
+    });
+}
+
+function loadPreset(idx) {
+    const p = userPresets[idx]; if(!p) return;
+    equipped = JSON.parse(JSON.stringify(p.equipped));
+    applyEquippedCosmetics(); saveSessionData(); renderInventoryView();
+}
+function deletePreset(idx) {
+    if(!confirm("Delete this preset?")) return;
+    userPresets.splice(idx, 1); saveSessionData(); renderPresetsList();
+}
+
 
 // =========================================================================
 // --- GAMES LAUNCHER SYSTEM ---
 // =========================================================================
-
 function selectGame(element, gameName) {
     document.querySelectorAll('.game-card-img').forEach(card => card.classList.remove('selected'));
     element.classList.add('selected');
@@ -415,12 +477,16 @@ function getAvatarColor(str) {
     return avatarColors[Math.abs(hash) % avatarColors.length];
 }
 
-function getAvatarHTML(user) {
-    if (!user.avatar || user.avatar.includes('default-avatar.png')) {
-        const color = getAvatarColor(user.username), initial = user.username.charAt(0).toUpperCase();
-        return `<div class="text-avatar" style="background-color: ${color};">${initial}</div>`;
+function getAvatarHTML(u) {
+    const frameClass = (u.equipped && u.equipped.frame && u.equipped.frame !== 'default') ? `frame-${u.equipped.frame}` : '';
+    let inner = '';
+    if (!u.avatar || u.avatar.includes('default-avatar.png')) {
+        const c = getAvatarColor(u.username), i = u.username.charAt(0).toUpperCase();
+        inner = `<div class="text-avatar" style="background-color: ${c};">${i}</div>`;
+    } else {
+        inner = `<img class="friend-avatar" src="${u.avatar}" draggable="false">`;
     }
-    return `<img class="friend-avatar" src="${user.avatar}" draggable="false">`;
+    return `<div class="avatar-frame-wrapper ${frameClass}" style="width: 100%; height: 100%;">${inner}</div>`;
 }
 
 let allUsersCache = [];
@@ -429,7 +495,7 @@ async function fetchAllUsers() {
     try {
         if (firebaseUserId && db) {
             const snapshot = await db.collection("users").get(); allUsersCache = [];
-            snapshot.forEach(doc => { const data = doc.data(); if (doc.id !== firebaseUserId && data.username) allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "" }); });
+            snapshot.forEach(doc => { const data = doc.data(); if (doc.id !== firebaseUserId && data.username) allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "", equipped: data.equipped || {} }); });
         }
     } catch (err) { console.error("Error fetching real users", err); }
     renderFriendsView();
@@ -447,8 +513,9 @@ function renderFriendsView() {
     } else {
         activeFriends.forEach(user => {
             const item = document.createElement("div"); item.className = "friend-item";
+            const titleBadge = user.equipped?.title ? `<span class="user-title-badge" style="display:inline-block;">${user.equipped.title}</span>` : '';
             item.innerHTML = `
-                <div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div>
+                <div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username} ${titleBadge}</span></div>
                 <div style="display:flex; gap:8px;">
                     <button class="friend-msg-btn" onclick='openDirectMessage(${JSON.stringify(user)})'>Message</button>
                     <button class="friend-req-btn" style="border-color:#ef4444; color:#ef4444;" onclick="unfriendUser('${user.id}')">Unfriend</button>
@@ -460,9 +527,11 @@ function renderFriendsView() {
 
     let searchResults = [];
     const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
+    
     incomingReqs.forEach(user => {
         const item = document.createElement("div"); item.className = "friend-item";
-        item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div><button class="friend-req-btn" onclick="acceptRequest('${user.id}')">Accept Request</button>`;
+        const titleBadge = user.equipped?.title ? `<span class="user-title-badge" style="display:inline-block;">${user.equipped.title}</span>` : '';
+        item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username} ${titleBadge}</span></div><button class="friend-req-btn" onclick="acceptRequest('${user.id}')">Accept Request</button>`;
         findList.appendChild(item);
     });
 
@@ -474,8 +543,9 @@ function renderFriendsView() {
             searchResults.forEach(user => {
                 const item = document.createElement("div"); item.className = "friend-item";
                 const isSent = mySentRequests.includes(user.id);
+                const titleBadge = user.equipped?.title ? `<span class="user-title-badge" style="display:inline-block;">${user.equipped.title}</span>` : '';
                 const btnHTML = isSent ? `<button class="friend-msg-btn" style="opacity: 0.5;" disabled>Sent!</button>` : `<button class="friend-msg-btn" onclick="sendFriendRequest('${user.id}')">Add Friend</button>`;
-                item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div>${btnHTML}`;
+                item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username} ${titleBadge}</span></div>${btnHTML}`;
                 findList.appendChild(item);
             });
         }
@@ -508,7 +578,8 @@ async function unfriendUser(targetId) {
 function openDirectMessage(user) {
     isDM = true; currentDmUser = user; activeChatId = "dm_" + [firebaseUserId, user.id].sort().join('_');
     document.getElementById("dm-header-avatar").innerHTML = getAvatarHTML(user);
-    document.getElementById("dm-header-name").innerText = user.username;
+    const titleBadge = user.equipped?.title ? `<span class="user-title-badge" style="display:inline-block;">${user.equipped.title}</span>` : '';
+    document.getElementById("dm-header-name").innerHTML = `${user.username} ${titleBadge}`;
     document.getElementById("dm-input").placeholder = `Message ${user.username}...`;
     document.getElementById("dm-chat-log").innerHTML = "";
     
@@ -519,6 +590,10 @@ function openDirectMessage(user) {
             const data = doc.data(), isMe = data.senderId === firebaseUserId;
             const msgDiv = document.createElement("div"); msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`; msgDiv.dataset.id = doc.id;
             const contentDiv = document.createElement("div"); contentDiv.className = "dm-message-content";
+            
+            // Inject Custom Bubbles
+            if (isMe && equipped.bubble && equipped.bubble !== "default") contentDiv.classList.add(`bubble-${equipped.bubble}`);
+            else if (!isMe && currentDmUser.equipped?.bubble && currentDmUser.equipped.bubble !== "default") contentDiv.classList.add(`bubble-${currentDmUser.equipped.bubble}`);
             
             if (data.text) { const textSpan = document.createElement("span"); textSpan.className = "dm-message-text"; textSpan.innerText = data.text; contentDiv.appendChild(textSpan); }
             if (data.imageSrc) { const img = document.createElement("img"); img.src = data.imageSrc; img.className = "chat-image"; img.draggable = false; contentDiv.appendChild(img); }
@@ -533,7 +608,7 @@ function openDirectMessage(user) {
                 msgWrapper.appendChild(delBtn); msgWrapper.appendChild(contentDiv);
             } else { msgWrapper.appendChild(contentDiv); }
 
-            const avatarObj = isMe ? { username: currentUser, avatar: currentUserAvatar } : currentDmUser;
+            const avatarObj = isMe ? { username: currentUser, avatar: currentUserAvatar, equipped: equipped } : currentDmUser;
             const avatarWrapper = document.createElement("div"); avatarWrapper.className = "dm-message-avatar"; avatarWrapper.innerHTML = getAvatarHTML(avatarObj);
             
             msgDiv.appendChild(avatarWrapper); msgDiv.appendChild(msgWrapper); log.appendChild(msgDiv);
@@ -596,6 +671,7 @@ function checkDailyMessageLimit() {
 
 function startNewChat() {
     isDM = false;
+    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
     archiveActiveChat(); activeChatId = "chat_" + Date.now(); chatHistory = [];
     const log = document.getElementById("chat-log"); if (log) log.innerHTML = '';
     const input = document.getElementById("user-input"); if (input) input.value = "";
@@ -607,6 +683,7 @@ function startNewChat() {
 
 function loadChat(chatId) {
     isDM = false;
+    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
     archiveActiveChat(); const target = chatsHistory.find(c => c.id === chatId);
     if (target) {
         activeChatId = target.id; const log = document.getElementById("chat-log"); if (log) log.innerHTML = target.html;
@@ -633,12 +710,10 @@ async function sendMessage() {
     }
 
     if (!checkDailyMessageLimit()) return;
-    hideStartupScreen(); 
-    appendMessage(text, "user", pendingImageSrc);
+    hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
     
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     
-    // Inject active persona system instruction
     let personaPrompt = "";
     if (equipped.persona === "pirate") personaPrompt = " [SYSTEM INSTRUCTION: You are a swashbuckling pirate. Answer the query speaking strictly like a pirate matey!]";
     else if (equipped.persona === "chef") personaPrompt = " [SYSTEM INSTRUCTION: You are Gordon Ramsay. Answer the query passionately and critique things like a world-class furious chef!]";
@@ -866,242 +941,4 @@ function appendMessage(msg, sender, imgSrc = null) {
     if (msg) { const textNode = document.createElement("div"); textNode.innerText = msg; bubble.appendChild(textNode); }
     if (imgSrc) { const img = document.createElement("img"); img.src = imgSrc; img.className = "chat-image"; img.draggable = false; bubble.appendChild(img); }
     log.appendChild(bubble); log.scrollTop = log.scrollHeight;
-}
-
-// =========================================================================
-// --- CALL FEATURE (Carl AI) ---
-// =========================================================================
-let isCallActive = false, isCallConnected = false, isMuted = false, isSpeakerOn = true;
-let callTimerInterval = null, callSeconds = 0, ringTimeout = null, ringInterval = null;
-let audioCtx = null, recognition = null, callAbortController = null, carlVoice = null;
-
-function loadCarlVoice() { 
-    if (!('speechSynthesis' in window)) return; 
-    const voices = window.speechSynthesis.getVoices(); 
-    if (voices.length === 0) return;
-    carlVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google US English') || v.name.includes('Aaron') || v.name.includes('Guy') || v.name.includes('Male'))) || voices.find(v => v.lang.startsWith('en')) || voices[0]; 
-}
-if ('speechSynthesis' in window) { 
-    window.speechSynthesis.onvoiceschanged = loadCarlVoice; 
-    loadCarlVoice(); 
-}
-
-function getAudioContext() { 
-    if (!audioCtx) { 
-        const AudioContext = window.AudioContext || window.webkitAudioContext; 
-        audioCtx = new AudioContext(); 
-    } 
-    if (audioCtx.state === 'suspended') audioCtx.resume(); 
-    return audioCtx; 
-}
-
-function playToneBurst(freq1, freq2, duration) { 
-    try { 
-        const ctx = getAudioContext(), osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator(), gain = ctx.createGain(); 
-        osc1.frequency.value = freq1; osc2.frequency.value = freq2; 
-        gain.gain.setValueAtTime(0.15, ctx.currentTime); 
-        gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05); 
-        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration); 
-        osc1.connect(gain); osc2.connect(gain); 
-        gain.connect(ctx.destination); 
-        osc1.start(ctx.currentTime); osc2.start(ctx.currentTime); 
-        osc1.stop(ctx.currentTime + duration); osc2.stop(ctx.currentTime + duration); 
-    } catch (e) {} 
-}
-
-function startRingingSound() { 
-    playToneBurst(440, 480, 2.0); 
-    ringInterval = setInterval(() => { 
-        if (!isCallActive || isCallConnected) { clearInterval(ringInterval); return; } 
-        playToneBurst(440, 480, 2.0); 
-    }, 4000); 
-}
-
-function stopRingingSound() { 
-    if (ringInterval) { clearInterval(ringInterval); ringInterval = null; } 
-}
-
-function playPickupClick() { 
-    try { 
-        const ctx = getAudioContext(), osc = ctx.createOscillator(), gain = ctx.createGain(); 
-        osc.type = 'triangle'; 
-        osc.frequency.setValueAtTime(800, ctx.currentTime); 
-        osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.08); 
-        gain.gain.setValueAtTime(0.3, ctx.currentTime); 
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08); 
-        osc.connect(gain); gain.connect(ctx.destination); 
-        osc.start(); osc.stop(ctx.currentTime + 0.08); 
-    } catch (e) {} 
-}
-
-function startCall() { 
-    if (!hasValidApiKey()) { 
-        alert("Calling Carl requires a custom Gemini API Key in Settings!"); 
-        switchView('view-settings'); 
-        return; 
-    } 
-    switchView('view-call'); 
-    isCallActive = true; isCallConnected = false; isMuted = false; callSeconds = 0; 
-    getAudioContext(); 
-    if ('speechSynthesis' in window) { 
-        let w = new SpeechSynthesisUtterance(''); w.volume = 0; window.speechSynthesis.speak(w); 
-    } 
-    document.getElementById("call-status").innerText = "Calling Carl..."; 
-    document.getElementById("call-status").style.display = "block"; 
-    document.getElementById("call-timer").innerText = "00:00"; 
-    document.getElementById("mute-btn").style.opacity = "1"; 
-    document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4"; 
-    
-    startRingingSound(); 
-    const d = Math.floor(Math.random() * 4000) + 1500; 
-    ringTimeout = setTimeout(() => { 
-        if (!isCallActive) return; 
-        stopRingingSound(); playPickupClick(); isCallConnected = true; 
-        document.getElementById("call-status").style.display = "none"; 
-        callTimerInterval = setInterval(() => { 
-            callSeconds++; 
-            const m = String(Math.floor(callSeconds / 60)).padStart(2, '0'), 
-                  s = String(Math.floor(callSeconds % 60)).padStart(2, '0'); 
-            document.getElementById("call-timer").innerText = `${m}:${s}`; 
-        }, 1000); 
-        initSpeechRecognition(); 
-        speakCarl("Hey! Carl here. What's on your mind?"); 
-    }, d); 
-}
-
-function endCall() { 
-    isCallActive = false; isCallConnected = false; 
-    if (ringTimeout) clearTimeout(ringTimeout); 
-    stopRingingSound(); 
-    if (callTimerInterval) clearInterval(callTimerInterval); 
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel(); 
-    if (callAbortController) callAbortController.abort(); 
-    if (recognition) { try { recognition.stop(); } catch (e) {} recognition = null; } 
-    document.getElementById("call-timer").innerText = "00:00"; 
-    document.getElementById("call-status").style.display = "none"; 
-    switchView('view-chat'); 
-}
-
-function toggleMute() { 
-    isMuted = !isMuted; 
-    const b = document.getElementById("mute-btn"); 
-    if (isMuted) { 
-        b.style.opacity = "0.4"; 
-        if (recognition) try { recognition.stop(); } catch (e) {} 
-    } else { 
-        b.style.opacity = "1"; 
-        if (recognition && isCallActive && isCallConnected) try { recognition.start(); } catch (e) {} 
-    } 
-}
-
-function toggleSpeaker() { 
-    isSpeakerOn = !isSpeakerOn; 
-    document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4"; 
-}
-
-function speakCarl(txt) { 
-    if (!('speechSynthesis' in window) || !isCallActive) return; 
-    let ct = txt.replace(/```[\s\S]*?```/g, '').replace(/`[^`]*`/g, '').replace(/[*_#~]/g, '').trim(); 
-    if (!ct) return; 
-    const u = new SpeechSynthesisUtterance(ct); 
-    if (!carlVoice) loadCarlVoice(); 
-    if (carlVoice) u.voice = carlVoice; 
-    u.rate = 1.05; 
-    u.volume = isSpeakerOn ? 1.0 : 0.15; 
-    window.speechSynthesis.speak(u); 
-}
-
-function initSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { 
-        document.getElementById("call-status").innerText = "Browser doesn't support mic!"; 
-        document.getElementById("call-status").style.display = "block"; 
-        return; 
-    }
-    recognition = new SpeechRecognition(); 
-    recognition.continuous = true; 
-    recognition.interimResults = true; 
-    recognition.lang = 'en-US';
-    recognition.onresult = async (event) => {
-        if (isMuted || !isCallActive || !isCallConnected) return;
-        let interimTranscript = '', finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
-            else interimTranscript += event.results[i][0].transcript;
-        }
-        let combined = finalTranscript + interimTranscript;
-        if (combined.trim().length > 3 && window.speechSynthesis.speaking) { 
-            window.speechSynthesis.cancel(); 
-            if (callAbortController) callAbortController.abort(); 
-        }
-        if (finalTranscript.trim().length > 0) {
-            const userQuery = finalTranscript.trim();
-            window.speechSynthesis.cancel(); 
-            if (callAbortController) callAbortController.abort();
-            document.getElementById("call-status").innerText = "Carl is thinking..."; 
-            document.getElementById("call-status").style.display = "block";
-            await processCallUserMessage(userQuery);
-        }
-    };
-    recognition.onerror = (e) => { 
-        if (e.error === 'not-allowed') { 
-            document.getElementById("call-status").innerText = "Mic Permission Denied"; 
-            document.getElementById("call-status").style.display = "block"; 
-        } 
-    };
-    recognition.onend = () => { 
-        if (isCallActive && isCallConnected && !isMuted) try { recognition.start(); } catch (e) {} 
-    };
-    try { recognition.start(); } catch (e) {}
-}
-
-async function processCallUserMessage(t) {
-    if (!isCallActive) return;
-    callAbortController = new AbortController(); 
-    chatHistory.push({ role: "user", content: t });
-    const uLT = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), 
-          uTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    let personaPrompt = "";
-    if (equipped.persona === "pirate") personaPrompt = " [SYSTEM INSTRUCTION: You are a pirate. Speak strictly like a pirate matey!]";
-    else if (equipped.persona === "chef") personaPrompt = " [SYSTEM INSTRUCTION: You are Gordon Ramsay. Critique passionately!]";
-    else if (equipped.persona === "cyber") personaPrompt = " [SYSTEM INSTRUCTION: You are a Cyberpunk hacker AI. Use cyberpunk terms!]";
-    else if (equipped.persona === "sarcastic") personaPrompt = " [SYSTEM INSTRUCTION: Answer with sarcasm and wit!]";
-
-    const p = { 
-        message: t + personaPrompt, 
-        history: chatHistory, 
-        image_b64: null, 
-        image_mime: null, 
-        api_key: customApiKey, 
-        user_time: uLT, 
-        user_timezone: uTZ, 
-        client_time: `${uLT} (${uTZ})` 
-    };
-    try {
-        const res = await fetch("/api/chat", { 
-            method: "POST", headers: { "Content-Type": "application/json" }, 
-            body: JSON.stringify(p), signal: callAbortController.signal 
-        });
-        if (!res.ok) return;
-        const rdr = res.body.getReader(), dcd = new TextDecoder(); 
-        let fR = "", sB = "";
-        document.getElementById("call-status").style.display = "none";
-        while (true) {
-            const { done, value } = await rdr.read(); if (done) break;
-            const chk = dcd.decode(value, { stream: true }); fR += chk; sB += chk;
-            let m;
-            while ((m = sB.match(/([^.!?]+[.!?])/))) {
-                let s = m[0].trim(); sB = sB.substring(m[0].length);
-                for (let px of ["Carl:", "carl:", "Carl - "]) if (s.startsWith(px)) s = s.replace(px, "").trim();
-                if (s) speakCarl(s);
-            }
-        }
-        if (sB.trim()) { 
-            let lo = sB.trim(); 
-            for (let px of ["Carl:", "carl:", "Carl - "]) if (lo.startsWith(px)) lo = lo.replace(px, "").trim(); 
-            speakCarl(lo); 
-        }
-        chatHistory.push({ role: "assistant", content: fR });
-    } catch (e) {}
 }
