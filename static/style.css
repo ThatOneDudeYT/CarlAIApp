@@ -189,6 +189,141 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 #dm-input { width: 100%; background: transparent; border: none; color: var(--text-main); font-size: 16px; outline: none; letter-spacing: 0.5px; }
 #dm-input::placeholder { color: var(--text-sub); }
 
+/* --- UNIFIED CALL UI SCREEN (Matches image_0efbbc.png) --- */
+#view-call, #view-friend-call {
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    position: relative;
+    background-color: var(--bg-card);
+}
+
+#facetime-video, #fc-remote-video {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    display: none;
+}
+
+#fc-local-video {
+    position: absolute;
+    top: 20px; right: 20px;
+    width: 110px; height: 160px;
+    object-fit: cover;
+    z-index: 5;
+    border-radius: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+
+.call-top-section {
+    margin-top: 12vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 10;
+    width: 100%;
+}
+
+.call-top-section h1 {
+    font-size: 64px;
+    letter-spacing: 1px;
+    margin: 0;
+    color: #ffffff;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    line-height: 1;
+}
+
+#call-timer, #fc-timer {
+    font-size: 28px;
+    color: #71717a;
+    letter-spacing: 1px;
+}
+
+#call-status, #fc-status {
+    font-size: 18px;
+    color: #a855f7;
+    margin-top: 6px;
+}
+
+.call-bottom-section {
+    margin-top: auto;
+    margin-bottom: 6vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    z-index: 10;
+    width: 100%;
+    max-width: 320px;
+}
+
+.call-option-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    width: 100%;
+}
+
+.call-icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    flex: 1;
+    max-width: 90px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.1s;
+}
+
+.call-icon-btn img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.call-icon-btn:active {
+    transform: scale(0.95);
+}
+
+.call-end-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 100%;
+    max-width: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.1s;
+}
+
+.call-end-btn img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.call-end-btn:active {
+    transform: scale(0.95);
+}
+
+#view-call .copyright, #view-friend-call .copyright {
+    z-index: 2;
+    margin-bottom: 12px;
+}
+
+/* --- GAMES & MENU UI --- */
 .games-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--text-sub); margin-top: 45px; }
 .back-btn { margin-left: 45px; background: transparent; border: 3px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; color: var(--text-sub); font-size: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer; flex-shrink: 0; }
 .difficulty-picker { display: flex; align-items: center; justify-content: space-between; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 8px 14px; margin-top: 10px; font-size: 16px; }
