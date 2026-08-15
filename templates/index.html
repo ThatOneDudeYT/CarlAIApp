@@ -5,19 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Carl AI</title>
     <link rel="stylesheet" href="/static/style.css">
-    
-    <!-- iPhone Home Screen App Icon & Favicon -->
     <link rel="apple-touch-icon" href="/static/icons/CarlAILogo.png">
     <link rel="icon" type="image/png" href="/static/icons/CarlAILogo.png">
-
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body class="dark-mode">
 
-    <!-- AUTH / SIGN-IN OVERLAY -->
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">
             <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo" draggable="false">
@@ -28,9 +23,7 @@
                 <input type="password" id="auth-password" placeholder="Password" required>
                 <button type="submit" class="auth-btn">Sign In / Register</button>
             </form>
-
             <div class="auth-divider"><span>OR</span></div>
-
             <button type="button" class="google-auth-btn" onclick="signInWithGoogle()">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" draggable="false">
                 Continue with Google
@@ -38,10 +31,7 @@
         </div>
     </div>
 
-    <!-- MAIN APP CONTAINER -->
     <div class="app-container">
-        
-        <!-- DESKTOP SIDEBAR -->
         <aside class="desktop-sidebar expanded" id="desktop-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
@@ -49,9 +39,7 @@
                 </div>
                 <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn">❮</button>
             </div>
-            
             <div class="sidebar-nav">
-                <!-- Expanded PC Buttons -->
                 <div class="full-nav-items">
                     <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat" draggable="false">
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
@@ -59,8 +47,6 @@
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
                     <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call" draggable="false">
                 </div>
-                
-                <!-- Collapsed PC Buttons -->
                 <div class="mini-nav-items">
                     <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat" draggable="false">
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search" draggable="false">
@@ -69,61 +55,40 @@
                     <img src="/static/icons/CallIcon.png" class="mini-nav-btn" onclick="startCall()" alt="Call" title="Call" draggable="false">
                 </div>
             </div>
-
             <div class="sidebar-chats">
                 <h3 class="chats-header">Chats</h3>
-                <div id="saved-chats-list">
-                    <!-- Saved chat history loaded dynamically -->
-                </div>
+                <div id="saved-chats-list"></div>
             </div>
-            
             <div class="sidebar-footer">
                 <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="switchView('view-settings')" draggable="false">
             </div>
         </aside>
 
-        <!-- MAIN CONTENT AREA -->
         <main class="main-content">
-            
-            <!-- TOP-RIGHT PROFILE WIDGET -->
             <div class="top-profile-bar" id="top-profile-bar">
-                <div class="burger-wallet">
-                    🍔 <span id="burger-count">100</span>
-                </div>
+                <div class="burger-wallet">🍔 <span id="burger-count">100</span></div>
                 <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar" draggable="false">
                 <span id="header-user-name" class="top-profile-name">Guest</span>
             </div>
 
-            <!-- CHAT VIEW (For Carl AI) -->
+            <!-- CHAT VIEW -->
             <div id="view-chat" class="view active startup-active">
-
-                <!-- HUGE GLOWING BACKGROUND -->
                 <div id="glow-bg" class="glow-bg"></div>
-
-                <!-- START-UP SCREEN TYPING ANIMATION -->
                 <div id="startup-screen" class="startup-screen">
                     <h1 id="startup-title">Ask Away!<span class="typing-cursor"></span></h1>
                 </div>
-                
-                <!-- DRAG AND DROP OVERLAY -->
                 <div id="drag-drop-overlay" class="drag-drop-overlay">
                     <div class="drag-drop-content">
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.8m8.7-1.6V21"/><path d="M16 16l-4-4-4 4"/></svg>
                         <h2>Drop file to upload</h2>
                     </div>
                 </div>
-
-                <div id="chat-log" class="chat-log">
-                    <!-- Messages will populate here -->
-                </div>
-                
-                <!-- INPUT WRAPPER -->
+                <div id="chat-log" class="chat-log"></div>
                 <div class="input-wrapper">
                     <div id="image-preview-box" class="image-preview-box">
                         <img id="image-preview-img" class="image-preview-thumb" src="" alt="Preview" draggable="false">
                         <button id="image-preview-close" class="image-preview-close" type="button" onclick="clearPendingImage()">✕</button>
                     </div>
-
                     <div class="input-container">
                         <button class="upload-btn" onclick="document.getElementById('native-file-picker').click();">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -132,29 +97,24 @@
                         <button id="send-btn" class="send-btn">↑</button>
                     </div>
                     <input type="file" id="native-file-picker" style="display: none;" accept="image/*, .pdf, .txt, .doc, .docx, .py, .lua, .cs, .js, .json" />
-                    
                     <div class="copyright">@Dalted Copyright Issued 2026</div>
                 </div>
             </div>
 
-            <!-- DIRECT MESSAGING VIEW (For Friends) -->
+            <!-- DM VIEW -->
             <div id="view-dm" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
                     <div id="dm-header-avatar" class="dm-header-avatar-container"></div>
                     <h1 id="dm-header-name">Friend</h1>
+                    <button class="dm-call-btn" onclick="startFriendCall()" title="Start Voice Call">📞</button>
                 </div>
-                
-                <div id="dm-chat-log" class="dm-chat-log">
-                    <!-- DM Messages populate here -->
-                </div>
-                
+                <div id="dm-chat-log" class="dm-chat-log"></div>
                 <div class="dm-input-wrapper">
                     <div id="dm-image-preview-box" class="image-preview-box">
                         <img id="dm-image-preview-img" class="image-preview-thumb" src="" alt="Preview" draggable="false">
                         <button id="dm-image-preview-close" class="image-preview-close" type="button" onclick="clearDmPendingImage()">✕</button>
                     </div>
-                    
                     <div class="input-container">
                         <button class="upload-btn" onclick="document.getElementById('dm-native-file-picker').click();">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -172,34 +132,25 @@
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
                 </div>
-                
                 <div class="friends-search-container">
                     <input type="text" id="friend-search-input" placeholder="Make Friends" autocomplete="off" oninput="renderFriendsView()">
                 </div>
-                
                 <div class="friends-split-layout">
                     <div class="friends-col">
                         <h2 class="friends-col-title">Find People</h2>
-                        <div class="friends-list-container" id="find-people-list">
-                            <!-- Populated dynamically -->
-                        </div>
+                        <div class="friends-list-container" id="find-people-list"></div>
                     </div>
                     <div class="friends-divider"></div>
                     <div class="friends-col">
                         <h2 class="friends-col-title">Friends</h2>
-                        <div class="friends-list-container" id="my-friends-list">
-                            <!-- Populated dynamically -->
-                        </div>
+                        <div class="friends-list-container" id="my-friends-list"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- SETTINGS VIEW TAB -->
+            <!-- SETTINGS VIEW -->
             <div id="view-settings" class="view">
-                <div class="settings-header">
-                    <h1>Settings</h1>
-                </div>
-
+                <div class="settings-header"><h1>Settings</h1></div>
                 <div class="settings-content-grid">
                     <div class="settings-row">
                         <label class="settings-label">Theme</label>
@@ -210,7 +161,6 @@
                             </label>
                         </div>
                     </div>
-
                     <div class="settings-row vertical-on-mobile">
                         <label class="settings-label" for="user-api-key">API Key</label>
                         <div class="input-with-help">
@@ -218,7 +168,6 @@
                             <button type="button" class="help-btn-inline" onclick="toggleApiKeyHelp()">Need Help?</button>
                         </div>
                     </div>
-
                     <div id="api-key-help-box" class="api-help-box hidden">
                         <p class="setting-hint">
                             <strong>How to get a Gemini API Key:</strong><br>
@@ -228,12 +177,10 @@
                             4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats and voice calling!
                         </p>
                     </div>
-
                     <div class="settings-row vertical-on-mobile">
                         <label class="settings-label" for="settings-username-input">Username</label>
                         <input type="text" id="settings-username-input" placeholder="Your Username (3–20 Characters)" maxlength="20" onchange="updateUsernameFromSettings()">
                     </div>
-
                     <div class="settings-row vertical-on-mobile">
                         <label class="settings-label">Password</label>
                         <div class="password-inputs">
@@ -241,18 +188,15 @@
                             <input type="password" id="settings-confirm-pass" placeholder="Confirm Password" autocomplete="new-password">
                         </div>
                     </div>
-
                     <div class="settings-row">
                         <label class="settings-label">Profile Picture</label>
                         <button class="settings-upload-btn" onclick="document.getElementById('avatar-file-picker').click();">Upload Profile</button>
                         <input type="file" id="avatar-file-picker" style="display: none;" accept="image/*" onchange="handleAvatarUpload(event)">
                     </div>
-
                     <div class="settings-row">
                         <label class="settings-label">Contacts</label>
                         <button class="settings-upload-btn" onclick="switchView('view-friends')">Manage Friends</button>
                     </div>
-                    
                     <div class="settings-row">
                         <label class="settings-label">Usage</label>
                         <div class="usage-bar-container">
@@ -260,38 +204,25 @@
                             <div class="usage-bar-text" id="usage-text">0/10</div>
                         </div>
                     </div>
-
                     <div class="settings-row">
                         <button class="settings-signout-btn" onclick="handleSignOut()">Sign Out</button>
                     </div>
                 </div>
-
-                <!-- FIND US AT SOCIAL LINKS -->
                 <div class="social-footer">
                     <h2>Find Us At</h2>
-                    <div class="social-link">
-                        <img src="/static/icons/MailIcon.png" alt="Email" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> 
-                        carlaisupport@gmail.com
-                    </div>
-                    <div class="social-link">
-                        <img src="/static/icons/YouTubeIcon.png" alt="YouTube" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> 
-                        @CarlAIApp
-                    </div>
-                    <div class="social-link">
-                        <img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> 
-                        https://discord.gg/kkq7gPPqMB
-                    </div>
+                    <div class="social-link"><img src="/static/icons/MailIcon.png" alt="Email" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> carlaisupport@gmail.com</div>
+                    <div class="social-link"><img src="/static/icons/YouTubeIcon.png" alt="YouTube" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> @CarlAIApp</div>
+                    <div class="social-link"><img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> https://discord.gg/kkq7gPPqMB</div>
                 </div>
             </div>
 
-            <!-- CALL VIEW -->
+            <!-- CARL AI CALL VIEW -->
             <div id="view-call" class="view">
                 <div class="call-header">
                     <h1>Carl AI</h1>
                     <div id="call-status" style="display: none;">Calling Carl...</div>
                     <div id="call-timer">00:00</div>
                 </div>
-
                 <div class="call-controls">
                     <div class="call-option-row">
                         <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" class="call-img-btn" onclick="toggleSpeaker()" draggable="false" />
@@ -305,13 +236,12 @@
                 <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- GAMES VIEW -->
+            <!-- GAMES MENU VIEW -->
             <div id="view-games" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
                     <h1>Games</h1>
                 </div>
-
                 <div class="difficulty-picker" id="difficulty-picker" style="display: none;">
                     <label for="difficulty-select">AI Difficulty</label>
                     <select id="difficulty-select" class="difficulty-dropdown">
@@ -320,10 +250,9 @@
                         <option value="hard">Hard</option>
                     </select>
                 </div>
-
                 <div class="games-scroll-box">
                     <div class="games-grid">
-                        <img src="/static/icons/BurgerClicker.png" class="game-card-img selected" onclick="selectGame(this, 'Burger Clicker')" alt="Burger Clicker" title="Burger Clicker" draggable="false" />
+                        <img src="/static/icons/BurgerClicker.png" class="game-card-img selected" onclick="selectGame(this, 'Burger Clicker')" alt="Burger Clicker" draggable="false" />
                         <img src="/static/icons/TicTacToe.png" class="game-card-img" onclick="selectGame(this, 'Tic Tac Toe')" alt="Tic Tac Toe" draggable="false" />
                         <img src="/static/icons/Chess.png" class="game-card-img" onclick="selectGame(this, 'Chess')" alt="Chess" draggable="false" />
                         <img src="/static/icons/Hangman.png" class="game-card-img" onclick="selectGame(this, 'Hangman')" alt="Hangman" draggable="false" />
@@ -334,180 +263,84 @@
                         <img src="/static/icons/BlackJack.png" class="game-card-img" onclick="selectGame(this, 'Blackjack')" alt="Blackjack" draggable="false" />
                     </div>
                 </div>
-
                 <div class="games-footer">
                     <button class="play-btn" onclick="launchGame()">Play</button>
                     <div class="copyright">@Dalted Copyright Issued 2026</div>
                 </div>
             </div>
 
-            <!-- BURGER CLICKER VIEW -->
+            <!-- BURGER CLICKER -->
             <div id="view-burgerclicker" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Burger Clicker</h1>
-                </div>
-                
+                <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Burger Clicker</h1></div>
                 <div class="clicker-arena">
                     <div class="clicker-left">
-                        <div class="clicker-stats-row">
-                            <div>BPS: <span id="bps-text">0</span></div>
-                            <div>Rebirths: <span id="rebirth-count">0</span></div>
-                        </div>
-                        
+                        <div class="clicker-stats-row"><div>BPS: <span id="bps-text">0</span></div><div>Rebirths: <span id="rebirth-count">0</span></div></div>
                         <div class="clicker-score">Burgers: <br><span id="clicker-score-text">0</span></div>
-                        
-                        <div class="carl-clicker-btn" id="carl-clicker-btn" onclick="clickBurger()">
-                            <img src="/static/icons/BurgerIcon.png" alt="Burger" class="rotating-burger" draggable="false">
-                        </div>
+                        <div class="carl-clicker-btn" id="carl-clicker-btn" onclick="clickBurger()"><img src="/static/icons/BurgerIcon.png" alt="Burger" class="rotating-burger" draggable="false"></div>
                     </div>
-                    
                     <div class="clicker-right">
                         <div class="clicker-upgrades">
-                            <button class="upgrade-btn" onclick="buyUpgrade('click')">
-                                Upgrade Click (Costs <span id="click-cost">100</span> 🍔)
-                                <div class="upgrade-desc">Current: <span id="click-power-count">1</span> 🍔/click</div>
-                            </button>
-                            <button class="upgrade-btn" onclick="buyUpgrade('chef')">
-                                Buy Auto-Chef (Costs <span id="chef-cost">50</span> 🍔)
-                                <div class="upgrade-desc">Generates <span id="chef-output">1</span> 🍔/sec | Owned: <span id="chef-count">0</span></div>
-                            </button>
-                            <button class="upgrade-btn" onclick="buyUpgrade('stand')">
-                                Buy Burger Stand (Costs <span id="stand-cost">500</span> 🍔)
-                                <div class="upgrade-desc">Generates <span id="stand-output">10</span> 🍔/sec | Owned: <span id="stand-count">0</span></div>
-                            </button>
-                            <button class="upgrade-btn" onclick="buyUpgrade('factory')">
-                                Buy Burger Factory (Costs <span id="factory-cost">5000</span> 🍔)
-                                <div class="upgrade-desc">Generates <span id="factory-output">100</span> 🍔/sec | Owned: <span id="factory-count">0</span></div>
-                            </button>
+                            <button class="upgrade-btn" onclick="buyUpgrade('click')">Upgrade Click (Costs <span id="click-cost">100</span> 🍔)<div class="upgrade-desc">Current: <span id="click-power-count">1</span> 🍔/click</div></button>
+                            <button class="upgrade-btn" onclick="buyUpgrade('chef')">Buy Auto-Chef (Costs <span id="chef-cost">50</span> 🍔)<div class="upgrade-desc">Generates <span id="chef-output">1</span> 🍔/sec | Owned: <span id="chef-count">0</span></div></button>
+                            <button class="upgrade-btn" onclick="buyUpgrade('stand')">Buy Burger Stand (Costs <span id="stand-cost">500</span> 🍔)<div class="upgrade-desc">Generates <span id="stand-output">10</span> 🍔/sec | Owned: <span id="stand-count">0</span></div></button>
+                            <button class="upgrade-btn" onclick="buyUpgrade('factory')">Buy Burger Factory (Costs <span id="factory-cost">5000</span> 🍔)<div class="upgrade-desc">Generates <span id="factory-output">100</span> 🍔/sec | Owned: <span id="factory-count">0</span></div></button>
                         </div>
-
                         <div class="clicker-actions">
-                            <button class="exchange-btn" onclick="exchangeBurgers()">
-                                Trade 10,000 🍔 for 1 Real 🍔
-                            </button>
-                            <button class="rebirth-btn" onclick="rebirth()">
-                                Rebirth (Cost: 1 Trillion 🍔)
-                                <div class="upgrade-desc">+100% Boost to All Production</div>
-                            </button>
+                            <button class="exchange-btn" onclick="exchangeBurgers()">Trade 10,000 🍔 for 1 Real 🍔</button>
+                            <button class="rebirth-btn" onclick="rebirth()">Rebirth (Cost: 1 Trillion 🍔)<div class="upgrade-desc">+100% Boost to All Production</div></button>
                         </div>
                     </div>
                 </div>
-
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- BLACKJACK VIEW -->
+            <!-- BLACKJACK -->
             <div id="view-blackjack" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Blackjack</h1>
-                </div>
+                <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Blackjack</h1></div>
                 <div id="bj-status" class="game-status">Place your bet and Deal!</div>
-                
-                <div id="bj-bet-area" class="bj-bet-area">
-                    <label>Bet (🍔): </label>
-                    <input type="number" id="bj-bet-input" value="10" min="10" max="10000">
-                </div>
-                
+                <div id="bj-bet-area" class="bj-bet-area"><label>Bet (🍔): </label><input type="number" id="bj-bet-input" value="10" min="10" max="10000"></div>
                 <div class="bj-arena">
-                    <div class="bj-area">
-                        <div class="bj-label">Carl's Hand (<span id="bj-carl-score">?</span>)</div>
-                        <div class="bj-cards" id="bj-carl-cards"></div>
-                    </div>
-                    
-                    <div class="bj-area">
-                        <div class="bj-label">Your Hand(s)</div>
-                        <div id="bj-player-hands-container" class="bj-hands-container"></div>
-                    </div>
+                    <div class="bj-area"><div class="bj-label">Carl's Hand (<span id="bj-carl-score">?</span>)</div><div class="bj-cards" id="bj-carl-cards"></div></div>
+                    <div class="bj-area"><div class="bj-label">Your Hand(s)</div><div id="bj-player-hands-container" class="bj-hands-container"></div></div>
                 </div>
-
                 <div class="bj-controls" id="bj-controls" style="display:none;">
-                    <div class="bj-controls-row">
-                        <button class="bj-btn hit" onclick="bjHit()">Hit</button>
-                        <button class="bj-btn stand" onclick="bjStand()">Stand</button>
-                    </div>
-                    <div class="bj-controls-row">
-                        <button class="bj-btn double" id="bj-btn-double" onclick="bjDouble()">Double</button>
-                        <button class="bj-btn split" id="bj-btn-split" onclick="bjSplit()">Split</button>
-                    </div>
+                    <div class="bj-controls-row"><button class="bj-btn hit" onclick="bjHit()">Hit</button><button class="bj-btn stand" onclick="bjStand()">Stand</button></div>
+                    <div class="bj-controls-row"><button class="bj-btn double" id="bj-btn-double" onclick="bjDouble()">Double</button><button class="bj-btn split" id="bj-btn-split" onclick="bjSplit()">Split</button></div>
                 </div>
-
                 <button class="reset-btn" onclick="initBlackjack()">Deal</button>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- ROCK PAPER SCISSORS VIEW -->
+            <!-- ROCK PAPER SCISSORS -->
             <div id="view-rps" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Rock Paper Scissors</h1>
-                </div>
+                <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Rock Paper Scissors</h1></div>
                 <div id="rps-status" class="game-status">Choose Your Move!</div>
-                
                 <div class="rps-arena">
-                    <div class="rps-fighter">
-                        <span class="rps-label">Carl</span>
-                        <div class="rps-img-wrapper">
-                            <img id="rps-carl-hand" src="/static/icons/CarlRock.png" alt="Carl Hand" class="rps-hand-img" draggable="false" />
-                        </div>
-                    </div>
+                    <div class="rps-fighter"><span class="rps-label">Carl</span><div class="rps-img-wrapper"><img id="rps-carl-hand" src="/static/icons/CarlRock.png" alt="Carl Hand" class="rps-hand-img" draggable="false" /></div></div>
                     <div class="rps-vs">VS</div>
-                    <div class="rps-fighter">
-                        <span class="rps-label">You</span>
-                        <div class="rps-img-wrapper">
-                            <img id="rps-player-hand" src="/static/icons/Rock.png" alt="Player Hand" class="rps-hand-img" draggable="false" />
-                        </div>
-                    </div>
+                    <div class="rps-fighter"><span class="rps-label">You</span><div class="rps-img-wrapper"><img id="rps-player-hand" src="/static/icons/Rock.png" alt="Player Hand" class="rps-hand-img" draggable="false" /></div></div>
                 </div>
-
                 <div class="rps-controls">
-                    <button class="rps-choice-btn" onclick="playRps('rock')">
-                        <img src="/static/icons/Rock.png" alt="Rock" draggable="false" />
-                        <span>Rock</span>
-                    </button>
-                    <button class="rps-choice-btn" onclick="playRps('paper')">
-                        <img src="/static/icons/Paper.png" alt="Paper" draggable="false" />
-                        <span>Paper</span>
-                    </button>
-                    <button class="rps-choice-btn" onclick="playRps('scissors')">
-                        <img src="/static/icons/Scissors.png" alt="Scissors" draggable="false" />
-                        <span>Scissors</span>
-                    </button>
+                    <button class="rps-choice-btn" onclick="playRps('rock')"><img src="/static/icons/Rock.png" alt="Rock" draggable="false" /><span>Rock</span></button>
+                    <button class="rps-choice-btn" onclick="playRps('paper')"><img src="/static/icons/Paper.png" alt="Paper" draggable="false" /><span>Paper</span></button>
+                    <button class="rps-choice-btn" onclick="playRps('scissors')"><img src="/static/icons/Scissors.png" alt="Scissors" draggable="false" /><span>Scissors</span></button>
                 </div>
-
                 <button class="reset-btn" onclick="initRps()">Reset Score</button>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- TIC TAC TOE VIEW -->
+            <!-- TIC TAC TOE -->
             <div id="view-tictactoe" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Tic Tac Toe</h1>
-                </div>
+                <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Tic Tac Toe</h1></div>
                 <div id="ttt-status" class="game-status">Your Turn (X)</div>
                 <div class="ttt-board">
-                    <button class="ttt-cell" id="ttt-cell-0" onclick="makeMove(0)"></button>
-                    <button class="ttt-cell" id="ttt-cell-1" onclick="makeMove(1)"></button>
-                    <button class="ttt-cell" id="ttt-cell-2" onclick="makeMove(2)"></button>
-                    <button class="ttt-cell" id="ttt-cell-3" onclick="makeMove(3)"></button>
-                    <button class="ttt-cell" id="ttt-cell-4" onclick="makeMove(4)"></button>
-                    <button class="ttt-cell" id="ttt-cell-5" onclick="makeMove(5)"></button>
-                    <button class="ttt-cell" id="ttt-cell-6" onclick="makeMove(6)"></button>
-                    <button class="ttt-cell" id="ttt-cell-7" onclick="makeMove(7)"></button>
-                    <button class="ttt-cell" id="ttt-cell-8" onclick="makeMove(8)"></button>
+                    <button class="ttt-cell" id="ttt-cell-0" onclick="makeMove(0)"></button><button class="ttt-cell" id="ttt-cell-1" onclick="makeMove(1)"></button><button class="ttt-cell" id="ttt-cell-2" onclick="makeMove(2)"></button>
+                    <button class="ttt-cell" id="ttt-cell-3" onclick="makeMove(3)"></button><button class="ttt-cell" id="ttt-cell-4" onclick="makeMove(4)"></button><button class="ttt-cell" id="ttt-cell-5" onclick="makeMove(5)"></button>
+                    <button class="ttt-cell" id="ttt-cell-6" onclick="makeMove(6)"></button><button class="ttt-cell" id="ttt-cell-7" onclick="makeMove(7)"></button><button class="ttt-cell" id="ttt-cell-8" onclick="makeMove(8)"></button>
                 </div>
                 <button class="reset-btn" onclick="initTicTacToe()">Restart Game</button>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- HANGMAN VIEW -->
+            <!-- HANGMAN -->
             <div id="view-hangman" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Hangman</h1>
-                </div>
+                <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Hangman</h1></div>
                 <div id="hm-status" class="game-status">Loading Word...</div>
                 <div class="hm-drawing-container">
                     <svg id="hm-canvas" width="200" height="150" viewBox="0 0 200 150">
@@ -525,127 +358,71 @@
                 </div>
                 <div id="hm-word" class="hm-word">_ _ _ _ _</div>
                 <div class="hm-keyboard">
-                    <div class="hm-row">
-                        <button class="hm-key" onclick="hmGuess('Q')">Q</button>
-                        <button class="hm-key" onclick="hmGuess('W')">W</button>
-                        <button class="hm-key" onclick="hmGuess('E')">E</button>
-                        <button class="hm-key" onclick="hmGuess('R')">R</button>
-                        <button class="hm-key" onclick="hmGuess('T')">T</button>
-                        <button class="hm-key" onclick="hmGuess('Y')">Y</button>
-                        <button class="hm-key" onclick="hmGuess('U')">U</button>
-                        <button class="hm-key" onclick="hmGuess('I')">I</button>
-                        <button class="hm-key" onclick="hmGuess('O')">O</button>
-                        <button class="hm-key" onclick="hmGuess('P')">P</button>
-                    </div>
-                    <div class="hm-row">
-                        <button class="hm-key" onclick="hmGuess('A')">A</button>
-                        <button class="hm-key" onclick="hmGuess('S')">S</button>
-                        <button class="hm-key" onclick="hmGuess('D')">D</button>
-                        <button class="hm-key" onclick="hmGuess('F')">F</button>
-                        <button class="hm-key" onclick="hmGuess('G')">G</button>
-                        <button class="hm-key" onclick="hmGuess('H')">H</button>
-                        <button class="hm-key" onclick="hmGuess('J')">J</button>
-                        <button class="hm-key" onclick="hmGuess('K')">K</button>
-                        <button class="hm-key" onclick="hmGuess('L')">L</button>
-                    </div>
-                    <div class="hm-row">
-                        <button class="hm-key" onclick="hmGuess('Z')">Z</button>
-                        <button class="hm-key" onclick="hmGuess('X')">X</button>
-                        <button class="hm-key" onclick="hmGuess('C')">C</button>
-                        <button class="hm-key" onclick="hmGuess('V')">V</button>
-                        <button class="hm-key" onclick="hmGuess('B')">B</button>
-                        <button class="hm-key" onclick="hmGuess('N')">N</button>
-                        <button class="hm-key" onclick="hmGuess('M')">M</button>
-                    </div>
+                    <div class="hm-row"><button class="hm-key" onclick="hmGuess('Q')">Q</button><button class="hm-key" onclick="hmGuess('W')">W</button><button class="hm-key" onclick="hmGuess('E')">E</button><button class="hm-key" onclick="hmGuess('R')">R</button><button class="hm-key" onclick="hmGuess('T')">T</button><button class="hm-key" onclick="hmGuess('Y')">Y</button><button class="hm-key" onclick="hmGuess('U')">U</button><button class="hm-key" onclick="hmGuess('I')">I</button><button class="hm-key" onclick="hmGuess('O')">O</button><button class="hm-key" onclick="hmGuess('P')">P</button></div>
+                    <div class="hm-row"><button class="hm-key" onclick="hmGuess('A')">A</button><button class="hm-key" onclick="hmGuess('S')">S</button><button class="hm-key" onclick="hmGuess('D')">D</button><button class="hm-key" onclick="hmGuess('F')">F</button><button class="hm-key" onclick="hmGuess('G')">G</button><button class="hm-key" onclick="hmGuess('H')">H</button><button class="hm-key" onclick="hmGuess('J')">J</button><button class="hm-key" onclick="hmGuess('K')">K</button><button class="hm-key" onclick="hmGuess('L')">L</button></div>
+                    <div class="hm-row"><button class="hm-key" onclick="hmGuess('Z')">Z</button><button class="hm-key" onclick="hmGuess('X')">X</button><button class="hm-key" onclick="hmGuess('C')">C</button><button class="hm-key" onclick="hmGuess('V')">V</button><button class="hm-key" onclick="hmGuess('B')">B</button><button class="hm-key" onclick="hmGuess('N')">N</button><button class="hm-key" onclick="hmGuess('M')">M</button></div>
                 </div>
                 <button class="reset-btn" onclick="initHangman()">Restart Game</button>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- CONNECT FOUR VIEW -->
+            <!-- CONNECT FOUR -->
             <div id="view-connectfour" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Connect Four</h1>
-                </div>
+                <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Connect Four</h1></div>
                 <div id="c4-status" class="game-status">Your Turn (Red)</div>
                 <div class="c4-container">
                     <div class="c4-drop-row">
-                        <button class="c4-drop-btn" onclick="c4HandleClick(0)">↓</button>
-                        <button class="c4-drop-btn" onclick="c4HandleClick(1)">↓</button>
-                        <button class="c4-drop-btn" onclick="c4HandleClick(2)">↓</button>
-                        <button class="c4-drop-btn" onclick="c4HandleClick(3)">↓</button>
-                        <button class="c4-drop-btn" onclick="c4HandleClick(4)">↓</button>
-                        <button class="c4-drop-btn" onclick="c4HandleClick(5)">↓</button>
-                        <button class="c4-drop-btn" onclick="c4HandleClick(6)">↓</button>
+                        <button class="c4-drop-btn" onclick="c4HandleClick(0)">↓</button><button class="c4-drop-btn" onclick="c4HandleClick(1)">↓</button><button class="c4-drop-btn" onclick="c4HandleClick(2)">↓</button><button class="c4-drop-btn" onclick="c4HandleClick(3)">↓</button><button class="c4-drop-btn" onclick="c4HandleClick(4)">↓</button><button class="c4-drop-btn" onclick="c4HandleClick(5)">↓</button><button class="c4-drop-btn" onclick="c4HandleClick(6)">↓</button>
                     </div>
                     <div class="c4-board" id="c4-board"></div>
                 </div>
                 <button class="reset-btn" onclick="initConnectFour()">Restart Game</button>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- BATTLESHIP VIEW -->
+            <!-- BATTLESHIP -->
             <div id="view-battleship" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Battleship</h1>
-                </div>
+                <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Battleship</h1></div>
                 <div id="bs-status" class="game-status">Place your 4-length ship</div>
-                
                 <div class="bs-container">
-                    <div id="bs-placement-controls" class="bs-controls-row">
-                        <button class="bs-action-btn" onclick="bsToggleRotate()">Rotate: Horizontal</button>
-                        <button class="bs-action-btn confirm" onclick="bsConfirmPlacement()">Place Ship</button>
-                    </div>
-                    
-                    <div class="bs-label" id="bs-enemy-label" style="display:none;">Carl's Fleet (Tap to Attack)</div>
-                    <div class="bs-grid" id="bs-enemy-grid" style="display:none;"></div>
-                    
-                    <div class="bs-label" id="bs-player-label">Your Fleet (Select position below)</div>
-                    <div class="bs-grid" id="bs-player-grid"></div>
+                    <div id="bs-placement-controls" class="bs-controls-row"><button class="bs-action-btn" onclick="bsToggleRotate()">Rotate: Horizontal</button><button class="bs-action-btn confirm" onclick="bsConfirmPlacement()">Place Ship</button></div>
+                    <div class="bs-label" id="bs-enemy-label" style="display:none;">Carl's Fleet (Tap to Attack)</div><div class="bs-grid" id="bs-enemy-grid" style="display:none;"></div>
+                    <div class="bs-label" id="bs-player-label">Your Fleet (Select position below)</div><div class="bs-grid" id="bs-player-grid"></div>
                 </div>
-
                 <button class="reset-btn" onclick="initBattleship()">Restart Game</button>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- CHECKERS VIEW -->
+            <!-- CHECKERS -->
             <div id="view-checkers" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Checkers</h1>
-                </div>
+                <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Checkers</h1></div>
                 <div id="chk-status" class="game-status">Your Turn (Red)</div>
-                
-                <div class="chk-container">
-                    <div class="chk-board" id="chk-board"></div>
-                </div>
-
+                <div class="chk-container"><div class="chk-board" id="chk-board"></div></div>
                 <button class="reset-btn" onclick="initCheckers()">Restart Game</button>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
-            <!-- CHESS VIEW -->
+            <!-- CHESS -->
             <div id="view-chess" class="view">
-                <div class="games-header">
-                    <button class="back-btn" onclick="switchView('view-games')">←</button>
-                    <h1>Chess</h1>
-                </div>
+                <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Chess</h1></div>
                 <div id="chs-status" class="game-status">Your Turn (White)</div>
-                
-                <div class="chs-container">
-                    <div class="chs-board" id="chs-board"></div>
-                </div>
-
+                <div class="chs-container"><div class="chs-board" id="chs-board"></div></div>
                 <button class="reset-btn" onclick="initChess()">Restart Game</button>
-                <div class="copyright">@Dalted Copyright Issued 2026</div>
             </div>
 
         </main>
     </div>
 
-   <!-- Replace your old script tag at the bottom with these two -->
+    <!-- FRIEND CALL OVERLAY -->
+    <div id="friend-call-modal" class="friend-call-modal hidden">
+        <div class="call-box">
+            <div id="friend-call-avatar" class="call-avatar"></div>
+            <h2 id="friend-call-name">Calling...</h2>
+            <p id="friend-call-status">Connecting...</p>
+            <audio id="remote-audio" autoplay playsinline></audio>
+            <div class="friend-call-actions">
+                <button id="accept-call-btn" class="call-btn accept" onclick="answerFriendCall()">Answer</button>
+                <button id="decline-call-btn" class="call-btn decline" onclick="endFriendCall()">End Call</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/script.js"></script>
     <script src="/static/games.js"></script>
 </body>
