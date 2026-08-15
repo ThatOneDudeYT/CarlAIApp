@@ -221,8 +221,8 @@
                 <div class="call-header">
                     <h1>Carl AI</h1>
                     <div id="call-timer">00:00</div>
+                    <div id="call-status" style="display: none;">Calling Carl...</div>
                 </div>
-                <div id="call-status" style="display: none;">Calling Carl...</div>
                 
                 <div class="call-controls">
                     <div class="call-option-row">
@@ -240,11 +240,12 @@
             <div id="view-friend-call" class="view">
                 <video id="fc-remote-video" autoplay playsinline></video>
                 <video id="fc-local-video" autoplay playsinline muted></video>
+                
                 <div class="call-header">
                     <h1 id="fc-title">Friend Name</h1>
                     <div id="fc-timer">00:00</div>
+                    <div id="fc-status" style="display: none;">Calling...</div>
                 </div>
-                <div id="fc-status" style="display: none;">Calling...</div>
 
                 <div class="call-controls" id="fc-controls">
                     <div class="call-option-row">
@@ -445,8 +446,8 @@
         </div>
     </div>
     
-    <!-- Hidden element to route friend audio when camera isn't explicitly visible -->
-    <audio id="remote-audio" autoplay playsinline style="display: none;"></audio>
+    <!-- Hidden element to route friend audio safely -->
+    <audio id="remote-audio" autoplay playsinline style="position: absolute; width: 0; height: 0; visibility: hidden;"></audio>
 
     <script src="/static/script.js"></script>
     <script src="/static/games.js"></script>
