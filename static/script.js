@@ -1,41 +1,32 @@
-// =========================================================================
-// --- FIREBASE CLOUD PERSISTENCE & GLOBAL STATE ---
-// =========================================================================
+const firebaseConfig = { apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", authDomain: "carl-ai-loggins.firebaseapp.com", projectId: "carl-ai-loggins", storageBucket: "carl-ai-loggins.firebasestorage.app", messagingSenderId: "372926140822", appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", measurementId: "G-G4H60BZHT3" };
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(), db = firebase.firestore();
 
-const firebaseConfig = {
-    apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg",
-    authDomain: "carl-ai-loggins.firebaseapp.com",
-    projectId: "carl-ai-loggins",
-    storageBucket: "carl-ai-loggins.firebasestorage.app",
-    messagingSenderId: "372926140822",
-    appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7",
-    measurementId: "G-G4H60BZHT3"
+let firebaseUserId=null, currentUser=null, currentUserAvatar="/static/icons/default-avatar.png", customApiKey="";
+let chatsHistory=[], activeChatId=null, chatHistory=[];  
+let selectedGame="Burger Clicker"; const gamesWithDifficulty=["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
+let pendingImageBase64=null, pendingImageMime=null, pendingImageSrc=null, pendingDmImageBase64=null, pendingDmImageMime=null, pendingDmImageSrc=null, currentDmUser=null; 
+let isDM=false, currentDmUnsubscribe=null;
+
+// --- BURGER ECONOMY & SHOP INVENTORY ---
+let userBurgers=100, clickerBurgers=0, rebirths=0, clickPower=1, autoChefs=0, burgerStands=0, burgerFactories=0;   
+let inventory = [];
+let equipped = {
+    persona: "default",
+    bubble: "default",
+    frame: "default",
+    title: "",
+    background: "default",
+    c4Skin: "default",
+    bjFelt: "default",
+    goldenSpatula: false
 };
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-let firebaseUserId = null;
-let currentUser = null;
-let currentUserAvatar = "/static/icons/default-avatar.png";
-let customApiKey = "";
-
-let chatsHistory = []; 
-let activeChatId = null;
-let chatHistory = [];  
-
-let selectedGame = "Burger Clicker";
-const gamesWithDifficulty = ["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
-
-let pendingImageBase64 = null, pendingImageMime = null, pendingImageSrc = null;
-let pendingDmImageBase64 = null, pendingDmImageMime = null, pendingDmImageSrc = null, currentDmUser = null; 
-let isDM = false, currentDmUnsubscribe = null;
-
-// --- BURGER ECONOMY STATE ---
-let userBurgers = 100, clickerBurgers = 0, rebirths = 0, clickPower = 1, autoChefs = 0, burgerStands = 0, burgerFactories = 0;   
-
-function getMultiplier() { return 1 + (rebirths * 1.0); }
+function getMultiplier() { 
+    let mult = 1 + (rebirths * 1.0);
+    if (equipped.goldenSpatula) mult *= 1.5; // Golden Spatula gives +50% passive boost!
+    return mult;
+}
 function getClickValue() { return (clickPower * Math.floor(1 + (clickPower * 0.1))) * getMultiplier(); }
 function getChefPower() { return Math.floor(1 + (autoChefs * 0.1)); }
 function getStandPower() { return Math.floor(10 + (burgerStands * 0.2)); }
@@ -43,274 +34,276 @@ function getFactoryPower() { return Math.floor(100 + (burgerFactories * 1)); }
 function getBps() { return ((autoChefs * getChefPower()) + (burgerStands * getStandPower()) + (burgerFactories * getFactoryPower())) * getMultiplier(); }
 
 function updateBurgerUI() {
-    const headerCount = document.getElementById("burger-count");
-    if(headerCount) headerCount.innerText = Math.floor(userBurgers).toLocaleString();
-    const clickerCount = document.getElementById("clicker-score-text");
-    if(clickerCount) clickerCount.innerText = Math.floor(clickerBurgers).toLocaleString();
+    const hc=document.getElementById("burger-count"); if(hc) hc.innerText = Math.floor(userBurgers).toLocaleString();
+    const cc=document.getElementById("clicker-score-text"); if(cc) cc.innerText = Math.floor(clickerBurgers).toLocaleString();
 }
+setInterval(() => { let bps = getBps(); if (bps > 0) { clickerBurgers += bps; updateBurgerUI(); } }, 1000);
 
-setInterval(() => {
-    let bps = getBps();
-    if (bps > 0) { clickerBurgers += bps; updateBurgerUI(); }
-}, 1000);
-
-// =========================================================================
-// --- START-UP SCREEN TYPING ANIMATION ---
-// =========================================================================
-
-const normalPhrases = ["Ready When You Are", "What Time Is It?", "I Need Help With Math", "The Floor Is Yours!"];
-const rarePhrases = ["Mmmm Burgers", "I weigh 700 pounds", "67"];
-let typingTimeout = null;
-
+// --- TYPING ANIMATION ---
+const normalPhrases=["Ready When You Are", "What Time Is It?", "I Need Help With Math", "The Floor Is Yours!"], rarePhrases=["Mmmm Burgers", "I weigh 700 pounds", "67"];
+let typingTimeout=null;
 function initTypingAnimation() {
-    const titleEl = document.getElementById("startup-title");
-    if (!titleEl) return;
-    if (typingTimeout) clearTimeout(typingTimeout);
-    let isDeleting = false, currentText = "Ask Away!", charIndex = currentText.length; 
-    titleEl.innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
-    typingTimeout = setTimeout(() => { isDeleting = true; typeLoop(titleEl, currentText, charIndex, isDeleting); }, 2000);
+    const t=document.getElementById("startup-title"); if(!t) return; if(typingTimeout) clearTimeout(typingTimeout);
+    let isDel=false, curTxt="Ask Away!", idx=curTxt.length; t.innerHTML='Ask Away!<span class="typing-cursor"></span>';
+    typingTimeout=setTimeout(()=>{isDel=true; typeLoop(t,curTxt,idx,isDel);},2000);
 }
-
-function typeLoop(titleEl, currentText, charIndex, isDeleting) {
-    let typingSpeed = isDeleting ? 45 : 65 + Math.random() * 40; 
-    if (isDeleting) charIndex--; else charIndex++;
-    titleEl.innerHTML = currentText.substring(0, charIndex) + '<span class="typing-cursor"></span>';
-    
-    if (!isDeleting && charIndex === currentText.length) {
-        typingSpeed = 2400; isDeleting = true;
-    } else if (isDeleting && charIndex === 0) {
-        isDeleting = false;
-        const pool = Math.random() < 0.10 ? rarePhrases : normalPhrases;
-        let newPhrase = currentText;
-        while (newPhrase === currentText) newPhrase = pool[Math.floor(Math.random() * pool.length)];
-        currentText = newPhrase; typingSpeed = 400;
-    }
-    typingTimeout = setTimeout(() => typeLoop(titleEl, currentText, charIndex, isDeleting), typingSpeed);
+function typeLoop(t, curTxt, idx, isDel) {
+    let spd=isDel?45:65+Math.random()*40; if(isDel) idx--; else idx++;
+    t.innerHTML=curTxt.substring(0,idx)+'<span class="typing-cursor"></span>';
+    if(!isDel && idx===curTxt.length) { spd=2400; isDel=true; } 
+    else if(isDel && idx===0) { isDel=false; const pool=Math.random()<0.10?rarePhrases:normalPhrases; let n=curTxt; while(n===curTxt) n=pool[Math.floor(Math.random()*pool.length)]; curTxt=n; spd=400; }
+    typingTimeout=setTimeout(()=>typeLoop(t,curTxt,idx,isDel),spd);
 }
-
-function hideStartupScreen() {
-    const startupScreen = document.getElementById("startup-screen");
-    const viewChat = document.getElementById("view-chat");
-    if (startupScreen) startupScreen.classList.add("hidden");
-    if (viewChat) viewChat.classList.remove("startup-active");
-    if (typingTimeout) clearTimeout(typingTimeout);
-}
-
-function showStartupScreen() {
-    const startupScreen = document.getElementById("startup-screen");
-    const viewChat = document.getElementById("view-chat");
-    if (startupScreen) { startupScreen.classList.remove("hidden"); initTypingAnimation(); }
-    if (viewChat) viewChat.classList.add("startup-active");
-}
-
+function hideStartupScreen() { const s=document.getElementById("startup-screen"), c=document.getElementById("view-chat"); if(s) s.classList.add("hidden"); if(c) c.classList.remove("startup-active"); if(typingTimeout) clearTimeout(typingTimeout); }
+function showStartupScreen() { const s=document.getElementById("startup-screen"), c=document.getElementById("view-chat"); if(s) { s.classList.remove("hidden"); initTypingAnimation(); } if(c) c.classList.add("startup-active"); }
 function hasValidApiKey() { return customApiKey && customApiKey.trim().length > 20; }
 
 window.addEventListener("DOMContentLoaded", () => {
-    initMobileNavIcons();
-    initTypingAnimation();
-    updateUsageUI();
-    updateBurgerUI();
-    
-    const oldNav = document.querySelector('.bottom-nav');
-    if (oldNav) oldNav.style.display = 'none';
-
+    initMobileNavIcons(); initTypingAnimation(); updateUsageUI(); updateBurgerUI();
+    const oldNav = document.querySelector('.bottom-nav'); if (oldNav) oldNav.style.display = 'none';
     if (!document.getElementById("mobile-hamburger-btn")) {
-        const hamburgerBtn = document.createElement("button");
-        hamburgerBtn.id = "mobile-hamburger-btn";
-        hamburgerBtn.className = "mobile-top-header";
-        hamburgerBtn.innerHTML = `<div class="hamburger-line"></div><div class="hamburger-line"></div><div class="hamburger-line"></div>`;
-        hamburgerBtn.onclick = toggleMobileSidebar; 
-        document.body.appendChild(hamburgerBtn);
+        const hb = document.createElement("button"); hb.id = "mobile-hamburger-btn"; hb.className = "mobile-top-header";
+        hb.innerHTML = `<div class="hamburger-line"></div><div class="hamburger-line"></div><div class="hamburger-line"></div>`;
+        hb.onclick = toggleMobileSidebar; document.body.appendChild(hb);
     }
-
     if (!document.getElementById("sidebar-overlay")) {
-        const overlay = document.createElement("div");
-        overlay.id = "sidebar-overlay"; overlay.className = "sidebar-overlay";
-        overlay.onclick = toggleMobileSidebar;
-        document.body.appendChild(overlay);
+        const ov = document.createElement("div"); ov.id = "sidebar-overlay"; ov.className = "sidebar-overlay"; ov.onclick = toggleMobileSidebar; document.body.appendChild(ov);
     }
-    
-    const dmInput = document.getElementById("dm-input");
-    if (dmInput) dmInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendDmMessage(); });
-
-    const sendBtn = document.getElementById("send-btn");
-    if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-    const userInput = document.getElementById("user-input");
-    if (userInput) userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
+    const dmInp = document.getElementById("dm-input"); if(dmInp) dmInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendDmMessage(); });
+    const sBtn = document.getElementById("send-btn"); if(sBtn) sBtn.addEventListener("click", sendMessage);
+    const uInp = document.getElementById("user-input"); if(uInp) uInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendMessage(); });
 });
 
-function toggleMobileSidebar() {
-    const sidebar = document.querySelector('.desktop-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    if (sidebar) sidebar.classList.toggle('open');
-    if (overlay) overlay.classList.toggle('active');
-}
+function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
 
 // --- AUTHENTICATION ---
 auth.onAuthStateChanged(async (user) => {
-    const overlay = document.getElementById('auth-overlay');
+    const ov = document.getElementById('auth-overlay');
     if (user) {
-        firebaseUserId = user.uid;
-        currentUser = user.displayName || user.email.split('@')[0];
-        currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
-        if (overlay) overlay.classList.add('hidden');
-        await loadUserDataFromCloud();
-    } else {
-        firebaseUserId = null;
-        if (overlay) overlay.classList.remove('hidden');
-    }
+        firebaseUserId = user.uid; currentUser = user.displayName || user.email.split('@')[0]; currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
+        if (ov) ov.classList.add('hidden'); await loadUserDataFromCloud();
+    } else { firebaseUserId = null; if (ov) ov.classList.remove('hidden'); }
 });
 
-function signInWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(error => alert("Google Sign-In Error: " + error.message));
-}
-
+function signInWithGoogle() { const p = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(p).catch(e => alert("Google Sign-In Error: " + e.message)); }
 function handleLogin(e) {
-    if (e) e.preventDefault();
-    const email = document.getElementById('auth-username').value.trim();
-    const pass = document.getElementById('auth-password').value;
-    
-    auth.signInWithEmailAndPassword(email, pass)
-        .then((userCredential) => { if (!userCredential.user.emailVerified) alert("Please check your inbox to verify your email address."); })
-        .catch(error => {
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
-                auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => {
-                    userCredential.user.sendEmailVerification().then(() => alert("Account created! Verification link sent to your email."));
-                }).catch(err => alert("Sign Up Error: " + err.message));
-            } else alert(error.message);
-        });
+    if(e) e.preventDefault(); const email = document.getElementById('auth-username').value.trim(), pass = document.getElementById('auth-password').value;
+    auth.signInWithEmailAndPassword(email, pass).then(c => { if (!c.user.emailVerified) alert("Please check your inbox to verify your email address."); })
+    .catch(err => {
+        if(err.code==='auth/user-not-found'||err.code==='auth/invalid-login-credentials'||err.code==='auth/invalid-credential') {
+            auth.createUserWithEmailAndPassword(email,pass).then(c=>{ c.user.sendEmailVerification().then(()=>alert("Account created! Verification link sent to your email. Check your spam folder.")); }).catch(e=>alert("Sign Up Error: "+e.message));
+        } else alert(err.message);
+    });
 }
-
 function handleSignOut() {
     auth.signOut().then(() => {
-        currentUser = null; currentUserAvatar = "/static/icons/default-avatar.png"; customApiKey = "";
-        chatsHistory = []; chatHistory = []; activeChatId = null; myFriends = []; myRequests = []; mySentRequests = []; currentDmUser = null;
-        userBurgers = 100; clickerBurgers = 0; autoChefs = 0; burgerStands = 0; burgerFactories = 0; clickPower = 1; rebirths = 0;
-        updateBurgerUI(); updateProfileUI(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
+        currentUser=null; currentUserAvatar="/static/icons/default-avatar.png"; customApiKey="";
+        chatsHistory=[]; chatHistory=[]; activeChatId=null; myFriends=[]; myRequests=[]; mySentRequests=[]; currentDmUser=null;
+        userBurgers=100; clickerBurgers=0; autoChefs=0; burgerStands=0; burgerFactories=0; clickPower=1; rebirths=0;
+        inventory=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
+        updateBurgerUI(); updateProfileUI(); applyEquippedCosmetics(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
     });
 }
 
-// --- CLOUD DATABASE ---
-let myFriends = [];
-let myRequests = [];
-let mySentRequests = [];
-
+// --- CLOUD PERSISTENCE ---
+let myFriends=[], myRequests=[], mySentRequests=[];
 async function loadUserDataFromCloud() {
     if (!firebaseUserId) return;
     db.collection("users").doc(firebaseUserId).onSnapshot(async (doc) => {
         if (doc.exists) {
-            const data = doc.data();
-            customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
-            if (!isDM) activeChatId = data.activeChatId || null;
-            applyTheme(data.theme || "dark");
-            
-            userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0;
-            autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0;
-            clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
-            myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || [];
-            
+            const data = doc.data(); customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
+            if (!isDM) activeChatId = data.activeChatId || null; applyTheme(data.theme || "dark");
+            userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0; autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0; clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
+            myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || []; 
+            inventory = data.inventory || [];
+            if (data.equipped) equipped = { ...equipped, ...data.equipped };
             updateBurgerUI();
-            
-            if (data.avatar) currentUserAvatar = data.avatar;
-            if (data.username) currentUser = data.username;
-            updateProfileUI();
-            
-            const keyInput = document.getElementById('user-api-key'); if (keyInput) keyInput.value = customApiKey;
-            const usernameInput = document.getElementById('settings-username-input'); if (usernameInput) usernameInput.value = currentUser;
-            
-            renderChatHistorySidebar(); updateUsageUI();
+            if (data.avatar) currentUserAvatar = data.avatar; if (data.username) currentUser = data.username;
+            updateProfileUI(); applyEquippedCosmetics();
+            const keyInp = document.getElementById('user-api-key'); if (keyInp) keyInp.value = customApiKey; const usrInp = document.getElementById('settings-username-input'); if (usrInp) usrInp.value = currentUser;
+            renderChatHistorySidebar(); updateUsageUI(); 
             if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
-        } else {
-            saveSessionData(); startNewChat();
-        }
-    }, (error) => console.error("Error listening to user data:", error));
+            if (document.getElementById('view-shop').classList.contains('active')) renderShopView();
+        } else { saveSessionData(); startNewChat(); }
+    }, e => console.error("Error:", e));
 }
-
 function saveSessionData() {
-    if (!firebaseUserId) return;
-    const currentActive = isDM ? (chatsHistory.length > 0 ? chatsHistory[0].id : null) : activeChatId;
+    if (!firebaseUserId) return; const cur = isDM ? (chatsHistory.length > 0 ? chatsHistory[0].id : null) : activeChatId;
     db.collection("users").doc(firebaseUserId).set({
-        apiKey: customApiKey, chats: chatsHistory, activeChatId: currentActive, theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
-        avatar: currentUserAvatar, username: currentUser, burgers: userBurgers, clickerBurgers: clickerBurgers,
-        autoChefs: autoChefs, burgerStands: burgerStands, burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths
-    }, { merge: true }).catch(e => console.error("Error saving data:", e));
+        apiKey: customApiKey, chats: chatsHistory, activeChatId: cur, theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
+        avatar: currentUserAvatar, username: currentUser, burgers: userBurgers, clickerBurgers: clickerBurgers, autoChefs: autoChefs, burgerStands: burgerStands, burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths,
+        inventory: inventory, equipped: equipped
+    }, { merge: true }).catch(e => console.error("Error saving:", e));
 }
 
-// --- USER PROFILE & SETTINGS ---
-function applyTheme(theme) {
-    const body = document.body, themeSwitch = document.getElementById('theme-toggle-switch');
-    if (theme === "light") { body.classList.remove("dark-mode"); body.classList.add("light-mode"); if (themeSwitch) themeSwitch.checked = true; } 
-    else { body.classList.remove("light-mode"); body.classList.add("dark-mode"); if (themeSwitch) themeSwitch.checked = false; }
+// --- PROFILE & COSMETICS UI ---
+function applyTheme(theme) { const b=document.body, ts=document.getElementById('theme-toggle-switch'); if(theme==="light"){ b.classList.remove("dark-mode"); b.classList.add("light-mode"); if(ts) ts.checked=true; } else { b.classList.remove("light-mode"); b.classList.add("dark-mode"); if(ts) ts.checked=false; } }
+function toggleTheme() { const b=document.body, ts=document.getElementById('theme-toggle-switch'); if(b.classList.contains('dark-mode')){ b.classList.remove('dark-mode'); b.classList.add('light-mode'); if(ts) ts.checked=true; } else { b.classList.remove('light-mode'); b.classList.add('dark-mode'); if(ts) ts.checked=false; } saveSessionData(); }
+function updateProfileUI() { 
+    const a=document.getElementById("header-user-avatar"), n=document.getElementById("header-user-name"); 
+    if(a) a.src=currentUserAvatar; 
+    if(n) n.innerText=currentUser||"Guest"; 
 }
-
-function toggleTheme() {
-    const body = document.body, themeSwitch = document.getElementById('theme-toggle-switch');
-    if (body.classList.contains('dark-mode')) { body.classList.remove('dark-mode'); body.classList.add('light-mode'); if (themeSwitch) themeSwitch.checked = true; } 
-    else { body.classList.remove('light-mode'); body.classList.add('dark-mode'); if (themeSwitch) themeSwitch.checked = false; }
-    saveSessionData();
-}
-
-function updateProfileUI() {
-    const avatarEl = document.getElementById("header-user-avatar"), nameEl = document.getElementById("header-user-name");
-    if (avatarEl) avatarEl.src = currentUserAvatar; if (nameEl) nameEl.innerText = currentUser || "Guest";
-}
-
-function updateUsernameFromSettings() {
-    const input = document.getElementById("settings-username-input");
-    if (!input || !currentUser) return;
-    const newName = input.value.trim();
-    if (newName.length >= 3 && newName.length <= 20) { currentUser = newName; updateProfileUI(); saveSessionData(); } 
-    else { alert("Username must be between 3 and 20 characters!"); input.value = currentUser || ""; }
-}
-
-function handleAvatarUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) { currentUserAvatar = e.target.result; updateProfileUI(); saveSessionData(); };
-    reader.readAsDataURL(file);
-}
-
-function saveSettings() {
-    const keyInput = document.getElementById('user-api-key'); if (keyInput) customApiKey = keyInput.value.trim();
-    const newPass = document.getElementById('settings-new-pass').value, confirmPass = document.getElementById('settings-confirm-pass').value;
-    if (newPass || confirmPass) {
-        if (newPass === confirmPass) { auth.currentUser.updatePassword(newPass).then(() => { alert("Password updated successfully."); document.getElementById('settings-new-pass').value = ""; document.getElementById('settings-confirm-pass').value = ""; }).catch(error => alert(error.message)); } 
-        else alert("Passwords do not match!");
+function applyEquippedCosmetics() {
+    // Frames
+    const fWrap = document.getElementById("header-avatar-wrapper");
+    if (fWrap) {
+        fWrap.className = "avatar-frame-wrapper";
+        if (equipped.frame && equipped.frame !== "default") fWrap.classList.add(`frame-${equipped.frame}`);
     }
-    saveSessionData(); updateUsageUI();
+    // Badges / Titles
+    const bBadge = document.getElementById("header-user-badge");
+    if (bBadge) {
+        if (equipped.title) { bBadge.innerText = equipped.title; bBadge.style.display = "inline-block"; }
+        else { bBadge.style.display = "none"; }
+    }
+    // Background Glow
+    const glow = document.getElementById("glow-bg");
+    if (glow) {
+        if (equipped.background === "gold") glow.style.background = "radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 60%)";
+        else if (equipped.background === "cyber") glow.style.background = "radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 60%)";
+        else glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)";
+    }
+    // Blackjack Felts
+    const bjArena = document.getElementById("bj-felt-arena");
+    if (bjArena) {
+        bjArena.className = "bj-arena";
+        if (equipped.bjFelt && equipped.bjFelt !== "default") bjArena.classList.add(`felt-${equipped.bjFelt}`);
+    }
 }
-
-function toggleApiKeyHelp() { const helpBox = document.getElementById('api-key-help-box'); if (helpBox) helpBox.classList.toggle('hidden'); }
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('desktop-sidebar'), btn = document.getElementById('sidebar-toggle-btn');
-    if (!sidebar) return;
-    if (sidebar.classList.contains('expanded')) { sidebar.classList.remove('expanded'); sidebar.classList.add('collapsed'); if (btn) btn.innerText = "❯"; } 
-    else { sidebar.classList.remove('collapsed'); sidebar.classList.add('expanded'); if (btn) btn.innerText = "❮"; }
-}
-
-function getDifficulty() { const select = document.getElementById("difficulty-select"); return select ? select.value : "medium"; }
+function updateUsernameFromSettings() { const inp=document.getElementById("settings-username-input"); if(!inp||!currentUser) return; const nn=inp.value.trim(); if(nn.length>=3 && nn.length<=20){ currentUser=nn; updateProfileUI(); saveSessionData(); } else { alert("Username must be between 3 and 20 characters!"); inp.value=currentUser||""; } }
+function handleAvatarUpload(e) { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(ev){ currentUserAvatar=ev.target.result; updateProfileUI(); saveSessionData(); }; r.readAsDataURL(f); }
+function saveSettings() { const ki=document.getElementById('user-api-key'); if(ki) customApiKey=ki.value.trim(); const np=document.getElementById('settings-new-pass').value, cp=document.getElementById('settings-confirm-pass').value; if(np||cp){ if(np===cp){ auth.currentUser.updatePassword(np).then(()=>{ alert("Password updated."); document.getElementById('settings-new-pass').value=""; document.getElementById('settings-confirm-pass').value=""; }).catch(e=>alert(e.message)); } else alert("Passwords do not match!"); } saveSessionData(); updateUsageUI(); }
+function toggleApiKeyHelp() { const hb=document.getElementById('api-key-help-box'); if(hb) hb.classList.toggle('hidden'); }
+function toggleSidebar() { const sb=document.getElementById('desktop-sidebar'), btn=document.getElementById('sidebar-toggle-btn'); if(!sb) return; if(sb.classList.contains('expanded')){ sb.classList.remove('expanded'); sb.classList.add('collapsed'); if(btn) btn.innerText="❯"; } else { sb.classList.remove('collapsed'); sb.classList.add('expanded'); if(btn) btn.innerText="❮"; } }
+function getDifficulty() { const s=document.getElementById("difficulty-select"); return s?s.value:"medium"; }
 
 function switchView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    const target = document.getElementById(viewId);
-    if (target) target.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); 
+    const t=document.getElementById(viewId); if(t) t.classList.add('active');
+    const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb&&sb.classList.contains('open')) sb.classList.remove('open'); if(ov&&ov.classList.contains('active')) ov.classList.remove('active');
+    if(viewId!=='view-dm'){ isDM=false; if(currentDmUnsubscribe){ currentDmUnsubscribe(); currentDmUnsubscribe=null; } }
+    if(viewId==='view-games') updateDifficultyPickerVisibility(); 
+    else if(viewId==='view-friends') fetchAllUsers(); 
+    else if(viewId==='view-burgerclicker') updateUpgradesUI();
+    else if(viewId==='view-shop') renderShopView();
+}
 
-    const sidebar = document.querySelector('.desktop-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    if (sidebar && sidebar.classList.contains('open')) sidebar.classList.remove('open');
-    if (overlay && overlay.classList.contains('active')) overlay.classList.remove('active');
-    
-    if (viewId !== 'view-dm') {
-        isDM = false;
-        if(currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
+// =========================================================================
+// --- BURGER SHOP SYSTEM ---
+// =========================================================================
+const shopCatalog = [
+    // Personas
+    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 25, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
+    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 30, desc: "Carl reviews your questions like a furious five-star culinary chef." },
+    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", icon: "🤖", cost: 40, desc: "Carl talks in cool dystopian cyberpunk terminology." },
+    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", icon: "😏", cost: 20, desc: "Carl answers your questions with maximum sarcasm and wit." },
+
+    // Bubbles
+    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 15, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
+    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 35, desc: "Wraps your chat messages in shiny luxury gold." },
+    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", icon: "🔮", cost: 25, desc: "Deep purple-pink retro synthwave gradient." },
+
+    // Profile Frames
+    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 50, desc: "Surrounds your profile avatar with an aura of pure gold." },
+    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 45, desc: "Animated pulsing cyber frame around your picture." },
+    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", icon: "🔥", cost: 60, desc: "Fiery red & orange border around your avatar." },
+
+    // Titles / Badges
+    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 20, desc: "Displays the [BURGER BARON] badge next to your name." },
+    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 50, desc: "Displays the [GRANDMASTER] badge next to your name." },
+    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", icon: "🐐", cost: 100, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
+
+    // Backgrounds
+    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 40, desc: "Changes the startup radial glow to ambient gold." },
+    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 40, desc: "Changes the ambient background to magenta & purple." },
+
+    // Minigame Skins & Boosts
+    { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", icon: "🍟", cost: 30, desc: "Play Connect Four using real Burger & French Fry tokens!" },
+    { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", icon: "🃏", cost: 25, desc: "Changes the Blackjack table to rich Velvet Crimson." },
+    { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", icon: "🎲", cost: 25, desc: "Luxury dark emerald green Blackjack felt." },
+    { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", icon: "🔮", cost: 25, desc: "Deep cosmic purple Blackjack felt." },
+    { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", icon: "🍳", cost: 75, desc: "Permanent +50% production boost across all Burger Clicker businesses!" }
+];
+
+function renderShopView() {
+    const container = document.getElementById("shop-items-container");
+    if (!container) return;
+    container.innerHTML = "";
+
+    shopCatalog.forEach(item => {
+        const owned = inventory.includes(item.id);
+        let isEquipped = false;
+
+        if (item.type === "goldenSpatula") isEquipped = equipped.goldenSpatula;
+        else if (item.type === "title") isEquipped = (equipped.title === item.val);
+        else isEquipped = (equipped[item.type] === item.val);
+
+        const card = document.createElement("div");
+        card.className = "shop-card";
+
+        let btnHTML = "";
+        if (!owned) {
+            btnHTML = `<button class="shop-buy-btn buy" onclick="buyShopItem('${item.id}')">Buy (${item.cost} 🍔)</button>`;
+        } else if (isEquipped) {
+            btnHTML = `<button class="shop-buy-btn equipped">Equipped ✓</button>`;
+        } else {
+            btnHTML = `<button class="shop-buy-btn equip" onclick="equipShopItem('${item.id}')">Equip</button>`;
+        }
+
+        card.innerHTML = `
+            <div>
+                <div class="shop-card-header">
+                    <span class="shop-item-title">${item.name}</span>
+                    <span class="shop-item-icon">${item.icon}</span>
+                </div>
+                <div class="shop-item-desc">${item.desc}</div>
+            </div>
+            <div>
+                <div class="shop-item-cost">Price: ${item.cost} Burgers</div>
+                ${btnHTML}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function buyShopItem(itemId) {
+    const item = shopCatalog.find(i => i.id === itemId);
+    if (!item) return;
+
+    if (userBurgers < item.cost) {
+        alert("You do not have enough Burgers! Play Burger Clicker to trade for real burgers!");
+        return;
     }
 
-    if (viewId === 'view-games') updateDifficultyPickerVisibility();
-    else if (viewId === 'view-friends') fetchAllUsers();
-    else if (viewId === 'view-burgerclicker') updateUpgradesUI();
+    userBurgers -= item.cost;
+    inventory.push(item.id);
+    
+    // Auto equip upon buying
+    equipShopItem(itemId, false);
+
+    updateBurgerUI();
+    saveSessionData();
+    renderShopView();
+}
+
+function equipShopItem(itemId, notify = true) {
+    const item = shopCatalog.find(i => i.id === itemId);
+    if (!item) return;
+
+    if (item.type === "goldenSpatula") {
+        equipped.goldenSpatula = true;
+    } else if (item.type === "title") {
+        equipped.title = item.val;
+    } else {
+        equipped[item.type] = item.val;
+    }
+
+    applyEquippedCosmetics();
+    saveSessionData();
+    renderShopView();
+    if (notify) alert(`Equipped ${item.name}!`);
 }
 
 // =========================================================================
@@ -344,7 +337,7 @@ function launchGame() {
     else if (selectedGame === "Chess") { switchView("view-chess"); if(typeof initChess === 'function') initChess(); } 
 }
 
-// --- GAME 0: BURGER CLICKER LOGIC ---
+// --- BURGER CLICKER LOGIC ---
 function clickBurger() {
     let amount = getClickValue();
     clickerBurgers += amount;
@@ -396,27 +389,20 @@ function rebirth() {
 }
 
 function updateUpgradesUI() {
-    if(document.getElementById("click-cost")) document.getElementById("click-cost").innerText = Math.floor(100 * Math.pow(1.5, clickPower - 1)).toLocaleString();
-    if(document.getElementById("click-power-count")) document.getElementById("click-power-count").innerText = getClickValue().toLocaleString();
-    
-    if(document.getElementById("chef-cost")) document.getElementById("chef-cost").innerText = Math.floor(50 * Math.pow(1.15, autoChefs)).toLocaleString();
-    if(document.getElementById("chef-count")) document.getElementById("chef-count").innerText = autoChefs.toLocaleString();
-    if(document.getElementById("chef-output")) document.getElementById("chef-output").innerText = (getChefPower() * getMultiplier()).toLocaleString();
-    
-    if(document.getElementById("stand-cost")) document.getElementById("stand-cost").innerText = Math.floor(500 * Math.pow(1.15, burgerStands)).toLocaleString();
-    if(document.getElementById("stand-count")) document.getElementById("stand-count").innerText = burgerStands.toLocaleString();
-    if(document.getElementById("stand-output")) document.getElementById("stand-output").innerText = (getStandPower() * getMultiplier()).toLocaleString();
-    
-    if(document.getElementById("factory-cost")) document.getElementById("factory-cost").innerText = Math.floor(5000 * Math.pow(1.15, burgerFactories)).toLocaleString();
-    if(document.getElementById("factory-count")) document.getElementById("factory-count").innerText = burgerFactories.toLocaleString();
-    if(document.getElementById("factory-output")) document.getElementById("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
-
-    let bps = getBps();
-    let bpsText = document.getElementById("bps-text");
-    if(bpsText) bpsText.innerText = bps.toLocaleString();
-    
-    let rebirthsText = document.getElementById("rebirth-count");
-    if(rebirthsText) rebirthsText.innerText = rebirths.toLocaleString();
+    let e = (id) => document.getElementById(id);
+    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.5, clickPower - 1)).toLocaleString();
+    if(e("click-power-count")) e("click-power-count").innerText = getClickValue().toLocaleString();
+    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.15, autoChefs)).toLocaleString();
+    if(e("chef-count")) e("chef-count").innerText = autoChefs.toLocaleString();
+    if(e("chef-output")) e("chef-output").innerText = (getChefPower() * getMultiplier()).toLocaleString();
+    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.15, burgerStands)).toLocaleString();
+    if(e("stand-count")) e("stand-count").innerText = burgerStands.toLocaleString();
+    if(e("stand-output")) e("stand-output").innerText = (getStandPower() * getMultiplier()).toLocaleString();
+    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.15, burgerFactories)).toLocaleString();
+    if(e("factory-count")) e("factory-count").innerText = burgerFactories.toLocaleString();
+    if(e("factory-output")) e("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
+    if(e("bps-text")) e("bps-text").innerText = getBps().toLocaleString();
+    if(e("rebirth-count")) e("rebirth-count").innerText = rebirths.toLocaleString();
 }
 
 // =========================================================================
@@ -425,15 +411,13 @@ function updateUpgradesUI() {
 const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
 
 function getAvatarColor(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
     return avatarColors[Math.abs(hash) % avatarColors.length];
 }
 
 function getAvatarHTML(user) {
     if (!user.avatar || user.avatar.includes('default-avatar.png')) {
-        const color = getAvatarColor(user.username);
-        const initial = user.username.charAt(0).toUpperCase();
+        const color = getAvatarColor(user.username), initial = user.username.charAt(0).toUpperCase();
         return `<div class="text-avatar" style="background-color: ${color};">${initial}</div>`;
     }
     return `<img class="friend-avatar" src="${user.avatar}" draggable="false">`;
@@ -441,19 +425,11 @@ function getAvatarHTML(user) {
 
 let allUsersCache = [];
 async function fetchAllUsers() {
-    const list = document.getElementById("find-people-list");
-    if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
-
+    const list = document.getElementById("find-people-list"); if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
     try {
         if (firebaseUserId && db) {
-            const snapshot = await db.collection("users").get();
-            allUsersCache = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (doc.id !== firebaseUserId && data.username) {
-                    allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "" });
-                }
-            });
+            const snapshot = await db.collection("users").get(); allUsersCache = [];
+            snapshot.forEach(doc => { const data = doc.data(); if (doc.id !== firebaseUserId && data.username) allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "" }); });
         }
     } catch (err) { console.error("Error fetching real users", err); }
     renderFriendsView();
@@ -461,10 +437,8 @@ async function fetchAllUsers() {
 
 function renderFriendsView() {
     const query = document.getElementById("friend-search-input").value.toLowerCase().trim();
-    const findList = document.getElementById("find-people-list");
-    const friendsList = document.getElementById("my-friends-list");
+    const findList = document.getElementById("find-people-list"), friendsList = document.getElementById("my-friends-list");
     if (!findList || !friendsList) return;
-    
     findList.innerHTML = ""; friendsList.innerHTML = "";
 
     const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
@@ -486,7 +460,6 @@ function renderFriendsView() {
 
     let searchResults = [];
     const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
-    
     incomingReqs.forEach(user => {
         const item = document.createElement("div"); item.className = "friend-item";
         item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username}</span></div><button class="friend-req-btn" onclick="acceptRequest('${user.id}')">Accept Request</button>`;
@@ -623,7 +596,6 @@ function checkDailyMessageLimit() {
 
 function startNewChat() {
     isDM = false;
-    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
     archiveActiveChat(); activeChatId = "chat_" + Date.now(); chatHistory = [];
     const log = document.getElementById("chat-log"); if (log) log.innerHTML = '';
     const input = document.getElementById("user-input"); if (input) input.value = "";
@@ -635,7 +607,6 @@ function startNewChat() {
 
 function loadChat(chatId) {
     isDM = false;
-    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
     archiveActiveChat(); const target = chatsHistory.find(c => c.id === chatId);
     if (target) {
         activeChatId = target.id; const log = document.getElementById("chat-log"); if (log) log.innerHTML = target.html;
@@ -662,12 +633,27 @@ async function sendMessage() {
     }
 
     if (!checkDailyMessageLimit()) return;
-    hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
+    hideStartupScreen(); 
+    appendMessage(text, "user", pendingImageSrc);
     
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    // Inject active persona system instruction
+    let personaPrompt = "";
+    if (equipped.persona === "pirate") personaPrompt = " [SYSTEM INSTRUCTION: You are a swashbuckling pirate. Answer the query speaking strictly like a pirate matey!]";
+    else if (equipped.persona === "chef") personaPrompt = " [SYSTEM INSTRUCTION: You are Gordon Ramsay. Answer the query passionately and critique things like a world-class furious chef!]";
+    else if (equipped.persona === "cyber") personaPrompt = " [SYSTEM INSTRUCTION: You are an elite underground Cyberpunk AI. Use cool hacker and sci-fi terminology!]";
+    else if (equipped.persona === "sarcastic") personaPrompt = " [SYSTEM INSTRUCTION: Answer the query with clever sarcasm, dry wit, and humorous irony!]";
+
     const payload = { 
-        message: text || "Look at this image.", history: chatHistory, image_b64: pendingImageBase64, image_mime: pendingImageMime, 
-        api_key: customApiKey, user_time: userLocalTime, user_timezone: userTimezone, client_time: `${userLocalTime} (${userTimezone})`
+        message: (text || "Look at this image.") + personaPrompt, 
+        history: chatHistory, 
+        image_b64: pendingImageBase64, 
+        image_mime: pendingImageMime, 
+        api_key: customApiKey, 
+        user_time: userLocalTime, 
+        user_timezone: userTimezone, 
+        client_time: `${userLocalTime} (${userTimezone})`
     };
 
     input.value = ""; clearPendingImage();
@@ -793,7 +779,11 @@ function renderChatHistorySidebar() {
         const deleteBtn = document.createElement("button"); deleteBtn.className = "chat-dropdown-item delete"; deleteBtn.innerText = "Delete";
         deleteBtn.onclick = (e) => { e.stopPropagation(); deleteChat(chat.id); dropdown.classList.remove('active'); };
         dropdown.appendChild(editBtn); dropdown.appendChild(pinBtn); dropdown.appendChild(deleteBtn);
-        optionsBtn.onclick = (e) => { e.stopPropagation(); document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => { if (menu !== dropdown) menu.classList.remove('active'); }); dropdown.classList.toggle('active'); };
+        optionsBtn.onclick = (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => { if (menu !== dropdown) menu.classList.remove('active'); });
+            dropdown.classList.toggle('active');
+        };
         item.appendChild(titleContainer); item.appendChild(optionsBtn); item.appendChild(dropdown); container.appendChild(item);
     });
 }
@@ -865,7 +855,14 @@ function formatMessage(text) {
 
 function appendMessage(msg, sender, imgSrc = null) {
     const log = document.getElementById("chat-log"); if (!log) return;
-    const bubble = document.createElement("div"); bubble.className = `chat-bubble ${sender}`;
+    const bubble = document.createElement("div"); 
+    bubble.className = `chat-bubble ${sender}`;
+    
+    // Apply custom equipped chat bubble style
+    if (sender === "user" && equipped.bubble && equipped.bubble !== "default") {
+        bubble.classList.add(`bubble-${equipped.bubble}`);
+    }
+
     if (msg) { const textNode = document.createElement("div"); textNode.innerText = msg; bubble.appendChild(textNode); }
     if (imgSrc) { const img = document.createElement("img"); img.src = imgSrc; img.className = "chat-image"; img.draggable = false; bubble.appendChild(img); }
     log.appendChild(bubble); log.scrollTop = log.scrollHeight;
@@ -898,16 +895,17 @@ function getAudioContext() {
     return audioCtx; 
 }
 
-function playToneBurst(f1, f2, d) { 
+function playToneBurst(freq1, freq2, duration) { 
     try { 
-        const cx = getAudioContext(), o1 = cx.createOscillator(), o2 = cx.createOscillator(), g = cx.createGain(); 
-        o1.frequency.value = f1; o2.frequency.value = f2; 
-        g.gain.setValueAtTime(0.15, cx.currentTime); 
-        g.gain.setValueAtTime(0.15, cx.currentTime + d - 0.05); 
-        g.gain.linearRampToValueAtTime(0.001, cx.currentTime + d); 
-        o1.connect(g); o2.connect(g); g.connect(cx.destination); 
-        o1.start(cx.currentTime); o2.start(cx.currentTime); 
-        o1.stop(cx.currentTime + d); o2.stop(cx.currentTime + d); 
+        const ctx = getAudioContext(), osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator(), gain = ctx.createGain(); 
+        osc1.frequency.value = freq1; osc2.frequency.value = freq2; 
+        gain.gain.setValueAtTime(0.15, ctx.currentTime); 
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05); 
+        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration); 
+        osc1.connect(gain); osc2.connect(gain); 
+        gain.connect(ctx.destination); 
+        osc1.start(ctx.currentTime); osc2.start(ctx.currentTime); 
+        osc1.stop(ctx.currentTime + duration); osc2.stop(ctx.currentTime + duration); 
     } catch (e) {} 
 }
 
@@ -925,12 +923,14 @@ function stopRingingSound() {
 
 function playPickupClick() { 
     try { 
-        const cx = getAudioContext(), o = cx.createOscillator(), g = cx.createGain(); 
-        o.type = 'triangle'; o.frequency.setValueAtTime(800, cx.currentTime); 
-        o.frequency.exponentialRampToValueAtTime(150, cx.currentTime + 0.08); 
-        g.gain.setValueAtTime(0.3, cx.currentTime); 
-        g.gain.exponentialRampToValueAtTime(0.01, cx.currentTime + 0.08); 
-        o.connect(g); g.connect(cx.destination); o.start(); o.stop(cx.currentTime + 0.08); 
+        const ctx = getAudioContext(), osc = ctx.createOscillator(), gain = ctx.createGain(); 
+        osc.type = 'triangle'; 
+        osc.frequency.setValueAtTime(800, ctx.currentTime); 
+        osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.08); 
+        gain.gain.setValueAtTime(0.3, ctx.currentTime); 
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08); 
+        osc.connect(gain); gain.connect(ctx.destination); 
+        osc.start(); osc.stop(ctx.currentTime + 0.08); 
     } catch (e) {} 
 }
 
@@ -1006,7 +1006,8 @@ function speakCarl(txt) {
     const u = new SpeechSynthesisUtterance(ct); 
     if (!carlVoice) loadCarlVoice(); 
     if (carlVoice) u.voice = carlVoice; 
-    u.rate = 1.05; u.volume = isSpeakerOn ? 1.0 : 0.15; 
+    u.rate = 1.05; 
+    u.volume = isSpeakerOn ? 1.0 : 0.15; 
     window.speechSynthesis.speak(u); 
 }
 
@@ -1060,9 +1061,22 @@ async function processCallUserMessage(t) {
     chatHistory.push({ role: "user", content: t });
     const uLT = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), 
           uTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    let personaPrompt = "";
+    if (equipped.persona === "pirate") personaPrompt = " [SYSTEM INSTRUCTION: You are a pirate. Speak strictly like a pirate matey!]";
+    else if (equipped.persona === "chef") personaPrompt = " [SYSTEM INSTRUCTION: You are Gordon Ramsay. Critique passionately!]";
+    else if (equipped.persona === "cyber") personaPrompt = " [SYSTEM INSTRUCTION: You are a Cyberpunk hacker AI. Use cyberpunk terms!]";
+    else if (equipped.persona === "sarcastic") personaPrompt = " [SYSTEM INSTRUCTION: Answer with sarcasm and wit!]";
+
     const p = { 
-        message: t, history: chatHistory, image_b64: null, image_mime: null, 
-        api_key: customApiKey, user_time: uLT, user_timezone: uTZ, client_time: `${uLT} (${uTZ})` 
+        message: t + personaPrompt, 
+        history: chatHistory, 
+        image_b64: null, 
+        image_mime: null, 
+        api_key: customApiKey, 
+        user_time: uLT, 
+        user_timezone: uTZ, 
+        client_time: `${uLT} (${uTZ})` 
     };
     try {
         const res = await fetch("/api/chat", { 
