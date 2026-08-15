@@ -1,87 +1,1276 @@
 // =========================================================================
-// --- MINIGAMES LOGIC ARCHITECTURE ---
+// --- MINIGAME LOGIC ARCHITECTURE ---
 // =========================================================================
 
-// Tic Tac Toe
-let board = ["", "", "", "", "", "", "", "", ""]; let playerTurn = true; const winCombos = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-function initTicTacToe() { board = ["", "", "", "", "", "", "", "", ""]; playerTurn = true; document.getElementById("ttt-status").innerText = "Your Turn (X)"; document.getElementById("ttt-status").style.color = "#fff"; document.querySelectorAll(".ttt-cell").forEach(cell => { cell.innerText = ""; cell.className = "ttt-cell"; }); }
-function makeMove(index) { if (board[index] === "" && playerTurn) { board[index] = "X"; updateCell(index, "X"); if (checkWin("X")) { document.getElementById("ttt-status").innerText = "You Win!"; document.getElementById("ttt-status").style.color = "#84cc16"; playerTurn = false; return; } else if (!board.includes("")) { document.getElementById("ttt-status").innerText = "It's a Draw!"; return; } playerTurn = false; document.getElementById("ttt-status").innerText = "Carl is thinking..."; setTimeout(carlMove, 500); } }
-function updateCell(index, player) { const cell = document.getElementById(`ttt-cell-${index}`); if (cell) { cell.innerText = player; cell.classList.add(player.toLowerCase()); } }
-function carlMove() { if (checkWin("X") || checkWin("O") || !board.includes("")) return; let diff = getDifficulty(); let available = board.map((v, i) => v === "" ? i : null).filter(v => v !== null); let bestMove; if (diff === "easy") { bestMove = available[Math.floor(Math.random() * available.length)]; } else if (diff === "medium") { bestMove = Math.random() < 0.5 ? getBestMove() : available[Math.floor(Math.random() * available.length)]; } else { bestMove = getBestMove(); } board[bestMove] = "O"; updateCell(bestMove, "O"); if (checkWin("O")) { document.getElementById("ttt-status").innerText = "Carl Wins!"; document.getElementById("ttt-status").style.color = "#ef4444"; } else if (!board.includes("")) { document.getElementById("ttt-status").innerText = "It's a Draw!"; } else { playerTurn = true; document.getElementById("ttt-status").innerText = "Your Turn (X)"; } }
-function getBestMove() { let diff = getDifficulty(); for (let combo of winCombos) { let values = combo.map(i => board[i]); if (values.filter(v => v === "O").length === 2 && values.includes("")) return combo[values.indexOf("")]; } for (let combo of winCombos) { let values = combo.map(i => board[i]); if (values.filter(v => v === "X").length === 2 && values.includes("")) return combo[values.indexOf("")]; } if (diff === "hard") { if (board[4] === "") return 4; const corners = [0, 2, 6, 8]; let availCorners = corners.filter(c => board[c] === ""); if (availCorners.length > 0) return availCorners[Math.floor(Math.random() * availCorners.length)]; } else { if (board[4] === "") return 4; } let available = board.map((v, i) => v === "" ? i : null).filter(v => v !== null); return available[Math.floor(Math.random() * available.length)]; }
-function checkWin(player) { return winCombos.some(combo => combo.every(i => board[i] === player)); }
+// ==========================================
+// 1. TIC TAC TOE
+// ==========================================
+let board = ["", "", "", "", "", "", "", "", ""]; 
+let playerTurn = true; 
+const winCombos = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
-// Rock Paper Scissors
-let rpsScore = { player: 0, carl: 0 }, rpsPlaying = false;
-const rpsCarlHands = { rock: '/static/icons/CarlRock.png', paper: '/static/icons/CarlPaper.png', scissors: '/static/icons/CarlScissors.png' }, rpsPlayerHands = { rock: '/static/icons/Rock.png', paper: '/static/icons/Paper.png', scissors: '/static/icons/Scissors.png' };
-function initRps() { rpsScore = { player: 0, carl: 0 }; rpsPlaying = false; document.getElementById("rps-status").innerText = "Choose Your Move!"; document.getElementById("rps-status").style.color = "#fff"; document.getElementById("rps-carl-hand").src = rpsCarlHands.rock; document.getElementById("rps-player-hand").src = rpsPlayerHands.rock; }
-function playRps(playerChoice) { if (rpsPlaying) return; rpsPlaying = true; const choices = ['rock', 'paper', 'scissors']; document.getElementById("rps-player-hand").src = rpsPlayerHands[playerChoice]; document.getElementById("rps-status").innerText = "Carl is choosing..."; document.getElementById("rps-status").style.color = "#eccc68"; setTimeout(() => { let diff = getDifficulty(), carlChoice; if (diff === "easy") { if (playerChoice === 'rock') carlChoice = Math.random() < 0.6 ? 'scissors' : choices[Math.floor(Math.random() * 3)]; else if (playerChoice === 'paper') carlChoice = Math.random() < 0.6 ? 'rock' : choices[Math.floor(Math.random() * 3)]; else carlChoice = Math.random() < 0.6 ? 'paper' : choices[Math.floor(Math.random() * 3)]; } else if (diff === "hard") { if (Math.random() < 0.90) { if (playerChoice === 'rock') carlChoice = 'paper'; else if (playerChoice === 'paper') carlChoice = 'scissors'; else carlChoice = 'rock'; } else { carlChoice = choices[Math.floor(Math.random() * 3)]; } } else { carlChoice = choices[Math.floor(Math.random() * 3)]; } document.getElementById("rps-carl-hand").src = rpsCarlHands[carlChoice]; if (playerChoice === carlChoice) { document.getElementById("rps-status").innerText = `It's a Tie! (${rpsScore.player} - ${rpsScore.carl})`; document.getElementById("rps-status").style.color = "#fff"; } else if ((playerChoice === 'rock' && carlChoice === 'scissors') || (playerChoice === 'paper' && carlChoice === 'rock') || (playerChoice === 'scissors' && carlChoice === 'paper')) { rpsScore.player++; document.getElementById("rps-status").innerText = `You Win! (${rpsScore.player} - ${rpsScore.carl})`; document.getElementById("rps-status").style.color = "#84cc16"; } else { rpsScore.carl++; document.getElementById("rps-status").innerText = `Carl Wins! (${rpsScore.player} - ${rpsScore.carl})`; document.getElementById("rps-status").style.color = "#ef4444"; } rpsPlaying = false; }, 500); }
+function initTicTacToe() { 
+    board = ["", "", "", "", "", "", "", "", ""]; 
+    playerTurn = true; 
+    document.getElementById("ttt-status").innerText = "Your Turn (X)"; 
+    document.getElementById("ttt-status").style.color = "#fff"; 
+    document.querySelectorAll(".ttt-cell").forEach(cell => { 
+        cell.innerText = ""; 
+        cell.className = "ttt-cell"; 
+    }); 
+}
 
-// Blackjack
-let bjDeck = [], bjPlayerHands = [], bjCarlHand = [], bjActiveHand = 0, bjGameOver = false, bjGameActive = false, bjResults = [], bjBet = 10, bjBets = [], bjPayoutsDone = false;
-function buildDeck() { const suits = ['♠', '♥', '♦', '♣'], values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']; let deck = []; for (let i = 0; i < 4; i++) for (let suit of suits) for (let value of values) deck.push({ suit, value }); return deck.sort(() => Math.random() - 0.5); }
-function getCardWeight(val) { if (['J', 'Q', 'K'].includes(val)) return 10; if (val === 'A') return 11; return parseInt(val); }
-function getBjScore(hand) { if (!hand || !Array.isArray(hand)) return 0; let score = 0, aces = 0; for (let card of hand) { if (!card) continue; if (['J', 'Q', 'K'].includes(card.value)) score += 10; else if (card.value === 'A') { score += 11; aces += 1; } else score += parseInt(card.value); } while (score > 21 && aces > 0) { score -= 10; aces -= 1; } return score; }
-function prepBlackjack() { bjGameActive = false; bjGameOver = true; document.getElementById("bj-status").innerText = "Place your bet and Deal!"; document.getElementById("bj-status").style.color = "#fff"; document.getElementById("bj-carl-cards").innerHTML = ""; document.getElementById("bj-player-hands-container").innerHTML = ""; document.getElementById("bj-carl-score").innerText = "?"; document.getElementById("bj-controls").style.display = "none"; const betInput = document.getElementById("bj-bet-input"); if (betInput) betInput.disabled = false; const resetBtn = document.querySelector("#view-blackjack .reset-btn"); if (resetBtn) resetBtn.innerText = "Deal"; }
-function initBlackjack() { const betInput = document.getElementById("bj-bet-input"); if (betInput) { bjBet = parseInt(betInput.value) || 10; if (bjBet < 10) { bjBet = 10; betInput.value = 10; } if (userBurgers < bjBet) { alert("Not enough Burgers! Play Burger Clicker to earn more."); return; } userBurgers -= bjBet; updateBurgerUI(); betInput.disabled = true; } document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false); bjDeck = buildDeck(); bjPlayerHands = [ [bjDeck.pop(), bjDeck.pop()] ]; bjCarlHand = [bjDeck.pop(), bjDeck.pop()]; bjActiveHand = 0; bjGameActive = true; bjGameOver = false; bjResults = []; bjBets = [bjBet]; bjPayoutsDone = false; const resetBtn = document.querySelector("#view-blackjack .reset-btn"); if (resetBtn) resetBtn.innerText = "Deal Again"; document.getElementById("bj-controls").style.display = "flex"; let dealerScore = getBjScore(bjCarlHand), playerScore = getBjScore(bjPlayerHands[0]); if (dealerScore === 21 && playerScore === 21) { bjGameOver = true; bjResults[0] = "Push (Tie)"; } else if (dealerScore === 21) { bjGameOver = true; bjResults[0] = "Carl Blackjack!"; } else if (playerScore === 21) { bjGameOver = true; bjResults[0] = "Blackjack! You Win!"; } renderBj(); }
-function processBjPayouts() { if (bjPayoutsDone) return; bjPayoutsDone = true; for (let i = 0; i < bjPlayerHands.length; i++) { let res = bjResults[i] || "", bet = bjBets[i] || 0; if (res.includes("Blackjack! You Win!") || res.includes("Win")) userBurgers += Math.floor(bet * 2); else if (res.includes("Push")) userBurgers += Math.floor(bet); } updateBurgerUI(); if(typeof saveSessionData === 'function') saveSessionData(); }
-function renderBj() { const cCards = document.getElementById("bj-carl-cards"); if (cCards) { cCards.innerHTML = ""; bjCarlHand.forEach((card, index) => { if (!card) return; let el = document.createElement("div"); if (!bjGameOver && index === 1) { el.className = "bj-card hidden"; el.innerText = ""; } else { el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`; el.innerText = `${card.value}${card.suit}`; } cCards.appendChild(el); }); } if (bjGameOver) { document.getElementById("bj-carl-score").innerText = getBjScore(bjCarlHand); document.getElementById("bj-controls").style.display = "none"; if (!document.getElementById("bj-status").innerText.includes("Place your bet")) { document.getElementById("bj-status").innerText = "Round Over"; document.getElementById("bj-status").style.color = "#aaa"; } const betInput = document.getElementById("bj-bet-input"); if (betInput) betInput.disabled = false; if (bjGameActive) { processBjPayouts(); bjGameActive = false; } } else { document.getElementById("bj-carl-score").innerText = getBjScore([bjCarlHand[0]]); let currentHand = bjPlayerHands[bjActiveHand]; if (currentHand) { document.getElementById("bj-controls").style.display = "flex"; document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false); document.getElementById("bj-btn-double").disabled = currentHand.length !== 2; let canSplit = currentHand.length === 2 && getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && bjPlayerHands.length < 4; document.getElementById("bj-btn-split").disabled = !canSplit; document.getElementById("bj-status").innerText = bjPlayerHands.length > 1 ? `Playing Hand ${bjActiveHand + 1}...` : `Your Turn!`; document.getElementById("bj-status").style.color = "#fff"; } else { document.getElementById("bj-controls").style.display = "none"; } } const pHandsContainer = document.getElementById("bj-player-hands-container"); if (pHandsContainer) { pHandsContainer.innerHTML = ""; bjPlayerHands.forEach((hand, index) => { let handDiv = document.createElement("div"); handDiv.className = `bj-single-hand ${index === bjActiveHand && !bjGameOver ? 'active' : ''}`; let scoreDiv = document.createElement("div"); scoreDiv.className = "bj-hand-score"; scoreDiv.innerText = `Score: ${getBjScore(hand)}`; handDiv.appendChild(scoreDiv); let cardsContainer = document.createElement("div"); cardsContainer.className = "bj-cards"; hand.forEach(card => { if (!card) return; let el = document.createElement("div"); el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`; el.innerText = `${card.value}${card.suit}`; cardsContainer.appendChild(el); }); handDiv.appendChild(cardsContainer); if (bjResults[index] && bjResults[index] !== "Doubled") { let resDiv = document.createElement("div"); resDiv.className = "bj-hand-result"; let txt = bjResults[index]; if (txt.includes("Win") || txt.includes("Blackjack")) resDiv.classList.add("win"); else if (txt.includes("Lose") || txt.includes("Bust")) resDiv.classList.add("lose"); else resDiv.classList.add("push"); resDiv.innerText = txt; handDiv.appendChild(resDiv); } pHandsContainer.appendChild(handDiv); }); } }
-function bjHit() { if (bjGameOver) return; let hand = bjPlayerHands[bjActiveHand]; if (!hand) return; if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck(); hand.push(bjDeck.pop()); let score = getBjScore(hand); if (score >= 21) document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true); renderBj(); if (score > 21) { bjResults[bjActiveHand] = "Bust"; setTimeout(() => bjNextHand(), 800); } else if (score === 21) setTimeout(() => bjNextHand(), 800); }
-function bjStand() { if (bjGameOver) return; document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true); bjNextHand(); }
-function bjDouble() { if (bjGameOver) return; let hand = bjPlayerHands[bjActiveHand]; if (!hand || hand.length !== 2) return; let currentBet = bjBets[bjActiveHand]; if (userBurgers < currentBet) { alert("Not enough Burgers to double down!"); return; } userBurgers -= currentBet; updateBurgerUI(); bjBets[bjActiveHand] *= 2; if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck(); hand.push(bjDeck.pop()); document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true); renderBj(); bjResults[bjActiveHand] = getBjScore(hand) > 21 ? "Bust" : "Doubled"; setTimeout(() => bjNextHand(), 800); }
-function bjSplit() { if (bjGameOver) return; let hand = bjPlayerHands[bjActiveHand]; if (!hand || hand.length !== 2 || getCardWeight(hand[0].value) !== getCardWeight(hand[1].value)) return; let currentBet = bjBets[bjActiveHand]; if (userBurgers < currentBet) { alert("Not enough Burgers to split!"); return; } userBurgers -= currentBet; updateBurgerUI(); if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck(); let splitCard = hand.pop(); let newHand = [splitCard, bjDeck.pop()]; hand.push(bjDeck.pop()); bjPlayerHands.splice(bjActiveHand + 1, 0, newHand); bjBets.splice(bjActiveHand + 1, 0, currentBet); renderBj(); }
-function bjNextHand() { bjActiveHand++; if (bjActiveHand >= bjPlayerHands.length) { document.getElementById("bj-controls").style.display = "none"; bjDealerTurn(); } else { document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false); renderBj(); } }
-function bjDealerTurn() { try { let allBusted = bjPlayerHands.every((_, i) => bjResults[i] === "Bust"); const playDealer = () => { try { let score = getBjScore(bjCarlHand); if (score < 17 && !allBusted) { if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck(); let card = bjDeck.pop(); if (card) bjCarlHand.push(card); renderBj(); setTimeout(playDealer, 800); } else { for (let i = 0; i < bjPlayerHands.length; i++) { if (bjResults[i] === "Bust") continue; let pScore = getBjScore(bjPlayerHands[i]); if (score > 21) bjResults[i] = "Win (Carl Busts)"; else if (pScore > score) bjResults[i] = "Win"; else if (score > pScore) bjResults[i] = "Lose"; else bjResults[i] = "Push"; } bjGameOver = true; renderBj(); } } catch (err) { console.error("Blackjack dealer turn error:", err); bjGameOver = true; renderBj(); } }; document.getElementById("bj-status").innerText = "Carl is dealing..."; document.getElementById("bj-status").style.color = "#eccc68"; setTimeout(playDealer, 600); } catch (err) { console.error("Blackjack turn error:", err); bjGameOver = true; renderBj(); } }
+function makeMove(index) { 
+    if (board[index] === "" && playerTurn) { 
+        board[index] = "X"; 
+        updateCell(index, "X"); 
+        if (checkWin("X")) { 
+            document.getElementById("ttt-status").innerText = "You Win!"; 
+            document.getElementById("ttt-status").style.color = "#84cc16"; 
+            playerTurn = false; 
+            return; 
+        } else if (!board.includes("")) { 
+            document.getElementById("ttt-status").innerText = "It's a Draw!"; 
+            return; 
+        } 
+        playerTurn = false; 
+        document.getElementById("ttt-status").innerText = "Carl is thinking..."; 
+        setTimeout(carlMove, 500); 
+    } 
+}
 
-// Hangman
-let hmWord = "", hmGuessed = new Set(), hmMistakes = 0, hmPlayerTurn = true, hmGameOver = false; const safeDictionary = ["ROBLOX", "MINECRAFT", "DEVELOPER", "PYTHON", "KEYBOARD", "UNITY", "GODOT", "SCRIPTING", "ANIMATION", "PHYSICS", "MULTIPLAYER", "SERVER", "GALAXY", "UNIVERSE", "HELICOPTER", "SPACESHIP"];
-function initHangman() { document.getElementById("hm-status").innerText = "Loading word..."; document.getElementById("hm-status").style.color = "#888"; hmWord = ""; hmGuessed.clear(); hmMistakes = 0; hmPlayerTurn = true; hmGameOver = false; for(let i=1; i<=6; i++) { const part = document.getElementById(`hm-part-${i}`); if (part) part.style.display = "none"; } document.querySelectorAll(".hm-key").forEach(btn => { btn.className = "hm-key"; btn.disabled = false; }); hmWord = safeDictionary[Math.floor(Math.random() * safeDictionary.length)].toUpperCase(); document.getElementById("hm-status").innerText = "Your Turn"; document.getElementById("hm-status").style.color = "#fff"; updateHmWordDisplay(); }
-function updateHmWordDisplay() { let display = hmWord.split('').map(c => hmGuessed.has(c) ? c : "_").join(' '); document.getElementById("hm-word").innerText = display; }
-function hmGuess(letter) { if (hmGameOver || hmGuessed.has(letter)) return; hmGuessed.add(letter); const btn = Array.from(document.querySelectorAll('.hm-key')).find(b => b.innerText === letter); if (btn) btn.disabled = true; if (hmWord.includes(letter)) { if (btn) btn.classList.add("correct"); updateHmWordDisplay(); if (hmWord.split('').every(c => hmGuessed.has(c))) { hmGameOver = true; document.getElementById("hm-status").innerText = hmPlayerTurn ? "You Win!" : "Carl Wins!"; document.getElementById("hm-status").style.color = "#84cc16"; return; } if (!hmPlayerTurn) { document.getElementById("hm-status").innerText = "Carl is thinking..."; setTimeout(carlHmMove, 1000); } } else { if (btn) btn.classList.add("wrong"); hmMistakes++; const part = document.getElementById(`hm-part-${hmMistakes}`); if (part) part.style.display = "block"; if (hmMistakes >= 6) { hmGameOver = true; document.getElementById("hm-status").innerText = "Game Over!"; document.getElementById("hm-status").style.color = "#ef4444"; document.getElementById("hm-word").innerText = hmWord.split('').join(' '); return; } hmPlayerTurn = !hmPlayerTurn; if (!hmPlayerTurn) { document.getElementById("hm-status").innerText = "Carl is thinking..."; document.getElementById("hm-status").style.color = "#9333ea"; setTimeout(carlHmMove, 1000); } else { document.getElementById("hm-status").innerText = "Your Turn"; document.getElementById("hm-status").style.color = "#fff"; } } }
-function carlHmMove() { if (hmGameOver) return; const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').filter(c => !hmGuessed.has(c)); const correctLeft = hmWord.split('').filter(c => !hmGuessed.has(c)); let guess = null; let diff = getDifficulty(); if (diff === "easy") { if (available.length > 0) guess = available[Math.floor(Math.random() * available.length)]; } else if (diff === "hard") { if (correctLeft.length > 0) guess = correctLeft[Math.floor(Math.random() * correctLeft.length)]; else if (available.length > 0) guess = available[Math.floor(Math.random() * available.length)]; } else { let roll = Math.random(); if (roll < 0.50 && correctLeft.length > 0) guess = correctLeft[Math.floor(Math.random() * correctLeft.length)]; else { const common = "EARIOTNSLCUDPMHGBFYWKVXZJQ".split('').filter(c => available.includes(c)); if (common.length > 0) guess = common[0]; else if (available.length > 0) guess = available[Math.floor(Math.random() * available.length)]; } } if (guess) hmGuess(guess); }
+function updateCell(index, player) { 
+    const cell = document.getElementById(`ttt-cell-${index}`); 
+    if (cell) { 
+        cell.innerText = player; 
+        cell.classList.add(player.toLowerCase()); 
+    } 
+}
 
-// Connect Four
-const C4_ROWS = 6, C4_COLS = 7; let c4Board = [], c4PlayerTurn = true, c4GameOver = false;
-function initConnectFour() { c4Board = Array(C4_ROWS).fill().map(() => Array(C4_COLS).fill(0)); c4PlayerTurn = true; c4GameOver = false; document.getElementById("c4-status").innerText = "Your Turn (Red)"; document.getElementById("c4-status").style.color = "#fff"; const boardDiv = document.getElementById("c4-board"); boardDiv.innerHTML = ""; for (let r = 0; r < C4_ROWS; r++) { for (let c = 0; c < C4_COLS; c++) { const cell = document.createElement("div"); cell.className = "c4-cell"; cell.id = `c4-${r}-${c}`; boardDiv.appendChild(cell); } } }
-function c4HandleClick(col) { if (!c4PlayerTurn || c4GameOver) return; let row = c4DropPiece(col, 1); if (row !== -1) { c4UpdateBoardUI(); if (c4CheckWin(1)) { c4GameOver = true; document.getElementById("c4-status").innerText = "You Win!"; document.getElementById("c4-status").style.color = "#ff4757"; return; } else if (c4IsBoardFull()) { c4GameOver = true; document.getElementById("c4-status").innerText = "It's a Draw!"; return; } c4PlayerTurn = false; document.getElementById("c4-status").innerText = "Carl is thinking..."; document.getElementById("c4-status").style.color = "#eccc68"; setTimeout(c4CarlMove, 600); } }
-function c4DropPiece(col, player) { for (let r = C4_ROWS - 1; r >= 0; r--) { if (c4Board[r][col] === 0) { c4Board[r][col] = player; return r; } } return -1; }
-function c4GetNextOpenRow(col) { for (let r = C4_ROWS - 1; r >= 0; r--) { if (c4Board[r][col] === 0) return r; } return -1; }
-function c4IsBoardFull() { return c4Board[0].every(val => val !== 0); }
-function c4CheckWin(p) { for (let r = 0; r < C4_ROWS; r++) { for (let c = 0; c < C4_COLS - 3; c++) { if (c4Board[r][c] == p && c4Board[r][c+1] == p && c4Board[r][c+2] == p && c4Board[r][c+3] == p) return true; } } for (let r = 0; r < C4_ROWS - 3; r++) { for (let c = 0; c < C4_COLS; c++) { if (c4Board[r][c] == p && c4Board[r+1][c] == p && c4Board[r+2][c] == p && c4Board[r+3][c] == p) return true; } } for (let r = 3; r < C4_ROWS; r++) { for (let c = 0; c < C4_COLS - 3; c++) { if (c4Board[r][c] == p && c4Board[r-1][c+1] == p && c4Board[r-2][c+2] == p && c4Board[r-3][c+3] == p) return true; } } for (let r = 0; r < C4_ROWS - 3; r++) { for (let c = 0; c < C4_COLS - 3; c++) { if (c4Board[r][c] == p && c4Board[r+1][c+1] == p && c4Board[r+2][c+2] == p && c4Board[r+3][c+3] == p) return true; } } return false; }
-function c4CarlMove() { if (c4GameOver) return; let validCols = []; for (let c = 0; c < C4_COLS; c++) { if (c4Board[0][c] === 0) validCols.push(c); } if (validCols.length === 0) return; let diff = getDifficulty(); let chosenCol = null; if (diff === "easy") { chosenCol = validCols[Math.floor(Math.random() * validCols.length)]; } else { for (let c of validCols) { let r = c4GetNextOpenRow(c); c4Board[r][c] = 2; if (c4CheckWin(2)) { chosenCol = c; c4Board[r][c] = 0; break; } c4Board[r][c] = 0; } if (chosenCol === null) { for (let c of validCols) { let r = c4GetNextOpenRow(c); c4Board[r][c] = 1; if (c4CheckWin(1)) { chosenCol = c; c4Board[r][c] = 0; break; } c4Board[r][c] = 0; } } if (diff === "hard" && chosenCol === null) { let safeCols = []; for (let c of validCols) { let r = c4GetNextOpenRow(c); c4Board[r][c] = 2; let givesWin = false; if (r > 0) { c4Board[r-1][c] = 1; if (c4CheckWin(1)) givesWin = true; c4Board[r-1][c] = 0; } c4Board[r][c] = 0; if (!givesWin) safeCols.push(c); } let pool = safeCols.length > 0 ? safeCols : validCols; let pref = [3, 2, 4, 1, 5, 0, 6]; for (let c of pref) { if (pool.includes(c)) { chosenCol = c; break; } } } else if (chosenCol === null && diff === "medium") { if (Math.random() < 0.5) { for (let c of validCols) { let r = c4GetNextOpenRow(c); c4Board[r][c] = 1; if (c4CheckWin(1)) { chosenCol = c; c4Board[r][c] = 0; break; } c4Board[r][c] = 0; } } } if (chosenCol === null) { let pref = [3, 2, 4, 1, 5, 0, 6]; for (let c of pref) { if (validCols.includes(c)) { chosenCol = c; break; } } } } if (chosenCol === null) chosenCol = validCols[Math.floor(Math.random() * validCols.length)]; c4DropPiece(chosenCol, 2); c4UpdateBoardUI(); if (c4CheckWin(2)) { c4GameOver = true; document.getElementById("c4-status").innerText = "Carl Wins!"; document.getElementById("c4-status").style.color = "#eccc68"; } else if (c4IsBoardFull()) { c4GameOver = true; document.getElementById("c4-status").innerText = "It's a Draw!"; } else { c4PlayerTurn = true; document.getElementById("c4-status").innerText = "Your Turn (Red)"; document.getElementById("c4-status").style.color = "#fff"; } }
-function c4UpdateBoardUI() { for (let r = 0; r < C4_ROWS; r++) { for (let c = 0; c < C4_COLS; c++) { const cell = document.getElementById(`c4-${r}-${c}`); if (cell) { let val = c4Board[r][c]; if (val === 1) cell.className = "c4-cell red"; else if (val === 2) cell.className = "c4-cell yellow"; else cell.className = "c4-cell"; } } } }
+function carlMove() { 
+    if (checkWin("X") || checkWin("O") || !board.includes("")) return; 
+    let diff = getDifficulty(); 
+    let available = board.map((v, i) => v === "" ? i : null).filter(v => v !== null); 
+    let bestMove; 
+    
+    if (diff === "easy") { 
+        bestMove = available[Math.floor(Math.random() * available.length)]; 
+    } else if (diff === "medium") { 
+        bestMove = Math.random() < 0.5 ? getBestMove() : available[Math.floor(Math.random() * available.length)]; 
+    } else { 
+        bestMove = getBestMove(); 
+    } 
+    
+    board[bestMove] = "O"; 
+    updateCell(bestMove, "O"); 
+    
+    if (checkWin("O")) { 
+        document.getElementById("ttt-status").innerText = "Carl Wins!"; 
+        document.getElementById("ttt-status").style.color = "#ef4444"; 
+    } else if (!board.includes("")) { 
+        document.getElementById("ttt-status").innerText = "It's a Draw!"; 
+    } else { 
+        playerTurn = true; 
+        document.getElementById("ttt-status").innerText = "Your Turn (X)"; 
+    } 
+}
 
-// Battleship
-const BS_SIZE = 6; let bsPlayerGrid = [], bsEnemyGrid = [], bsEnemyShips = [], bsPlayerTurn = true, bsGameOver = false, bsPlacing = true, bsShipSizes = [4, 3, 2], bsCurrentShipIndex = 0, bsIsHorizontal = true, bsPreviewOrigin = null, bsPreviewCoords = [];
-function initBattleship() { bsPlayerGrid = Array(BS_SIZE).fill().map(() => Array(BS_SIZE).fill(0)); bsEnemyGrid = Array(BS_SIZE).fill().map(() => Array(BS_SIZE).fill(0)); bsEnemyShips = []; bsPlayerTurn = true; bsGameOver = false; bsPlacing = true; bsCurrentShipIndex = 0; bsIsHorizontal = true; document.getElementById("bs-status").innerText = `Place your ${bsShipSizes[bsCurrentShipIndex]}-length ship`; document.getElementById("bs-status").style.color = "#fff"; document.getElementById("bs-placement-controls").style.display = "flex"; document.getElementById("bs-enemy-label").style.display = "none"; document.getElementById("bs-enemy-grid").style.display = "none"; document.getElementById("bs-player-label").innerText = "Your Fleet (Select position below)"; bsPlaceEnemyShipsRandomly(); bsUpdateBoardsUI(); }
-function bsToggleRotate() { bsIsHorizontal = !bsIsHorizontal; const btn = document.querySelector("#bs-placement-controls .bs-action-btn"); if (btn) btn.innerText = `Rotate: ${bsIsHorizontal ? "Horizontal" : "Vertical"}`; if (bsPreviewOrigin) bsPreviewCoords = bsCalculatePreview(bsPreviewOrigin.r, bsPreviewOrigin.c); bsUpdateBoardsUI(); }
-function bsPlaceEnemyShipsRandomly() { for (let size of bsShipSizes) { let placed = false; while (!placed) { let horizontal = Math.random() < 0.5, r = Math.floor(Math.random() * BS_SIZE), c = Math.floor(Math.random() * BS_SIZE), fits = true, tempCoords = []; for (let i = 0; i < size; i++) { let nr = horizontal ? r : r + i, nc = horizontal ? c + i : c; if (nr >= BS_SIZE || nc >= BS_SIZE) { fits = false; break; } tempCoords.push(`${nr},${nc}`); } if (fits && !tempCoords.some(coord => bsEnemyShips.includes(coord))) { tempCoords.forEach(coord => bsEnemyShips.push(coord)); placed = true; } } } }
-function bsCalculatePreview(r, c) { let size = bsShipSizes[bsCurrentShipIndex], coords = []; for (let i = 0; i < size; i++) { let nr = bsIsHorizontal ? r : r + i, nc = bsIsHorizontal ? c + i : c; if (nr >= BS_SIZE || nc >= BS_SIZE || bsPlayerGrid[nr][nc] === 1) return []; coords.push({r: nr, c: nc}); } return coords; }
-function bsCellClick(r, c) { if (bsGameOver || !bsPlacing) return; let coords = bsCalculatePreview(r, c); if (coords.length > 0) { bsPreviewOrigin = { r, c }; bsPreviewCoords = coords; } else { bsPreviewOrigin = null; bsPreviewCoords = []; } bsUpdateBoardsUI(); }
-function bsConfirmPlacement() { if (!bsPlacing || bsPreviewCoords.length === 0) { alert("Please tap a valid spot first!"); return; } bsPreviewCoords.forEach(coord => { bsPlayerGrid[coord.r][coord.c] = 1; }); bsPreviewOrigin = null; bsPreviewCoords = []; bsCurrentShipIndex++; if (bsCurrentShipIndex < bsShipSizes.length) { document.getElementById("bs-status").innerText = `Place your ${bsShipSizes[bsCurrentShipIndex]}-length ship`; } else { bsPlacing = false; document.getElementById("bs-placement-controls").style.display = "none"; document.getElementById("bs-enemy-label").style.display = "block"; document.getElementById("bs-enemy-grid").style.display = "grid"; document.getElementById("bs-player-label").innerText = "Your Fleet"; document.getElementById("bs-status").innerText = "Your Turn - Fire!"; } bsUpdateBoardsUI(); }
-function bsFire(r, c) { if (bsPlacing || !bsPlayerTurn || bsGameOver || bsEnemyGrid[r][c] !== 0) return; let targetCoord = `${r},${c}`, isHit = bsEnemyShips.includes(targetCoord); bsEnemyGrid[r][c] = isHit ? 3 : 2; document.getElementById("bs-status").innerText = isHit ? "Direct Hit! Fire Again!" : "Miss!"; document.getElementById("bs-status").style.color = isHit ? "#84cc16" : "#ef4444"; bsUpdateBoardsUI(); if (bsEnemyShips.every(coord => { let [tr,tc] = coord.split(',').map(Number); return bsEnemyGrid[tr][tc] === 3; })) { bsGameOver = true; document.getElementById("bs-status").innerText = "You Destroyed Carl's Fleet!"; document.getElementById("bs-status").style.color = "#84cc16"; return; } if (!isHit) { bsPlayerTurn = false; setTimeout(bsCarlTurn, 800); } }
-function bsCarlTurn() { if (bsGameOver) return; let diff = getDifficulty(); let r, c; let potentialTargets = []; if (diff === "hard") { for(let row=0; row<BS_SIZE; row++) { for(let col=0; col<BS_SIZE; col++) { if (bsPlayerGrid[row][col] === 3) { if (row>0 && bsPlayerGrid[row-1][col] <= 1) potentialTargets.push({r:row-1,c:col}); if (row<BS_SIZE-1 && bsPlayerGrid[row+1][col] <= 1) potentialTargets.push({r:row+1,c:col}); if (col>0 && bsPlayerGrid[row][col-1] <= 1) potentialTargets.push({r:row,c:col-1}); if (col<BS_SIZE-1 && bsPlayerGrid[row][col+1] <= 1) potentialTargets.push({r:row,c:col+1}); } } } } if (potentialTargets.length > 0) { let t = potentialTargets[Math.floor(Math.random()*potentialTargets.length)]; r = t.r; c = t.c; } else if (diff === "hard" && Math.random() < 0.3) { let ships = []; for(let row=0; row<BS_SIZE; row++) for(let col=0; col<BS_SIZE; col++) if (bsPlayerGrid[row][col] === 1) ships.push({r:row, c:col}); if (ships.length > 0) { let t = ships[Math.floor(Math.random()*ships.length)]; r = t.r; c = t.c; } else { do { r = Math.floor(Math.random() * BS_SIZE); c = Math.floor(Math.random() * BS_SIZE); } while (bsPlayerGrid[r][c] > 1); } } else { do { r = Math.floor(Math.random() * BS_SIZE); c = Math.floor(Math.random() * BS_SIZE); } while (bsPlayerGrid[r][c] > 1); } let isHit = (bsPlayerGrid[r][c] === 1); bsPlayerGrid[r][c] = isHit ? 3 : 2; document.getElementById("bs-status").innerText = isHit ? "Carl hit your ship!" : "Carl missed! Your Turn - Fire!"; document.getElementById("bs-status").style.color = isHit ? "#ef4444" : "#fff"; bsUpdateBoardsUI(); let playerLost = true; for (let row = 0; row < BS_SIZE; row++) for (let col = 0; col < BS_SIZE; col++) if (bsPlayerGrid[row][col] === 1) playerLost = false; if (playerLost) { bsGameOver = true; document.getElementById("bs-status").innerText = "Carl Destroyed Your Fleet!"; document.getElementById("bs-status").style.color = "#ef4444"; } else if (isHit) { setTimeout(bsCarlTurn, 800); } else { bsPlayerTurn = true; } }
-function bsUpdateBoardsUI() { const enemyDiv = document.getElementById("bs-enemy-grid"), playerDiv = document.getElementById("bs-player-grid"); if (!enemyDiv || !playerDiv) return; enemyDiv.innerHTML = ""; playerDiv.innerHTML = ""; if (!bsPlacing) { for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsEnemyGrid[r][c]; if (val === 2) { cell.classList.add("miss"); } else if (val === 3) { cell.classList.add("hit"); } cell.onclick = () => bsFire(r, c); enemyDiv.appendChild(cell); } } } for (let r = 0; r < BS_SIZE; r++) { for (let c = 0; c < BS_SIZE; c++) { const cell = document.createElement("div"); cell.className = "bs-cell"; let val = bsPlayerGrid[r][c], isPreview = bsPreviewCoords.some(coord => coord.r === r && coord.c === c); if (val === 1) { cell.classList.add("ship"); } else if (val === 2) { cell.classList.add("miss"); } else if (val === 3) { cell.classList.add("hit"); } else if (isPreview) { cell.classList.add("preview"); } if (bsPlacing) { cell.onclick = () => bsCellClick(r, c); } playerDiv.appendChild(cell); } } }
+function getBestMove() { 
+    let diff = getDifficulty();
+    for (let combo of winCombos) { let values = combo.map(i => board[i]); if (values.filter(v => v === "O").length === 2 && values.includes("")) return combo[values.indexOf("")]; } 
+    for (let combo of winCombos) { let values = combo.map(i => board[i]); if (values.filter(v => v === "X").length === 2 && values.includes("")) return combo[values.indexOf("")]; } 
+    
+    if (diff === "hard") {
+        if (board[4] === "") return 4; 
+        const corners = [0, 2, 6, 8];
+        let availCorners = corners.filter(c => board[c] === "");
+        if (availCorners.length > 0) return availCorners[Math.floor(Math.random() * availCorners.length)];
+    } else {
+        if (board[4] === "") return 4;
+    }
+    
+    let available = board.map((v, i) => v === "" ? i : null).filter(v => v !== null); 
+    return available[Math.floor(Math.random() * available.length)]; 
+}
 
-// Checkers
-const CHK_SIZE = 8; let chkBoard = [], chkSelected = null, chkValidMoves = [], chkPlayerTurn = true, chkGameOver = false;
-function initCheckers() { chkBoard = Array(CHK_SIZE).fill().map(() => Array(CHK_SIZE).fill(0)); chkSelected = null; chkValidMoves = []; chkPlayerTurn = true; chkGameOver = false; document.getElementById("chk-status").innerText = "Your Turn (Red)"; document.getElementById("chk-status").style.color = "#fff"; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { if ((r + c) % 2 === 1) { if (r < 3) chkBoard[r][c] = 2; else if (r > 4) chkBoard[r][c] = 1; } } } chkRenderBoard(); }
-function chkRenderBoard() { const boardDiv = document.getElementById("chk-board"); if (!boardDiv) return; boardDiv.innerHTML = ""; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { const tile = document.createElement("div"); let isDark = (r + c) % 2 === 1; tile.className = `chk-tile ${isDark ? "dark" : "light"}`; let pieceVal = chkBoard[r][c]; if (chkSelected && chkSelected.r === r && chkSelected.c === c) tile.classList.add("selected"); if (chkValidMoves.some(m => m.toR === r && m.toC === c)) tile.classList.add("target"); if (chkValidMoves.some(m => m.isJump && m.jumpedR === r && m.jumpedC === c)) tile.classList.add("jump-capture"); if (pieceVal !== 0) { const piece = document.createElement("div"); piece.className = `chk-piece ${pieceVal === 1 || pieceVal === 11 ? "red" : "black"} ${pieceVal === 11 || pieceVal === 22 ? "king" : ""}`; tile.appendChild(piece); } tile.onclick = () => chkTileClick(r, c); boardDiv.appendChild(tile); } } }
-function chkTileClick(r, c) { if (!chkPlayerTurn || chkGameOver) return; let p = chkBoard[r][c]; if (p === 1 || p === 11) { chkSelected = { r, c }; chkValidMoves = chkGetMovesForPiece(r, c, chkBoard); chkRenderBoard(); return; } if (chkSelected) { let move = chkValidMoves.find(m => m.toR === r && m.toC === c); if (move) { chkExecuteMove(move); chkSelected = null; chkValidMoves = []; chkRenderBoard(); if (chkCheckWin(1)) { chkGameOver = true; document.getElementById("chk-status").innerText = "You Win!"; document.getElementById("chk-status").style.color = "#84cc16"; return; } chkPlayerTurn = false; document.getElementById("chk-status").innerText = "Carl is thinking..."; document.getElementById("chk-status").style.color = "#9333ea"; setTimeout(chkCarlTurn, 600); } else { chkSelected = null; chkValidMoves = []; chkRenderBoard(); } } }
-function chkGetMovesForPiece(r, c, boardState) { let p = boardState[r][c]; if (p === 0) return []; let isRed = p === 1 || p === 11, isKing = p === 11 || p === 22, moves = [], dirs = []; if (isRed || isKing) dirs.push([-1, -1], [-1, 1]); if (!isRed || isKing) dirs.push([1, -1], [1, 1]); for (let [dr, dc] of dirs) { let nr = r + dr, nc = c + dc; if (nr >= 0 && nr < CHK_SIZE && nc >= 0 && nc < CHK_SIZE) { if (boardState[nr][nc] === 0) moves.push({ fromR: r, fromC: c, toR: nr, toC: nc, isJump: false }); else { let opp = boardState[nr][nc], isOpponent = isRed ? (opp === 2 || opp === 22) : (opp === 1 || opp === 11); if (isOpponent) { let jR = r + 2 * dr, jC = c + 2 * dc; if (jR >= 0 && jR < CHK_SIZE && jC >= 0 && jC < CHK_SIZE && boardState[jR][jC] === 0) { moves.push({ fromR: r, fromC: c, toR: jR, toC: jC, isJump: true, jumpedR: nr, jumpedC: nc }); } } } } } return moves; }
-function chkExecuteMove(move) { let p = chkBoard[move.fromR][move.fromC]; chkBoard[move.fromR][move.fromC] = 0; if (move.isJump) chkBoard[move.jumpedR][move.jumpedC] = 0; if (p === 1 && move.toR === 0) p = 11; if (p === 2 && move.toR === 7) p = 22; chkBoard[move.toR][move.toC] = p; }
-function chkCarlTurn() { if (chkGameOver) return; let diff = getDifficulty(); let allMoves = []; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { if (chkBoard[r][c] === 2 || chkBoard[r][c] === 22) { allMoves.push(...chkGetMovesForPiece(r, c, chkBoard)); } } } if (allMoves.length === 0) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Has No Moves! You Win!"; document.getElementById("chk-status").style.color = "#84cc16"; return; } let jumps = allMoves.filter(m => m.isJump); let chosenMove = null; if (diff === "easy") { chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; } else if (diff === "medium") { chosenMove = jumps.length > 0 && Math.random() < 0.7 ? jumps[Math.floor(Math.random() * jumps.length)] : allMoves[Math.floor(Math.random() * allMoves.length)]; } else { allMoves.forEach(m => { m.score = m.isJump ? 5 : 0; if (m.toR === 7) m.score += 3; let p = chkBoard[m.fromR][m.fromC]; chkBoard[m.fromR][m.fromC] = 0; let jumpedVal = 0; if (m.isJump) { jumpedVal = chkBoard[m.jumpedR][m.jumpedC]; chkBoard[m.jumpedR][m.jumpedC] = 0; } chkBoard[m.toR][m.toC] = p; let vulnerable = false; for (let tr=0; tr<CHK_SIZE; tr++) { for (let tc=0; tc<CHK_SIZE; tc++) { if (chkBoard[tr][tc] === 1 || chkBoard[tr][tc] === 11) { let pMoves = chkGetMovesForPiece(tr, tc, chkBoard); if (pMoves.some(pm => pm.isJump && pm.jumpedR === m.toR && pm.jumpedC === m.toC)) vulnerable = true; } } } if (vulnerable) m.score -= 6; chkBoard[m.fromR][m.fromC] = p; chkBoard[m.toR][m.toC] = 0; if (m.isJump) chkBoard[m.jumpedR][m.jumpedC] = jumpedVal; }); allMoves.sort((a,b) => b.score - a.score); let bestScore = allMoves[0].score; let bestOptions = allMoves.filter(m => m.score === bestScore); chosenMove = bestOptions[Math.floor(Math.random() * bestOptions.length)]; } chkExecuteMove(chosenMove); chkRenderBoard(); if (chkCheckWin(2)) { chkGameOver = true; document.getElementById("chk-status").innerText = "Carl Wins!"; document.getElementById("chk-status").style.color = "#ef4444"; return; } chkPlayerTurn = true; document.getElementById("chk-status").innerText = "Your Turn (Red)"; document.getElementById("chk-status").style.color = "#fff"; }
-function chkCheckWin(player) { let e1 = player === 1 ? 2 : 1, e2 = player === 1 ? 22 : 11; for (let r = 0; r < CHK_SIZE; r++) { for (let c = 0; c < CHK_SIZE; c++) { if (chkBoard[r][c] === e1 || chkBoard[r][c] === e2) return false; } } return true; }
+function checkWin(player) { 
+    return winCombos.some(combo => combo.every(i => board[i] === player)); 
+}
 
-// Chess
-const CHS_SIZE = 8; let chsBoard = [], chsSelected = null, chsValidMoves = [], chsPlayerTurn = true, chsGameOver = false;
-const chsInitialBoard = [ ['r','n','b','q','k','b','n','r'], ['p','p','p','p','p','p','p','p'], ['','','','','','','',''], ['','','','','','','',''], ['','','','','','','',''], ['','','','','','','',''], ['P','P','P','P','P','P','P','P'], ['R','N','B','Q','K','B','N','R'] ];
-const chsIcons = { 'P': '/static/icons/PawnWhite.png', 'R': '/static/icons/RookWhite.png', 'N': '/static/icons/HorseWhite.png', 'B': '/static/icons/BishopWhite.png', 'Q': '/static/icons/QueenWhite.png', 'K': '/static/icons/KingWhite.png', 'p': '/static/icons/PawnBlack.png', 'r': '/static/icons/RookBlack.png', 'n': '/static/icons/HorseBlack.png', 'b': '/static/icons/BishopBlack.png', 'q': '/static/icons/QueenBlack.png', 'k': '/static/icons/KingBlack.png' };
+// ==========================================
+// 2. ROCK PAPER SCISSORS
+// ==========================================
+let rpsScore = { player: 0, carl: 0 };
+let rpsPlaying = false;
 
-function initChess() { chsBoard = JSON.parse(JSON.stringify(chsInitialBoard)); chsSelected = null; chsValidMoves = []; chsPlayerTurn = true; chsGameOver = false; document.getElementById("chs-status").innerText = "Your Turn (White)"; document.getElementById("chs-status").style.color = "#fff"; chsRenderBoard(); }
-function chsRenderBoard() { const boardDiv = document.getElementById("chs-board"); if (!boardDiv) return; boardDiv.innerHTML = ""; for (let r = 0; r < CHS_SIZE; r++) { for (let c = 0; c < CHS_SIZE; c++) { const tile = document.createElement("div"); let isDark = (r + c) % 2 === 1; tile.className = `chs-tile ${isDark ? "dark" : "light"}`; let p = chsBoard[r][c]; if (chsSelected && chsSelected.r === r && chsSelected.c === c) tile.classList.add("selected"); if (chsValidMoves.some(m => m.r === r && m.c === c)) tile.classList.add(p !== '' ? "target-capture" : "target"); if (p !== '') { const piece = document.createElement("img"); piece.className = "chs-piece"; piece.src = chsIcons[p]; piece.draggable = false; tile.appendChild(piece); } tile.onclick = () => chsTileClick(r, c); boardDiv.appendChild(tile); } } }
+const rpsCarlHands = {
+    rock: '/static/icons/CarlRock.png',
+    paper: '/static/icons/CarlPaper.png',
+    scissors: '/static/icons/CarlScissors.png'
+};
 
-// --- FIXED KNIGHT MOVEMENT ---
+const rpsPlayerHands = {
+    rock: '/static/icons/Rock.png',
+    paper: '/static/icons/Paper.png',
+    scissors: '/static/icons/Scissors.png'
+};
+
+function initRps() {
+    rpsScore = { player: 0, carl: 0 };
+    rpsPlaying = false;
+    document.getElementById("rps-status").innerText = "Choose Your Move!";
+    document.getElementById("rps-status").style.color = "#fff";
+    document.getElementById("rps-carl-hand").src = rpsCarlHands.rock;
+    document.getElementById("rps-player-hand").src = rpsPlayerHands.rock;
+}
+
+function playRps(playerChoice) {
+    if (rpsPlaying) return;
+    rpsPlaying = true;
+
+    const choices = ['rock', 'paper', 'scissors'];
+    document.getElementById("rps-player-hand").src = rpsPlayerHands[playerChoice];
+    document.getElementById("rps-status").innerText = "Carl is choosing...";
+    document.getElementById("rps-status").style.color = "#eccc68";
+
+    setTimeout(() => {
+        let diff = getDifficulty();
+        let carlChoice;
+
+        if (diff === "easy") {
+            if (playerChoice === 'rock') carlChoice = Math.random() < 0.6 ? 'scissors' : choices[Math.floor(Math.random() * 3)];
+            else if (playerChoice === 'paper') carlChoice = Math.random() < 0.6 ? 'rock' : choices[Math.floor(Math.random() * 3)];
+            else carlChoice = Math.random() < 0.6 ? 'paper' : choices[Math.floor(Math.random() * 3)];
+        } else if (diff === "hard") {
+            // 90% chance to cheat on Hard mode
+            if (Math.random() < 0.90) {
+                if (playerChoice === 'rock') carlChoice = 'paper';
+                else if (playerChoice === 'paper') carlChoice = 'scissors';
+                else carlChoice = 'rock';
+            } else {
+                carlChoice = choices[Math.floor(Math.random() * 3)];
+            }
+        } else {
+            carlChoice = choices[Math.floor(Math.random() * 3)];
+        }
+
+        document.getElementById("rps-carl-hand").src = rpsCarlHands[carlChoice];
+
+        if (playerChoice === carlChoice) {
+            document.getElementById("rps-status").innerText = `It's a Tie! (${rpsScore.player} - ${rpsScore.carl})`;
+            document.getElementById("rps-status").style.color = "#fff";
+        } else if (
+            (playerChoice === 'rock' && carlChoice === 'scissors') ||
+            (playerChoice === 'paper' && carlChoice === 'rock') ||
+            (playerChoice === 'scissors' && carlChoice === 'paper')
+        ) {
+            rpsScore.player++;
+            document.getElementById("rps-status").innerText = `You Win! (${rpsScore.player} - ${rpsScore.carl})`;
+            document.getElementById("rps-status").style.color = "#84cc16";
+        } else {
+            rpsScore.carl++;
+            document.getElementById("rps-status").innerText = `Carl Wins! (${rpsScore.player} - ${rpsScore.carl})`;
+            document.getElementById("rps-status").style.color = "#ef4444";
+        }
+
+        rpsPlaying = false;
+    }, 500);
+}
+
+// ==========================================
+// 3. BLACKJACK
+// ==========================================
+let bjDeck = [];
+let bjPlayerHands = [];
+let bjCarlHand = [];
+let bjActiveHand = 0;
+let bjGameOver = false;
+let bjGameActive = false;
+let bjResults = []; 
+let bjBet = 10;
+let bjBets = [];
+let bjPayoutsDone = false;
+
+function buildDeck() {
+    const suits = ['♠', '♥', '♦', '♣'];
+    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    let deck = [];
+    for (let i = 0; i < 4; i++) {
+        for (let suit of suits) {
+            for (let value of values) {
+                deck.push({ suit, value });
+            }
+        }
+    }
+    return deck.sort(() => Math.random() - 0.5);
+}
+
+function getCardWeight(val) {
+    if (['J', 'Q', 'K'].includes(val)) return 10;
+    if (val === 'A') return 11;
+    return parseInt(val);
+}
+
+function getBjScore(hand) {
+    if (!hand || !Array.isArray(hand)) return 0;
+    let score = 0;
+    let aces = 0;
+    for (let card of hand) {
+        if (!card) continue;
+        if (['J', 'Q', 'K'].includes(card.value)) score += 10;
+        else if (card.value === 'A') { score += 11; aces += 1; }
+        else score += parseInt(card.value);
+    }
+    while (score > 21 && aces > 0) { score -= 10; aces -= 1; }
+    return score;
+}
+
+function prepBlackjack() {
+    bjGameActive = false;
+    bjGameOver = true; 
+    document.getElementById("bj-status").innerText = "Place your bet and Deal!";
+    document.getElementById("bj-status").style.color = "#fff";
+    document.getElementById("bj-carl-cards").innerHTML = "";
+    document.getElementById("bj-player-hands-container").innerHTML = "";
+    document.getElementById("bj-carl-score").innerText = "?";
+    document.getElementById("bj-controls").style.display = "none";
+    const betInput = document.getElementById("bj-bet-input");
+    if (betInput) betInput.disabled = false;
+    const resetBtn = document.querySelector("#view-blackjack .reset-btn");
+    if (resetBtn) resetBtn.innerText = "Deal";
+}
+
+function initBlackjack() {
+    const betInput = document.getElementById("bj-bet-input");
+    if (betInput) {
+        bjBet = parseInt(betInput.value) || 10;
+        if (bjBet < 10) {
+            bjBet = 10;
+            betInput.value = 10;
+        }
+        if (userBurgers < bjBet) {
+            alert("Not enough Burgers! Play Burger Clicker to earn more.");
+            return;
+        }
+        userBurgers -= bjBet;
+        updateBurgerUI();
+        betInput.disabled = true;
+    }
+
+    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
+
+    bjDeck = buildDeck();
+    bjPlayerHands = [ [bjDeck.pop(), bjDeck.pop()] ];
+    bjCarlHand = [bjDeck.pop(), bjDeck.pop()];
+    bjActiveHand = 0;
+    
+    bjGameActive = true;
+    bjGameOver = false;
+    bjResults = [];
+    bjBets = [bjBet];
+    bjPayoutsDone = false;
+    
+    const resetBtn = document.querySelector("#view-blackjack .reset-btn");
+    if (resetBtn) resetBtn.innerText = "Deal Again";
+    
+    document.getElementById("bj-controls").style.display = "flex";
+    
+    let dealerScore = getBjScore(bjCarlHand);
+    let playerScore = getBjScore(bjPlayerHands[0]);
+
+    if (dealerScore === 21 && playerScore === 21) {
+        bjGameOver = true;
+        bjResults[0] = "Push (Tie)";
+    } else if (dealerScore === 21) {
+        bjGameOver = true;
+        bjResults[0] = "Carl Blackjack!";
+    } else if (playerScore === 21) {
+        bjGameOver = true;
+        bjResults[0] = "Blackjack! You Win!";
+    }
+
+    renderBj();
+}
+
+function processBjPayouts() {
+    if (bjPayoutsDone) return;
+    bjPayoutsDone = true;
+    
+    for (let i = 0; i < bjPlayerHands.length; i++) {
+        let res = bjResults[i] || "";
+        let bet = bjBets[i] || 0;
+        
+        if (res.includes("Blackjack! You Win!") || res.includes("Win")) {
+            userBurgers += Math.floor(bet * 2); 
+        } else if (res.includes("Push")) {
+            userBurgers += Math.floor(bet); 
+        }
+    }
+    updateBurgerUI();
+    if(typeof saveSessionData === 'function') { saveSessionData(); }
+}
+
+function renderBj() {
+    const cCards = document.getElementById("bj-carl-cards");
+    if (cCards) {
+        cCards.innerHTML = "";
+        bjCarlHand.forEach((card, index) => {
+            if (!card) return;
+            let el = document.createElement("div");
+            if (!bjGameOver && index === 1) {
+                el.className = "bj-card hidden";
+                el.innerText = "";
+            } else {
+                el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
+                el.innerText = `${card.value}${card.suit}`;
+            }
+            cCards.appendChild(el);
+        });
+    }
+
+    if (bjGameOver) {
+        document.getElementById("bj-carl-score").innerText = getBjScore(bjCarlHand);
+        document.getElementById("bj-controls").style.display = "none";
+        
+        if (!document.getElementById("bj-status").innerText.includes("Place your bet")) {
+            document.getElementById("bj-status").innerText = "Round Over";
+            document.getElementById("bj-status").style.color = "#aaa";
+        }
+        
+        const betInput = document.getElementById("bj-bet-input");
+        if (betInput) betInput.disabled = false;
+        
+        if (bjGameActive) {
+            processBjPayouts();
+            bjGameActive = false;
+        }
+        
+    } else {
+        document.getElementById("bj-carl-score").innerText = getBjScore([bjCarlHand[0]]);
+
+        let currentHand = bjPlayerHands[bjActiveHand];
+        if (currentHand) {
+            document.getElementById("bj-controls").style.display = "flex";
+            
+            document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
+            
+            document.getElementById("bj-btn-double").disabled = currentHand.length !== 2;
+            let canSplit = currentHand.length === 2 && 
+                           getCardWeight(currentHand[0].value) === getCardWeight(currentHand[1].value) && 
+                           bjPlayerHands.length < 4;
+            document.getElementById("bj-btn-split").disabled = !canSplit;
+
+            if (bjPlayerHands.length > 1) {
+                document.getElementById("bj-status").innerText = `Playing Hand ${bjActiveHand + 1}...`;
+            } else {
+                document.getElementById("bj-status").innerText = `Your Turn!`;
+            }
+            document.getElementById("bj-status").style.color = "#fff";
+        } else {
+            document.getElementById("bj-controls").style.display = "none";
+        }
+    }
+
+    const pHandsContainer = document.getElementById("bj-player-hands-container");
+    if (pHandsContainer) {
+        pHandsContainer.innerHTML = "";
+        bjPlayerHands.forEach((hand, index) => {
+            let handDiv = document.createElement("div");
+            handDiv.className = `bj-single-hand ${index === bjActiveHand && !bjGameOver ? 'active' : ''}`;
+
+            let scoreDiv = document.createElement("div");
+            scoreDiv.className = "bj-hand-score";
+            scoreDiv.innerText = `Score: ${getBjScore(hand)}`;
+            handDiv.appendChild(scoreDiv);
+
+            let cardsContainer = document.createElement("div");
+            cardsContainer.className = "bj-cards";
+            hand.forEach(card => {
+                if (!card) return;
+                let el = document.createElement("div");
+                el.className = `bj-card ${card.suit === '♥' || card.suit === '♦' ? 'red' : ''}`;
+                el.innerText = `${card.value}${card.suit}`;
+                cardsContainer.appendChild(el);
+            });
+            handDiv.appendChild(cardsContainer);
+
+            if (bjResults[index] && bjResults[index] !== "Doubled") {
+                let resDiv = document.createElement("div");
+                resDiv.className = "bj-hand-result";
+                let txt = bjResults[index];
+                if (txt.includes("Win") || txt.includes("Blackjack")) resDiv.classList.add("win");
+                else if (txt.includes("Lose") || txt.includes("Bust")) resDiv.classList.add("lose");
+                else resDiv.classList.add("push");
+                resDiv.innerText = txt;
+                handDiv.appendChild(resDiv);
+            }
+
+            pHandsContainer.appendChild(handDiv);
+        });
+    }
+}
+
+function bjHit() {
+    if (bjGameOver) return;
+    let hand = bjPlayerHands[bjActiveHand];
+    if (!hand) return;
+    
+    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
+    hand.push(bjDeck.pop());
+
+    let score = getBjScore(hand);
+    
+    if (score >= 21) {
+        document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
+    }
+    
+    renderBj();
+
+    if (score > 21) {
+        bjResults[bjActiveHand] = "Bust";
+        setTimeout(() => bjNextHand(), 800);
+    } else if (score === 21) {
+        setTimeout(() => bjNextHand(), 800);
+    }
+}
+
+function bjStand() {
+    if (bjGameOver) return;
+    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
+    bjNextHand();
+}
+
+function bjDouble() {
+    if (bjGameOver) return;
+    let hand = bjPlayerHands[bjActiveHand];
+    if (!hand || hand.length !== 2) return;
+    
+    let currentBet = bjBets[bjActiveHand];
+    if (userBurgers < currentBet) {
+        alert("Not enough Burgers to double down!");
+        return;
+    }
+    userBurgers -= currentBet;
+    updateBurgerUI();
+    bjBets[bjActiveHand] *= 2;
+
+    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
+    hand.push(bjDeck.pop());
+    
+    document.querySelectorAll('.bj-btn').forEach(b => b.disabled = true);
+    
+    renderBj();
+    
+    if (getBjScore(hand) > 21) {
+        bjResults[bjActiveHand] = "Bust";
+    } else {
+        bjResults[bjActiveHand] = "Doubled";
+    }
+    setTimeout(() => bjNextHand(), 800);
+}
+
+function bjSplit() {
+    if (bjGameOver) return;
+    let hand = bjPlayerHands[bjActiveHand];
+    if (!hand || hand.length !== 2 || getCardWeight(hand[0].value) !== getCardWeight(hand[1].value)) return;
+    
+    let currentBet = bjBets[bjActiveHand];
+    if (userBurgers < currentBet) {
+        alert("Not enough Burgers to split!");
+        return;
+    }
+    userBurgers -= currentBet;
+    updateBurgerUI();
+
+    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
+    let splitCard = hand.pop();
+    let newHand = [splitCard, bjDeck.pop()];
+    hand.push(bjDeck.pop());
+    
+    bjPlayerHands.splice(bjActiveHand + 1, 0, newHand);
+    bjBets.splice(bjActiveHand + 1, 0, currentBet);
+    renderBj();
+}
+
+function bjNextHand() {
+    bjActiveHand++;
+    if (bjActiveHand >= bjPlayerHands.length) {
+        document.getElementById("bj-controls").style.display = "none";
+        bjDealerTurn();
+    } else {
+        document.querySelectorAll('.bj-btn').forEach(b => b.disabled = false);
+        renderBj();
+    }
+}
+
+function bjDealerTurn() {
+    try {
+        let allBusted = bjPlayerHands.every((_, i) => bjResults[i] === "Bust");
+
+        const playDealer = () => {
+            try {
+                let score = getBjScore(bjCarlHand);
+                if (score < 17 && !allBusted) {
+                    if (!bjDeck || bjDeck.length < 5) bjDeck = buildDeck();
+                    let card = bjDeck.pop();
+                    if (card) bjCarlHand.push(card);
+                    renderBj();
+                    setTimeout(playDealer, 800);
+                } else {
+                    for (let i = 0; i < bjPlayerHands.length; i++) {
+                        if (bjResults[i] === "Bust") continue;
+
+                        let pScore = getBjScore(bjPlayerHands[i]);
+                        if (score > 21) bjResults[i] = "Win (Carl Busts)";
+                        else if (pScore > score) bjResults[i] = "Win";
+                        else if (score > pScore) bjResults[i] = "Lose";
+                        else bjResults[i] = "Push";
+                    }
+                    bjGameOver = true;
+                    renderBj();
+                }
+            } catch (err) {
+                console.error("Blackjack dealer turn error:", err);
+                bjGameOver = true;
+                renderBj();
+            }
+        };
+
+        document.getElementById("bj-status").innerText = "Carl is dealing...";
+        document.getElementById("bj-status").style.color = "#eccc68";
+        setTimeout(playDealer, 600);
+    } catch (err) {
+        console.error("Blackjack turn error:", err);
+        bjGameOver = true;
+        renderBj();
+    }
+}
+
+
+// ==========================================
+// 4. HANGMAN
+// ==========================================
+let hmWord = "", hmGuessed = new Set(), hmMistakes = 0, hmPlayerTurn = true, hmGameOver = false; 
+const safeDictionary = ["ROBLOX", "MINECRAFT", "DEVELOPER", "PYTHON", "KEYBOARD", "UNITY", "GODOT", "SCRIPTING", "ANIMATION", "PHYSICS", "MULTIPLAYER", "SERVER", "GALAXY", "UNIVERSE", "HELICOPTER", "SPACESHIP"];
+
+function initHangman() { 
+    document.getElementById("hm-status").innerText = "Loading word..."; 
+    document.getElementById("hm-status").style.color = "#888"; 
+    hmWord = ""; 
+    hmGuessed.clear(); 
+    hmMistakes = 0; 
+    hmPlayerTurn = true; 
+    hmGameOver = false; 
+    for(let i=1; i<=6; i++) { 
+        const part = document.getElementById(`hm-part-${i}`); 
+        if (part) part.style.display = "none"; 
+    } 
+    document.querySelectorAll(".hm-key").forEach(btn => { 
+        btn.className = "hm-key"; 
+        btn.disabled = false; 
+    }); 
+    hmWord = safeDictionary[Math.floor(Math.random() * safeDictionary.length)].toUpperCase(); 
+    document.getElementById("hm-status").innerText = "Your Turn"; 
+    document.getElementById("hm-status").style.color = "#fff"; 
+    updateHmWordDisplay(); 
+}
+
+function updateHmWordDisplay() { 
+    let display = hmWord.split('').map(c => hmGuessed.has(c) ? c : "_").join(' '); 
+    document.getElementById("hm-word").innerText = display; 
+}
+
+function hmGuess(letter) { 
+    if (hmGameOver || hmGuessed.has(letter)) return; 
+    hmGuessed.add(letter); 
+    const btn = Array.from(document.querySelectorAll('.hm-key')).find(b => b.innerText === letter); 
+    if (btn) btn.disabled = true; 
+    
+    if (hmWord.includes(letter)) { 
+        if (btn) btn.classList.add("correct"); 
+        updateHmWordDisplay(); 
+        if (hmWord.split('').every(c => hmGuessed.has(c))) { 
+            hmGameOver = true; 
+            document.getElementById("hm-status").innerText = hmPlayerTurn ? "You Win!" : "Carl Wins!"; 
+            document.getElementById("hm-status").style.color = "#84cc16"; 
+            return; 
+        } 
+        if (!hmPlayerTurn) { 
+            document.getElementById("hm-status").innerText = "Carl is thinking..."; 
+            setTimeout(carlHmMove, 1000); 
+        } 
+    } else { 
+        if (btn) btn.classList.add("wrong"); 
+        hmMistakes++; 
+        const part = document.getElementById(`hm-part-${hmMistakes}`); 
+        if (part) part.style.display = "block"; 
+        
+        if (hmMistakes >= 6) { 
+            hmGameOver = true; 
+            document.getElementById("hm-status").innerText = "Game Over!"; 
+            document.getElementById("hm-status").style.color = "#ef4444"; 
+            document.getElementById("hm-word").innerText = hmWord.split('').join(' '); 
+            return; 
+        } 
+        hmPlayerTurn = !hmPlayerTurn; 
+        if (!hmPlayerTurn) { 
+            document.getElementById("hm-status").innerText = "Carl is thinking..."; 
+            document.getElementById("hm-status").style.color = "#9333ea"; 
+            setTimeout(carlHmMove, 1000); 
+        } else { 
+            document.getElementById("hm-status").innerText = "Your Turn"; 
+            document.getElementById("hm-status").style.color = "#fff"; 
+        } 
+    } 
+}
+
+function carlHmMove() { 
+    if (hmGameOver) return; 
+    const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').filter(c => !hmGuessed.has(c)); 
+    const correctLeft = hmWord.split('').filter(c => !hmGuessed.has(c)); 
+    let guess = null; 
+    let diff = getDifficulty(); 
+    
+    if (diff === "easy") { 
+        if (available.length > 0) guess = available[Math.floor(Math.random() * available.length)]; 
+    } else if (diff === "hard") { 
+        // 100% correct guess on hard
+        if (correctLeft.length > 0) guess = correctLeft[Math.floor(Math.random() * correctLeft.length)];
+        else if (available.length > 0) guess = available[Math.floor(Math.random() * available.length)];
+    } else { 
+        let roll = Math.random(); 
+        if (roll < 0.50 && correctLeft.length > 0) guess = correctLeft[Math.floor(Math.random() * correctLeft.length)]; 
+        else { 
+            const common = "EARIOTNSLCUDPMHGBFYWKVXZJQ".split('').filter(c => available.includes(c)); 
+            if (common.length > 0) guess = common[0]; 
+            else if (available.length > 0) guess = available[Math.floor(Math.random() * available.length)]; 
+        } 
+    } 
+    if (guess) hmGuess(guess); 
+}
+
+// ==========================================
+// 5. CONNECT FOUR
+// ==========================================
+const C4_ROWS = 6, C4_COLS = 7; 
+let c4Board = [], c4PlayerTurn = true, c4GameOver = false;
+
+function initConnectFour() { 
+    c4Board = Array(C4_ROWS).fill().map(() => Array(C4_COLS).fill(0)); 
+    c4PlayerTurn = true; 
+    c4GameOver = false; 
+    document.getElementById("c4-status").innerText = "Your Turn (Red)"; 
+    document.getElementById("c4-status").style.color = "#fff"; 
+    const boardDiv = document.getElementById("c4-board"); 
+    boardDiv.innerHTML = ""; 
+    for (let r = 0; r < C4_ROWS; r++) { 
+        for (let c = 0; c < C4_COLS; c++) { 
+            const cell = document.createElement("div"); 
+            cell.className = "c4-cell"; 
+            cell.id = `c4-${r}-${c}`; 
+            boardDiv.appendChild(cell); 
+        } 
+    } 
+}
+
+function c4HandleClick(col) { 
+    if (!c4PlayerTurn || c4GameOver) return; 
+    let row = c4DropPiece(col, 1); 
+    if (row !== -1) { 
+        c4UpdateBoardUI(); 
+        if (c4CheckWin(1)) { 
+            c4GameOver = true; 
+            document.getElementById("c4-status").innerText = "You Win!"; 
+            document.getElementById("c4-status").style.color = "#ff4757"; 
+            return; 
+        } else if (c4IsBoardFull()) { 
+            c4GameOver = true; 
+            document.getElementById("c4-status").innerText = "It's a Draw!"; 
+            return; 
+        } 
+        c4PlayerTurn = false; 
+        document.getElementById("c4-status").innerText = "Carl is thinking..."; 
+        document.getElementById("c4-status").style.color = "#eccc68"; 
+        setTimeout(c4CarlMove, 600); 
+    } 
+}
+
+function c4DropPiece(col, player) { 
+    for (let r = C4_ROWS - 1; r >= 0; r--) { 
+        if (c4Board[r][col] === 0) { 
+            c4Board[r][col] = player; 
+            return r; 
+        } 
+    } 
+    return -1; 
+}
+
+function c4GetNextOpenRow(col) { 
+    for (let r = C4_ROWS - 1; r >= 0; r--) { 
+        if (c4Board[r][col] === 0) return r; 
+    } 
+    return -1; 
+}
+
+function c4IsBoardFull() { 
+    return c4Board[0].every(val => val !== 0); 
+}
+
+function c4CheckWin(p) { 
+    for (let r = 0; r < C4_ROWS; r++) { 
+        for (let c = 0; c < C4_COLS - 3; c++) { 
+            if (c4Board[r][c] == p && c4Board[r][c+1] == p && c4Board[r][c+2] == p && c4Board[r][c+3] == p) return true; 
+        } 
+    } 
+    for (let r = 0; r < C4_ROWS - 3; r++) { 
+        for (let c = 0; c < C4_COLS; c++) { 
+            if (c4Board[r][c] == p && c4Board[r+1][c] == p && c4Board[r+2][c] == p && c4Board[r+3][c] == p) return true; 
+        } 
+    } 
+    for (let r = 3; r < C4_ROWS; r++) { 
+        for (let c = 0; c < C4_COLS - 3; c++) { 
+            if (c4Board[r][c] == p && c4Board[r-1][c+1] == p && c4Board[r-2][c+2] == p && c4Board[r-3][c+3] == p) return true; 
+        } 
+    } 
+    for (let r = 0; r < C4_ROWS - 3; r++) { 
+        for (let c = 0; c < C4_COLS - 3; c++) { 
+            if (c4Board[r][c] == p && c4Board[r+1][c+1] == p && c4Board[r+2][c+2] == p && c4Board[r+3][c+3] == p) return true; 
+        } 
+    } 
+    return false; 
+}
+
+function c4CarlMove() { 
+    if (c4GameOver) return; 
+    let validCols = []; 
+    for (let c = 0; c < C4_COLS; c++) { 
+        if (c4Board[0][c] === 0) validCols.push(c); 
+    } 
+    if (validCols.length === 0) return; 
+    
+    let diff = getDifficulty(); 
+    let chosenCol = null; 
+    
+    if (diff === "easy") { 
+        chosenCol = validCols[Math.floor(Math.random() * validCols.length)]; 
+    } else { 
+        for (let c of validCols) { 
+            let r = c4GetNextOpenRow(c); 
+            c4Board[r][c] = 2; 
+            if (c4CheckWin(2)) { chosenCol = c; c4Board[r][c] = 0; break; } 
+            c4Board[r][c] = 0; 
+        } 
+        if (chosenCol === null) { 
+            for (let c of validCols) { 
+                let r = c4GetNextOpenRow(c); 
+                c4Board[r][c] = 1; 
+                if (c4CheckWin(1)) { chosenCol = c; c4Board[r][c] = 0; break; } 
+                c4Board[r][c] = 0; 
+            } 
+        } 
+        // Lookahead avoidance on hard
+        if (diff === "hard" && chosenCol === null) {
+            let safeCols = [];
+            for (let c of validCols) {
+                let r = c4GetNextOpenRow(c);
+                c4Board[r][c] = 2;
+                let givesWin = false;
+                if (r > 0) { c4Board[r-1][c] = 1; if (c4CheckWin(1)) givesWin = true; c4Board[r-1][c] = 0; }
+                c4Board[r][c] = 0;
+                if (!givesWin) safeCols.push(c);
+            }
+            let pool = safeCols.length > 0 ? safeCols : validCols;
+            let pref = [3, 2, 4, 1, 5, 0, 6]; 
+            for (let c of pref) { if (pool.includes(c)) { chosenCol = c; break; } }
+        } else if (chosenCol === null && diff === "medium") { 
+            if (Math.random() < 0.5) { 
+                for (let c of validCols) { 
+                    let r = c4GetNextOpenRow(c); 
+                    c4Board[r][c] = 1; 
+                    if (c4CheckWin(1)) { chosenCol = c; c4Board[r][c] = 0; break; } 
+                    c4Board[r][c] = 0; 
+                } 
+            } 
+        } 
+        if (chosenCol === null) { 
+            let pref = [3, 2, 4, 1, 5, 0, 6]; 
+            for (let c of pref) { 
+                if (validCols.includes(c)) { chosenCol = c; break; } 
+            } 
+        } 
+    } 
+    if (chosenCol === null) chosenCol = validCols[Math.floor(Math.random() * validCols.length)]; 
+    
+    c4DropPiece(chosenCol, 2); 
+    c4UpdateBoardUI(); 
+    
+    if (c4CheckWin(2)) { 
+        c4GameOver = true; 
+        document.getElementById("c4-status").innerText = "Carl Wins!"; 
+        document.getElementById("c4-status").style.color = "#eccc68"; 
+    } else if (c4IsBoardFull()) { 
+        c4GameOver = true; 
+        document.getElementById("c4-status").innerText = "It's a Draw!"; 
+    } else { 
+        c4PlayerTurn = true; 
+        document.getElementById("c4-status").innerText = "Your Turn (Red)"; 
+        document.getElementById("c4-status").style.color = "#fff"; 
+    } 
+}
+
+function c4UpdateBoardUI() { 
+    for (let r = 0; r < C4_ROWS; r++) { 
+        for (let c = 0; c < C4_COLS; c++) { 
+            const cell = document.getElementById(`c4-${r}-${c}`); 
+            if (cell) { 
+                let val = c4Board[r][c]; 
+                if (val === 1) cell.className = "c4-cell red"; 
+                else if (val === 2) cell.className = "c4-cell yellow"; 
+                else cell.className = "c4-cell"; 
+            } 
+        } 
+    } 
+}
+
+// ==========================================
+// 6. BATTLESHIP
+// ==========================================
+const BS_SIZE = 6; 
+let bsPlayerGrid = [], bsEnemyGrid = [], bsEnemyShips = [], bsPlayerTurn = true, bsGameOver = false, bsPlacing = true, bsShipSizes = [4, 3, 2], bsCurrentShipIndex = 0, bsIsHorizontal = true, bsPreviewOrigin = null, bsPreviewCoords = [];
+
+function initBattleship() { 
+    bsPlayerGrid = Array(BS_SIZE).fill().map(() => Array(BS_SIZE).fill(0)); 
+    bsEnemyGrid = Array(BS_SIZE).fill().map(() => Array(BS_SIZE).fill(0)); 
+    bsEnemyShips = []; bsPlayerTurn = true; bsGameOver = false; bsPlacing = true; bsCurrentShipIndex = 0; bsIsHorizontal = true; 
+    document.getElementById("bs-status").innerText = `Place your ${bsShipSizes[bsCurrentShipIndex]}-length ship`; 
+    document.getElementById("bs-status").style.color = "#fff"; 
+    document.getElementById("bs-placement-controls").style.display = "flex"; 
+    document.getElementById("bs-enemy-label").style.display = "none"; 
+    document.getElementById("bs-enemy-grid").style.display = "none"; 
+    document.getElementById("bs-player-label").innerText = "Your Fleet (Select position below)"; 
+    bsPlaceEnemyShipsRandomly(); 
+    bsUpdateBoardsUI(); 
+}
+
+function bsToggleRotate() { 
+    bsIsHorizontal = !bsIsHorizontal; 
+    const btn = document.querySelector("#bs-placement-controls .bs-action-btn"); 
+    if (btn) btn.innerText = `Rotate: ${bsIsHorizontal ? "Horizontal" : "Vertical"}`; 
+    if (bsPreviewOrigin) bsPreviewCoords = bsCalculatePreview(bsPreviewOrigin.r, bsPreviewOrigin.c); 
+    bsUpdateBoardsUI(); 
+}
+
+function bsPlaceEnemyShipsRandomly() { 
+    for (let size of bsShipSizes) { 
+        let placed = false; 
+        while (!placed) { 
+            let horizontal = Math.random() < 0.5, r = Math.floor(Math.random() * BS_SIZE), c = Math.floor(Math.random() * BS_SIZE), fits = true, tempCoords = []; 
+            for (let i = 0; i < size; i++) { 
+                let nr = horizontal ? r : r + i, nc = horizontal ? c + i : c; 
+                if (nr >= BS_SIZE || nc >= BS_SIZE) { fits = false; break; } 
+                tempCoords.push(`${nr},${nc}`); 
+            } 
+            if (fits && !tempCoords.some(coord => bsEnemyShips.includes(coord))) { 
+                tempCoords.forEach(coord => bsEnemyShips.push(coord)); 
+                placed = true; 
+            } 
+        } 
+    } 
+}
+
+function bsCalculatePreview(r, c) { 
+    let size = bsShipSizes[bsCurrentShipIndex], coords = []; 
+    for (let i = 0; i < size; i++) { 
+        let nr = bsIsHorizontal ? r : r + i, nc = bsIsHorizontal ? c + i : c; 
+        if (nr >= BS_SIZE || nc >= BS_SIZE || bsPlayerGrid[nr][nc] === 1) return []; 
+        coords.push({r: nr, c: nc}); 
+    } 
+    return coords; 
+}
+
+function bsCellClick(r, c) { 
+    if (bsGameOver || !bsPlacing) return; 
+    let coords = bsCalculatePreview(r, c); 
+    if (coords.length > 0) { 
+        bsPreviewOrigin = { r, c }; 
+        bsPreviewCoords = coords; 
+    } else { 
+        bsPreviewOrigin = null; 
+        bsPreviewCoords = []; 
+    } 
+    bsUpdateBoardsUI(); 
+}
+
+function bsConfirmPlacement() { 
+    if (!bsPlacing || bsPreviewCoords.length === 0) { 
+        alert("Please tap a valid spot first!"); 
+        return; 
+    } 
+    bsPreviewCoords.forEach(coord => { bsPlayerGrid[coord.r][coord.c] = 1; }); 
+    bsPreviewOrigin = null; 
+    bsPreviewCoords = []; 
+    bsCurrentShipIndex++; 
+    if (bsCurrentShipIndex < bsShipSizes.length) {
+        document.getElementById("bs-status").innerText = `Place your ${bsShipSizes[bsCurrentShipIndex]}-length ship`; 
+    } else { 
+        bsPlacing = false; 
+        document.getElementById("bs-placement-controls").style.display = "none"; 
+        document.getElementById("bs-enemy-label").style.display = "block"; 
+        document.getElementById("bs-enemy-grid").style.display = "grid"; 
+        document.getElementById("bs-player-label").innerText = "Your Fleet"; 
+        document.getElementById("bs-status").innerText = "Your Turn - Fire!"; 
+    } 
+    bsUpdateBoardsUI(); 
+}
+
+function bsFire(r, c) { 
+    if (bsPlacing || !bsPlayerTurn || bsGameOver || bsEnemyGrid[r][c] !== 0) return; 
+    let targetCoord = `${r},${c}`, isHit = bsEnemyShips.includes(targetCoord); 
+    bsEnemyGrid[r][c] = isHit ? 3 : 2; 
+    document.getElementById("bs-status").innerText = isHit ? "Direct Hit! Fire Again!" : "Miss!"; 
+    document.getElementById("bs-status").style.color = isHit ? "#84cc16" : "#ef4444"; 
+    bsUpdateBoardsUI(); 
+    if (bsEnemyShips.every(coord => { let [tr,tc] = coord.split(',').map(Number); return bsEnemyGrid[tr][tc] === 3; })) { 
+        bsGameOver = true; 
+        document.getElementById("bs-status").innerText = "You Destroyed Carl's Fleet!"; 
+        document.getElementById("bs-status").style.color = "#84cc16"; 
+        return; 
+    } 
+    if (!isHit) { 
+        bsPlayerTurn = false; 
+        setTimeout(bsCarlTurn, 800); 
+    } 
+}
+
+function bsCarlTurn() { 
+    if (bsGameOver) return; 
+    let diff = getDifficulty();
+    let r, c; 
+    let potentialTargets = [];
+    
+    if (diff === "hard") {
+        for(let row=0; row<BS_SIZE; row++) {
+            for(let col=0; col<BS_SIZE; col++) {
+                if (bsPlayerGrid[row][col] === 3) { 
+                    if (row>0 && bsPlayerGrid[row-1][col] <= 1) potentialTargets.push({r:row-1,c:col});
+                    if (row<BS_SIZE-1 && bsPlayerGrid[row+1][col] <= 1) potentialTargets.push({r:row+1,c:col});
+                    if (col>0 && bsPlayerGrid[row][col-1] <= 1) potentialTargets.push({r:row,c:col-1});
+                    if (col<BS_SIZE-1 && bsPlayerGrid[row][col+1] <= 1) potentialTargets.push({r:row,c:col+1});
+                }
+            }
+        }
+    }
+    
+    if (potentialTargets.length > 0) {
+        let t = potentialTargets[Math.floor(Math.random()*potentialTargets.length)];
+        r = t.r; c = t.c;
+    } else if (diff === "hard" && Math.random() < 0.3) {
+        let ships = [];
+        for(let row=0; row<BS_SIZE; row++) for(let col=0; col<BS_SIZE; col++) if (bsPlayerGrid[row][col] === 1) ships.push({r:row, c:col});
+        if (ships.length > 0) { let t = ships[Math.floor(Math.random()*ships.length)]; r = t.r; c = t.c; }
+        else { do { r = Math.floor(Math.random() * BS_SIZE); c = Math.floor(Math.random() * BS_SIZE); } while (bsPlayerGrid[r][c] > 1); }
+    } else {
+        do { r = Math.floor(Math.random() * BS_SIZE); c = Math.floor(Math.random() * BS_SIZE); } while (bsPlayerGrid[r][c] > 1); 
+    }
+    
+    let isHit = (bsPlayerGrid[r][c] === 1); 
+    bsPlayerGrid[r][c] = isHit ? 3 : 2; 
+    document.getElementById("bs-status").innerText = isHit ? "Carl hit your ship!" : "Carl missed! Your Turn - Fire!"; 
+    document.getElementById("bs-status").style.color = isHit ? "#ef4444" : "#fff"; 
+    bsUpdateBoardsUI(); 
+    
+    let playerLost = true; 
+    for (let row = 0; row < BS_SIZE; row++) {
+        for (let col = 0; col < BS_SIZE; col++) {
+            if (bsPlayerGrid[row][col] === 1) playerLost = false; 
+        }
+    }
+    
+    if (playerLost) { 
+        bsGameOver = true; 
+        document.getElementById("bs-status").innerText = "Carl Destroyed Your Fleet!"; 
+        document.getElementById("bs-status").style.color = "#ef4444"; 
+    } else if (isHit) {
+        setTimeout(bsCarlTurn, 800); 
+    } else {
+        bsPlayerTurn = true; 
+    }
+}
+
+function bsUpdateBoardsUI() { 
+    const enemyDiv = document.getElementById("bs-enemy-grid"), playerDiv = document.getElementById("bs-player-grid"); 
+    if (!enemyDiv || !playerDiv) return; 
+    enemyDiv.innerHTML = ""; playerDiv.innerHTML = ""; 
+    if (!bsPlacing) { 
+        for (let r = 0; r < BS_SIZE; r++) {
+            for (let c = 0; c < BS_SIZE; c++) { 
+                const cell = document.createElement("div"); 
+                cell.className = "bs-cell"; 
+                let val = bsEnemyGrid[r][c]; 
+                if (val === 2) { cell.classList.add("miss"); } 
+                else if (val === 3) { cell.classList.add("hit"); } 
+                cell.onclick = () => bsFire(r, c); 
+                enemyDiv.appendChild(cell); 
+            } 
+        }
+    } 
+    for (let r = 0; r < BS_SIZE; r++) {
+        for (let c = 0; c < BS_SIZE; c++) { 
+            const cell = document.createElement("div"); 
+            cell.className = "bs-cell"; 
+            let val = bsPlayerGrid[r][c], isPreview = bsPreviewCoords.some(coord => coord.r === r && coord.c === c); 
+            if (val === 1) { cell.classList.add("ship"); } 
+            else if (val === 2) { cell.classList.add("miss"); } 
+            else if (val === 3) { cell.classList.add("hit"); } 
+            else if (isPreview) { cell.classList.add("preview"); } 
+            if (bsPlacing) { cell.onclick = () => bsCellClick(r, c); } 
+            playerDiv.appendChild(cell); 
+        } 
+    }
+}
+
+// ==========================================
+// 7. CHECKERS
+// ==========================================
+const CHK_SIZE = 8; 
+let chkBoard = [], chkSelected = null, chkValidMoves = [], chkPlayerTurn = true, chkGameOver = false;
+
+function initCheckers() { 
+    chkBoard = Array(CHK_SIZE).fill().map(() => Array(CHK_SIZE).fill(0)); 
+    chkSelected = null; chkValidMoves = []; chkPlayerTurn = true; chkGameOver = false; 
+    document.getElementById("chk-status").innerText = "Your Turn (Red)"; 
+    document.getElementById("chk-status").style.color = "#fff"; 
+    for (let r = 0; r < CHK_SIZE; r++) {
+        for (let c = 0; c < CHK_SIZE; c++) {
+            if ((r + c) % 2 === 1) { 
+                if (r < 3) chkBoard[r][c] = 2; 
+                else if (r > 4) chkBoard[r][c] = 1; 
+            } 
+        }
+    }
+    chkRenderBoard(); 
+}
+
+function chkRenderBoard() { 
+    const boardDiv = document.getElementById("chk-board"); 
+    if (!boardDiv) return; 
+    boardDiv.innerHTML = ""; 
+    for (let r = 0; r < CHK_SIZE; r++) {
+        for (let c = 0; c < CHK_SIZE; c++) { 
+            const tile = document.createElement("div"); 
+            let isDark = (r + c) % 2 === 1; 
+            tile.className = `chk-tile ${isDark ? "dark" : "light"}`; 
+            let pieceVal = chkBoard[r][c]; 
+            if (chkSelected && chkSelected.r === r && chkSelected.c === c) tile.classList.add("selected"); 
+            if (chkValidMoves.some(m => m.toR === r && m.toC === c)) tile.classList.add("target"); 
+            if (chkValidMoves.some(m => m.isJump && m.jumpedR === r && m.jumpedC === c)) tile.classList.add("jump-capture"); 
+            if (pieceVal !== 0) { 
+                const piece = document.createElement("div"); 
+                piece.className = `chk-piece ${pieceVal === 1 || pieceVal === 11 ? "red" : "black"} ${pieceVal === 11 || pieceVal === 22 ? "king" : ""}`; 
+                tile.appendChild(piece); 
+            } 
+            tile.onclick = () => chkTileClick(r, c); 
+            boardDiv.appendChild(tile); 
+        } 
+    }
+}
+
+function chkTileClick(r, c) { 
+    if (!chkPlayerTurn || chkGameOver) return; 
+    let p = chkBoard[r][c]; 
+    if (p === 1 || p === 11) { 
+        chkSelected = { r, c }; 
+        chkValidMoves = chkGetMovesForPiece(r, c, chkBoard); 
+        chkRenderBoard(); 
+        return; 
+    } 
+    if (chkSelected) { 
+        let move = chkValidMoves.find(m => m.toR === r && m.toC === c); 
+        if (move) { 
+            chkExecuteMove(move); 
+            chkSelected = null; 
+            chkValidMoves = []; 
+            chkRenderBoard(); 
+            if (chkCheckWin(1)) { 
+                chkGameOver = true; 
+                document.getElementById("chk-status").innerText = "You Win!"; 
+                document.getElementById("chk-status").style.color = "#84cc16"; 
+                return; 
+            } 
+            chkPlayerTurn = false; 
+            document.getElementById("chk-status").innerText = "Carl is thinking..."; 
+            document.getElementById("chk-status").style.color = "#9333ea"; 
+            setTimeout(chkCarlTurn, 600); 
+        } else { 
+            chkSelected = null; 
+            chkValidMoves = []; 
+            chkRenderBoard(); 
+        } 
+    } 
+}
+
+function chkGetMovesForPiece(r, c, boardState) { 
+    let p = boardState[r][c]; 
+    if (p === 0) return []; 
+    let isRed = p === 1 || p === 11, isKing = p === 11 || p === 22, moves = [], dirs = []; 
+    if (isRed || isKing) dirs.push([-1, -1], [-1, 1]); 
+    if (!isRed || isKing) dirs.push([1, -1], [1, 1]); 
+    for (let [dr, dc] of dirs) { 
+        let nr = r + dr, nc = c + dc; 
+        if (nr >= 0 && nr < CHK_SIZE && nc >= 0 && nc < CHK_SIZE) { 
+            if (boardState[nr][nc] === 0) moves.push({ fromR: r, fromC: c, toR: nr, toC: nc, isJump: false }); 
+            else { 
+                let opp = boardState[nr][nc], isOpponent = isRed ? (opp === 2 || opp === 22) : (opp === 1 || opp === 11); 
+                if (isOpponent) { 
+                    let jR = r + 2 * dr, jC = c + 2 * dc; 
+                    if (jR >= 0 && jR < CHK_SIZE && jC >= 0 && jC < CHK_SIZE && boardState[jR][jC] === 0) {
+                        moves.push({ fromR: r, fromC: c, toR: jR, toC: jC, isJump: true, jumpedR: nr, jumpedC: nc }); 
+                    }
+                } 
+            } 
+        } 
+    } 
+    return moves; 
+}
+
+function chkExecuteMove(move) { 
+    let p = chkBoard[move.fromR][move.fromC]; 
+    chkBoard[move.fromR][move.fromC] = 0; 
+    if (move.isJump) chkBoard[move.jumpedR][move.jumpedC] = 0; 
+    if (p === 1 && move.toR === 0) p = 11; 
+    if (p === 2 && move.toR === 7) p = 22; 
+    chkBoard[move.toR][move.toC] = p; 
+}
+
+function chkCarlTurn() { 
+    if (chkGameOver) return; 
+    let diff = getDifficulty(); let allMoves = []; 
+    for (let r = 0; r < CHK_SIZE; r++) {
+        for (let c = 0; c < CHK_SIZE; c++) {
+            if (chkBoard[r][c] === 2 || chkBoard[r][c] === 22) {
+                allMoves.push(...chkGetMovesForPiece(r, c, chkBoard)); 
+            }
+        }
+    }
+    if (allMoves.length === 0) { 
+        chkGameOver = true; 
+        document.getElementById("chk-status").innerText = "Carl Has No Moves! You Win!"; 
+        document.getElementById("chk-status").style.color = "#84cc16"; 
+        return; 
+    } 
+    let jumps = allMoves.filter(m => m.isJump); 
+    let chosenMove = null; 
+    
+    if (diff === "easy") {
+        chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; 
+    } else if (diff === "medium") {
+        chosenMove = jumps.length > 0 && Math.random() < 0.7 ? jumps[Math.floor(Math.random() * jumps.length)] : allMoves[Math.floor(Math.random() * allMoves.length)]; 
+    } else { 
+        allMoves.forEach(m => {
+            m.score = m.isJump ? 5 : 0;
+            if (m.toR === 7) m.score += 3;
+            let p = chkBoard[m.fromR][m.fromC]; chkBoard[m.fromR][m.fromC] = 0;
+            let jumpedVal = 0; if (m.isJump) { jumpedVal = chkBoard[m.jumpedR][m.jumpedC]; chkBoard[m.jumpedR][m.jumpedC] = 0; }
+            chkBoard[m.toR][m.toC] = p;
+            
+            let vulnerable = false;
+            for (let tr=0; tr<CHK_SIZE; tr++) {
+                for (let tc=0; tc<CHK_SIZE; tc++) {
+                    if (chkBoard[tr][tc] === 1 || chkBoard[tr][tc] === 11) {
+                        let pMoves = chkGetMovesForPiece(tr, tc, chkBoard);
+                        if (pMoves.some(pm => pm.isJump && pm.jumpedR === m.toR && pm.jumpedC === m.toC)) vulnerable = true;
+                    }
+                }
+            }
+            if (vulnerable) m.score -= 6;
+            
+            chkBoard[m.fromR][m.fromC] = p; chkBoard[m.toR][m.toC] = 0;
+            if (m.isJump) chkBoard[m.jumpedR][m.jumpedC] = jumpedVal;
+        });
+        allMoves.sort((a,b) => b.score - a.score);
+        let bestScore = allMoves[0].score;
+        let bestOptions = allMoves.filter(m => m.score === bestScore);
+        chosenMove = bestOptions[Math.floor(Math.random() * bestOptions.length)];
+    } 
+    
+    chkExecuteMove(chosenMove); 
+    chkRenderBoard(); 
+    if (chkCheckWin(2)) { 
+        chkGameOver = true; 
+        document.getElementById("chk-status").innerText = "Carl Wins!"; 
+        document.getElementById("chk-status").style.color = "#ef4444"; 
+        return; 
+    } 
+    chkPlayerTurn = true; 
+    document.getElementById("chk-status").innerText = "Your Turn (Red)"; 
+    document.getElementById("chk-status").style.color = "#fff"; 
+}
+
+function chkCheckWin(player) { 
+    let e1 = player === 1 ? 2 : 1, e2 = player === 1 ? 22 : 11; 
+    for (let r = 0; r < CHK_SIZE; r++) {
+        for (let c = 0; c < CHK_SIZE; c++) {
+            if (chkBoard[r][c] === e1 || chkBoard[r][c] === e2) return false; 
+        }
+    }
+    return true; 
+}
+
+// ==========================================
+// 8. CHESS
+// ==========================================
+const CHS_SIZE = 8; 
+let chsBoard = [], chsSelected = null, chsValidMoves = [], chsPlayerTurn = true, chsGameOver = false;
+
+const chsInitialBoard = [
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','p','p','p','p','p','p'],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['P','P','P','P','P','P','P','P'],
+    ['R','N','B','Q','K','B','N','R']
+];
+
+const chsIcons = { 
+    'P': '/static/icons/PawnWhite.png', 'R': '/static/icons/RookWhite.png', 'N': '/static/icons/HorseWhite.png', 'B': '/static/icons/BishopWhite.png', 'Q': '/static/icons/QueenWhite.png', 'K': '/static/icons/KingWhite.png', 
+    'p': '/static/icons/PawnBlack.png', 'r': '/static/icons/RookBlack.png', 'n': '/static/icons/HorseBlack.png', 'b': '/static/icons/BishopBlack.png', 'q': '/static/icons/QueenBlack.png', 'k': '/static/icons/KingBlack.png' 
+};
+
+function initChess() { 
+    chsBoard = JSON.parse(JSON.stringify(chsInitialBoard)); 
+    chsSelected = null; chsValidMoves = []; chsPlayerTurn = true; chsGameOver = false; 
+    document.getElementById("chs-status").innerText = "Your Turn (White)"; 
+    document.getElementById("chs-status").style.color = "#fff"; 
+    chsRenderBoard(); 
+}
+
+function chsRenderBoard() { 
+    const boardDiv = document.getElementById("chs-board"); 
+    if (!boardDiv) return; 
+    boardDiv.innerHTML = ""; 
+    for (let r = 0; r < CHS_SIZE; r++) {
+        for (let c = 0; c < CHS_SIZE; c++) { 
+            const tile = document.createElement("div"); 
+            let isDark = (r + c) % 2 === 1; 
+            tile.className = `chs-tile ${isDark ? "dark" : "light"}`; 
+            let p = chsBoard[r][c]; 
+            if (chsSelected && chsSelected.r === r && chsSelected.c === c) tile.classList.add("selected"); 
+            if (chsValidMoves.some(m => m.r === r && m.c === c)) tile.classList.add(p !== '' ? "target-capture" : "target"); 
+            if (p !== '') { 
+                const piece = document.createElement("img"); 
+                piece.className = "chs-piece"; 
+                piece.src = chsIcons[p]; 
+                piece.draggable = false; 
+                tile.appendChild(piece); 
+            } 
+            tile.onclick = () => chsTileClick(r, c); 
+            boardDiv.appendChild(tile); 
+        } 
+    }
+}
+
 function chsGetMoves(r, c, board) { 
     let p = board[r][c]; 
     if (p === '') return []; 
@@ -96,7 +1285,8 @@ function chsGetMoves(r, c, board) {
     } 
     
     if (piece === 'p') { 
-        let dir = isPlayer ? -1 : 1; let startRow = isPlayer ? 6 : 1; 
+        let dir = isPlayer ? -1 : 1; 
+        let startRow = isPlayer ? 6 : 1; 
         if (r+dir >= 0 && r+dir < CHS_SIZE && board[r+dir][c] === '') { 
             moves.push({r: r+dir, c: c}); 
             if (r === startRow && board[r+2*dir][c] === '') moves.push({r: r+2*dir, c: c}); 
@@ -124,24 +1314,75 @@ function chsGetMoves(r, c, board) {
     return moves; 
 }
 
-function chsTileClick(r, c) { if (!chsPlayerTurn || chsGameOver) return; let p = chsBoard[r][c]; if (/^[A-Z]$/.test(p)) { chsSelected = { r, c }; chsValidMoves = chsGetMoves(r, c, chsBoard); chsRenderBoard(); return; } if (chsSelected) { if (chsValidMoves.find(m => m.r === r && m.c === c)) { chsExecuteMove(chsSelected.r, chsSelected.c, r, c); chsSelected = null; chsValidMoves = []; chsRenderBoard(); if (chsGameOver) return; chsPlayerTurn = false; document.getElementById("chs-status").innerText = "Carl is thinking..."; document.getElementById("chs-status").style.color = "#9333ea"; setTimeout(chsCarlTurn, 800); } else { chsSelected = null; chsValidMoves = []; chsRenderBoard(); } } }
-function chsExecuteMove(fromR, fromC, toR, toC) { let piece = chsBoard[fromR][fromC], target = chsBoard[toR][toC]; if (target === 'k') { chsGameOver = true; document.getElementById("chs-status").innerText = "Checkmate! You Win!"; document.getElementById("chs-status").style.color = "#84cc16"; } else if (target === 'K') { chsGameOver = true; document.getElementById("chs-status").innerText = "Checkmate! Carl Wins!"; document.getElementById("chs-status").style.color = "#ef4444"; } if (piece === 'P' && toR === 0) piece = 'Q'; if (piece === 'p' && toR === 7) piece = 'q'; chsBoard[toR][toC] = piece; chsBoard[fromR][fromC] = ''; }
+function chsTileClick(r, c) { 
+    if (!chsPlayerTurn || chsGameOver) return; 
+    let p = chsBoard[r][c]; 
+    if (/^[A-Z]$/.test(p)) { 
+        chsSelected = { r, c }; 
+        chsValidMoves = chsGetMoves(r, c, chsBoard); 
+        chsRenderBoard(); 
+        return; 
+    } 
+    if (chsSelected) { 
+        if (chsValidMoves.find(m => m.r === r && m.c === c)) { 
+            chsExecuteMove(chsSelected.r, chsSelected.c, r, c); 
+            chsSelected = null; chsValidMoves = []; chsRenderBoard(); 
+            if (chsGameOver) return; 
+            chsPlayerTurn = false; 
+            document.getElementById("chs-status").innerText = "Carl is thinking..."; 
+            document.getElementById("chs-status").style.color = "#9333ea"; 
+            setTimeout(chsCarlTurn, 800); 
+        } else { 
+            chsSelected = null; chsValidMoves = []; chsRenderBoard(); 
+        } 
+    } 
+}
+
+function chsExecuteMove(fromR, fromC, toR, toC) { 
+    let piece = chsBoard[fromR][fromC], target = chsBoard[toR][toC]; 
+    if (target === 'k') { 
+        chsGameOver = true; 
+        document.getElementById("chs-status").innerText = "Checkmate! You Win!"; 
+        document.getElementById("chs-status").style.color = "#84cc16"; 
+    } else if (target === 'K') { 
+        chsGameOver = true; 
+        document.getElementById("chs-status").innerText = "Checkmate! Carl Wins!"; 
+        document.getElementById("chs-status").style.color = "#ef4444"; 
+    } 
+    if (piece === 'P' && toR === 0) piece = 'Q'; 
+    if (piece === 'p' && toR === 7) piece = 'q'; 
+    chsBoard[toR][toC] = piece; 
+    chsBoard[fromR][fromC] = ''; 
+}
 
 function chsCarlTurn() { 
     if (chsGameOver) return; 
-    let diff = getDifficulty(); let allMoves = []; 
+    
+    let diff = getDifficulty(); 
+    let allMoves = []; 
     const values = {'p':1, 'n':3, 'b':3, 'r':5, 'q':9, 'k':100, 'P':1, 'N':3, 'B':3, 'R':5, 'Q':9, 'K':100}; 
+    
     for (let r = 0; r < CHS_SIZE; r++) {
         for (let c = 0; c < CHS_SIZE; c++) { 
             if (/^[a-z]$/.test(chsBoard[r][c])) { 
                 let moves = chsGetMoves(r, c, chsBoard); 
-                for (let m of moves) { let target = chsBoard[m.r][m.c]; allMoves.push({ fr: r, fc: c, tr: m.r, tc: m.c, score: (target === '' ? 0 : values[target]) }); } 
+                for (let m of moves) {
+                    let target = chsBoard[m.r][m.c];
+                    let score = target === '' ? 0 : values[target];
+                    allMoves.push({ fr: r, fc: c, tr: m.r, tc: m.c, score: score }); 
+                }
             } 
         }
     }
-    if (allMoves.length === 0) { chsGameOver = true; document.getElementById("chs-status").innerText = "Stalemate!"; return; } 
+    
+    if (allMoves.length === 0) { 
+        chsGameOver = true; 
+        document.getElementById("chs-status").innerText = "Stalemate!"; 
+        return; 
+    } 
+    
     let chosenMove; 
-    if (diff === "easy") { 
+    if (diff === "easy") {
         chosenMove = allMoves[Math.floor(Math.random() * allMoves.length)]; 
     } else { 
         if (diff === "hard") {
@@ -153,7 +1394,11 @@ function chsCarlTurn() {
                     for(let cc=0; cc<CHS_SIZE; cc++) {
                         if(/^[A-Z]$/.test(chsBoard[rr][cc])) { 
                             let oppMoves = chsGetMoves(rr, cc, chsBoard);
-                            oppMoves.forEach(om => { let t = chsBoard[om.r][om.c]; let val = t===''?0:values[t]; if(val > oppMax) oppMax = val; });
+                            oppMoves.forEach(om => {
+                                let t = chsBoard[om.r][om.c];
+                                let val = t===''?0:values[t];
+                                if(val > oppMax) oppMax = val;
+                            });
                         }
                     }
                 }
@@ -165,7 +1410,13 @@ function chsCarlTurn() {
         let bestScore = allMoves[0].score, bestMoves = allMoves.filter(m => m.score === bestScore); 
         chosenMove = (diff === "medium" && Math.random() < 0.6) ? allMoves[Math.floor(Math.random() * allMoves.length)] : bestMoves[Math.floor(Math.random() * bestMoves.length)]; 
     } 
+    
     chsExecuteMove(chosenMove.fr, chosenMove.fc, chosenMove.tr, chosenMove.tc); 
     chsRenderBoard(); 
-    if (!chsGameOver) { chsPlayerTurn = true; document.getElementById("chs-status").innerText = "Your Turn (White)"; document.getElementById("chs-status").style.color = "#fff"; } 
+    
+    if (!chsGameOver) { 
+        chsPlayerTurn = true; 
+        document.getElementById("chs-status").innerText = "Your Turn (White)"; 
+        document.getElementById("chs-status").style.color = "#fff"; 
+    } 
 }
