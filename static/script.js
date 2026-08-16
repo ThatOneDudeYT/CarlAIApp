@@ -1,142 +1,3 @@
-// =========================================================================
-// --- FIREBASE CLOUD PERSISTENCE & GLOBAL STATE ---
-// =========================================================================
-
-const firebaseConfig = { 
-    apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", 
-    authDomain: "carl-ai-loggins.firebaseapp.com", 
-    projectId: "carl-ai-loggins", 
-    storageBucket: "carl-ai-loggins.firebasestorage.app", 
-    messagingSenderId: "372926140822", 
-    appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", 
-    measurementId: "G-G4H60BZHT3" 
-};
-
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-let firebaseUserId = null;
-let currentUser = null;
-let currentUserAvatar = "/static/icons/default-avatar.png";
-let customApiKey = "";
-
-let chatsHistory = [];
-let activeChatId = null;
-let chatHistory = [];  
-
-let selectedGame = "Burger Clicker";
-const gamesWithDifficulty = ["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
-
-let pendingImageBase64 = null, pendingImageMime = null, pendingImageSrc = null;
-let pendingDmImageBase64 = null, pendingDmImageMime = null, pendingDmImageSrc = null, currentDmUser = null; 
-let isDM = false, currentDmUnsubscribe = null;
-let isGuest = false;
-
-// --- BURGER ECONOMY, SHOP INVENTORY & CODES ---
-let userBurgers = 100, clickerBurgers = 0, rebirths = 0, clickPower = 1, autoChefs = 0, burgerStands = 0, burgerFactories = 0;   
-let inventory = [];
-let userPresets = [];
-let claimedCodes = []; 
-let equipped = {
-    persona: "default",
-    bubble: "default",
-    frame: "default",
-    title: "",
-    background: "default",
-    c4Skin: "default",
-    bjFelt: "default",
-    goldenSpatula: false
-};
-
-function getMultiplier() { 
-    let mult = 1 + (rebirths * 1.0);
-    if (equipped.goldenSpatula) mult *= 1.5; 
-    return mult;
-}
-function getClickValue() { return (clickPower * Math.floor(1 + (clickPower * 0.1))) * getMultiplier(); }
-function getChefPower() { return Math.floor(1 + (autoChefs * 0.1)); }
-function getStandPower() { return Math.floor(10 + (burgerStands * 0.2)); }
-function getFactoryPower() { return Math.floor(100 + (burgerFactories * 1)); }
-function getBps() { return ((autoChefs * getChefPower()) + (burgerStands * getStandPower()) + (burgerFactories * getFactoryPower())) * getMultiplier(); }
-
-function updateBurgerUI() {
-    const hc = document.getElementById("burger-count"); if (hc) hc.innerText = Math.floor(userBurgers).toLocaleString();
-    const cc = document.getElementById("clicker-score-text"); if (cc) cc.innerText = Math.floor(clickerBurgers).toLocaleString();
-}
-setInterval(() => { let bps = getBps(); if (bps > 0) { clickerBurgers += bps; updateBurgerUI(); } }, 1000);
-
-// =========================================================================
-// --- STARTUP ANIMATION & INITIALIZATION ---
-// =========================================================================
-
-const normalPhrases = ["Ready When You Are", "What Time Is It?", "I Need Help With Math", "The Floor Is Yours!"], rarePhrases = ["Mmmm Burgers", "I weigh 700 pounds", "67"];
-let typingTimeout = null;
-function initTypingAnimation() {
-    const t = document.getElementById("startup-title"); if (!t) return; if (typingTimeout) clearTimeout(typingTimeout);
-    let isDel = false, curTxt = "Ask Away!", idx = curTxt.length; t.innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
-    typingTimeout = setTimeout(() => { isDel = true; typeLoop(t, curTxt, idx, isDel); }, 2000);
-}
-function typeLoop(t, curTxt, idx, isDel) {
-    let spd = isDel ? 45 : 65 + Math.random() * 40; if (isDel) idx--; else idx++;
-    t.innerHTML = curTxt.substring(0, idx) + '<span class="typing-cursor"></span>';
-    if (!isDel && idx === curTxt.length) { spd = 2400; isDel = true; } 
-    else if (isDel && idx === 0) { isDel = false; const pool = Math.random() < 0.10 ? rarePhrases : normalPhrases; let n = curTxt; while (n === curTxt) n = pool[Math.floor(Math.random() * pool.length)]; curTxt = n; spd = 400; }
-    typingTimeout = setTimeout(() => typeLoop(t, curTxt, idx, isDel), spd);
-}
-function hideStartupScreen() { const s = document.getElementById("startup-screen"), c = document.getElementById("view-chat"); if (s) s.classList.add("hidden"); if (c) c.classList.remove("startup-active"); if (typingTimeout) clearTimeout(typingTimeout); }
-function showStartupScreen() { const s = document.getElementById("startup-screen"), c = document.getElementById("view-chat"); if (s) { s.classList.remove("hidden"); initTypingAnimation(); } if (c) c.classList.add("startup-active"); }
-function hasValidApiKey() { return customApiKey && customApiKey.trim().length > 20; }
-
-window.addEventListener("DOMContentLoaded", () => {
-    initMobileNavIcons(); initTypingAnimation(); updateUsageUI(); updateBurgerUI();
-    const oldNav = document.querySelector('.bottom-nav'); if (oldNav) oldNav.style.display = 'none';
-    if (!document.getElementById("mobile-hamburger-btn")) {
-        const hb = document.createElement("button"); hb.id = "mobile-hamburger-btn"; hb.className = "mobile-top-header";
-        hb.innerHTML = `<div class="hamburger-line"></div><div class="hamburger-line"></div><div class="hamburger-line"></div>`;
-        hb.onclick = toggleMobileSidebar; document.body.appendChild(hb);
-    }
-    if (!document.getElementById("sidebar-overlay")) {
-        const ov = document.createElement("div"); ov.id = "sidebar-overlay"; ov.className = "sidebar-overlay"; ov.onclick = toggleMobileSidebar; document.body.appendChild(ov);
-    }
-    const dmInp = document.getElementById("dm-input"); if(dmInp) dmInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendDmMessage(); });
-    const sBtn = document.getElementById("send-btn"); if(sBtn) sBtn.addEventListener("click", sendMessage);
-    const uInp = document.getElementById("user-input"); if(uInp) uInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendMessage(); });
-});
-
-function toggleMobileSidebar() { const sb = document.querySelector('.desktop-sidebar'), ov = document.getElementById('sidebar-overlay'); if (sb) sb.classList.toggle('open'); if (ov) ov.classList.toggle('active'); }
-
-// =========================================================================
-// --- AUTHENTICATION & OTP SYSTEM ---
-// =========================================================================
-
-function continueAsGuest() {
-    isGuest = true;
-    document.getElementById('auth-overlay').classList.add('hidden');
-    document.body.classList.add('guest-mode');
-    currentUser = "Guest";
-    currentUserAvatar = "/static/icons/default-avatar.png";
-    updateProfileUI();
-    startNewChat();
-}
-
-auth.onAuthStateChanged(async (user) => {
-    const ov = document.getElementById('auth-overlay');
-    if (user) {
-        isGuest = false;
-        document.body.classList.remove('guest-mode');
-        firebaseUserId = user.uid; currentUser = user.displayName || user.email.split('@')[0]; currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
-        if (ov) ov.classList.add('hidden'); await loadUserDataFromCloud();
-    } else if (!isGuest) { 
-        firebaseUserId = null; if (ov) ov.classList.remove('hidden'); 
-    }
-});
-
-function signInWithGoogle() { 
-    const p = new firebase.auth.GoogleAuthProvider(); 
-    auth.signInWithPopup(p).catch(e => alert("Google Sign-In Error: " + e.message)); 
-}
-
 let pendingAuthCredentials = { email: "", pass: "" };
 
 async function handleLogin(e) {
@@ -184,8 +45,10 @@ async function handleLogin(e) {
             alert(err.message);
         }
     } finally {
-        submitBtn.innerText = "Sign In / Register";
-        submitBtn.disabled = false;
+        if(submitBtn) {
+            submitBtn.innerText = "Sign In / Register";
+            submitBtn.disabled = false;
+        }
     }
 }
 
@@ -217,11 +80,14 @@ async function handleVerifyOtp(e) {
         document.getElementById("auth-step-otp").style.display = "none";
         document.getElementById("auth-step-credentials").style.display = "block";
         pendingAuthCredentials = { email: "", pass: "" };
+        alert("Account verified and registered successfully!");
 
     } catch (err) {
         alert("Error creating account: " + err.message);
     } finally {
-        verifyBtn.innerText = "Verify Code"; verifyBtn.disabled = false;
+        if(verifyBtn) {
+            verifyBtn.innerText = "Verify Code"; verifyBtn.disabled = false;
+        }
     }
 }
 
@@ -231,33 +97,137 @@ function cancelOtpStep() {
     pendingAuthCredentials = { email: "", pass: "" };
 }
 
+const firebaseConfig = { apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", authDomain: "carl-ai-loggins.firebaseapp.com", projectId: "carl-ai-loggins", storageBucket: "carl-ai-loggins.firebasestorage.app", messagingSenderId: "372926140822", appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", measurementId: "G-G4H60BZHT3" };
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(), db = firebase.firestore();
+
+let firebaseUserId=null, currentUser=null, currentUserAvatar="/static/icons/default-avatar.png", customApiKey="";
+let chatsHistory=[], activeChatId=null, chatHistory=[];  
+let selectedGame="Burger Clicker"; const gamesWithDifficulty=["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
+let pendingImageBase64=null, pendingImageMime=null, pendingImageSrc=null, pendingDmImageBase64=null, pendingDmImageMime=null, pendingDmImageSrc=null, currentDmUser=null; 
+let isDM=false, currentDmUnsubscribe=null;
+let isGuest = false;
+
+// --- BURGER ECONOMY & SHOP INVENTORY ---
+let userBurgers=100, clickerBurgers=0, rebirths=0, clickPower=1, autoChefs=0, burgerStands=0, burgerFactories=0;   
+let inventory = [];
+let userPresets = [];
+let claimedCodes = []; 
+let equipped = {
+    persona: "default",
+    bubble: "default",
+    frame: "default",
+    title: "",
+    background: "default",
+    c4Skin: "default",
+    bjFelt: "default",
+    goldenSpatula: false
+};
+
+function getMultiplier() { 
+    let mult = 1 + (rebirths * 1.0);
+    if (equipped.goldenSpatula) mult *= 1.5; 
+    return mult;
+}
+function getClickValue() { return (clickPower * Math.floor(1 + (clickPower * 0.1))) * getMultiplier(); }
+function getChefPower() { return Math.floor(1 + (autoChefs * 0.1)); }
+function getStandPower() { return Math.floor(10 + (burgerStands * 0.2)); }
+function getFactoryPower() { return Math.floor(100 + (burgerFactories * 1)); }
+function getBps() { return ((autoChefs * getChefPower()) + (burgerStands * getStandPower()) + (burgerFactories * getFactoryPower())) * getMultiplier(); }
+
+function updateBurgerUI() {
+    const hc=document.getElementById("burger-count"); if(hc) hc.innerText = Math.floor(userBurgers).toLocaleString();
+    const cc=document.getElementById("clicker-score-text"); if(cc) cc.innerText = Math.floor(clickerBurgers).toLocaleString();
+}
+setInterval(() => { let bps = getBps(); if (bps > 0) { clickerBurgers += bps; updateBurgerUI(); } }, 1000);
+
+const normalPhrases=["Ready When You Are", "What Time Is It?", "I Need Help With Math", "The Floor Is Yours!"], rarePhrases=["Mmmm Burgers", "I weigh 700 pounds", "67"];
+let typingTimeout=null;
+function initTypingAnimation() {
+    const t=document.getElementById("startup-title"); if(!t) return; if(typingTimeout) clearTimeout(typingTimeout);
+    let isDel=false, curTxt="Ask Away!", idx=curTxt.length; t.innerHTML='Ask Away!<span class="typing-cursor"></span>';
+    typingTimeout=setTimeout(()=>{isDel=true; typeLoop(t,curTxt,idx,isDel);},2000);
+}
+function typeLoop(t, curTxt, idx, isDel) {
+    let spd=isDel?45:65+Math.random()*40; if(isDel) idx--; else idx++;
+    t.innerHTML=curTxt.substring(0,idx)+'<span class="typing-cursor"></span>';
+    if(!isDel && idx===curTxt.length) { spd=2400; isDel=true; } 
+    else if(isDel && idx===0) { isDel=false; const pool=Math.random()<0.10?rarePhrases:normalPhrases; let n=curTxt; while(n===curTxt) n=pool[Math.floor(Math.random()*pool.length)]; curTxt=n; spd=400; }
+    typingTimeout=setTimeout(()=>typeLoop(t,curTxt,idx,isDel),spd);
+}
+function hideStartupScreen() { const s=document.getElementById("startup-screen"), c=document.getElementById("view-chat"); if(s) s.classList.add("hidden"); if(c) c.classList.remove("startup-active"); if(typingTimeout) clearTimeout(typingTimeout); }
+function showStartupScreen() { const s=document.getElementById("startup-screen"), c=document.getElementById("view-chat"); if(s) { s.classList.remove("hidden"); initTypingAnimation(); } if(c) c.classList.add("startup-active"); }
+function hasValidApiKey() { return customApiKey && customApiKey.trim().length > 20; }
+
+window.addEventListener("DOMContentLoaded", () => {
+    initMobileNavIcons(); initTypingAnimation(); updateUsageUI(); updateBurgerUI();
+    const oldNav = document.querySelector('.bottom-nav'); if (oldNav) oldNav.style.display = 'none';
+    if (!document.getElementById("mobile-hamburger-btn")) {
+        const hb = document.createElement("button"); hb.id = "mobile-hamburger-btn"; hb.className = "mobile-top-header";
+        hb.innerHTML = `<div class="hamburger-line"></div><div class="hamburger-line"></div><div class="hamburger-line"></div>`;
+        hb.onclick = toggleMobileSidebar; document.body.appendChild(hb);
+    }
+    if (!document.getElementById("sidebar-overlay")) {
+        const ov = document.createElement("div"); ov.id = "sidebar-overlay"; ov.className = "sidebar-overlay"; ov.onclick = toggleMobileSidebar; document.body.appendChild(ov);
+    }
+    const dmInp = document.getElementById("dm-input"); if(dmInp) dmInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendDmMessage(); });
+    const sBtn = document.getElementById("send-btn"); if(sBtn) sBtn.addEventListener("click", sendMessage);
+    const uInp = document.getElementById("user-input"); if(uInp) uInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendMessage(); });
+});
+
+function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
+
+// --- AUTHENTICATION ---
+function continueAsGuest() {
+    isGuest = true;
+    document.getElementById('auth-overlay').classList.add('hidden');
+    document.body.classList.add('guest-mode');
+    currentUser = "Guest";
+    currentUserAvatar = "/static/icons/default-avatar.png";
+    updateProfileUI();
+    startNewChat();
+}
+
+auth.onAuthStateChanged(async (user) => {
+    const ov = document.getElementById('auth-overlay');
+    if (user) {
+        isGuest = false;
+        document.body.classList.remove('guest-mode');
+        firebaseUserId = user.uid; currentUser = user.displayName || user.email.split('@')[0]; currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
+        if (ov) ov.classList.add('hidden'); await loadUserDataFromCloud();
+    } else if (!isGuest) { 
+        firebaseUserId = null; if (ov) ov.classList.remove('hidden'); 
+    }
+});
+
+function signInWithGoogle() { const p = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(p).catch(e => alert("Google Sign-In Error: " + e.message)); }
 function handleSignOut() {
-    if (isGuest) { window.location.reload(); return; }
+    if (isGuest) {
+        window.location.reload();
+        return;
+    }
     auth.signOut().then(() => {
-        currentUser = null; currentUserAvatar = "/static/icons/default-avatar.png"; customApiKey = "";
-        chatsHistory = []; chatHistory = []; activeChatId = null; myFriends = []; myRequests = []; mySentRequests = []; currentDmUser = null;
-        userBurgers = 100; clickerBurgers = 0; autoChefs = 0; burgerStands = 0; burgerFactories = 0; clickPower = 1; rebirths = 0;
-        inventory = []; userPresets = []; claimedCodes = []; 
-        equipped = { persona: "default", bubble: "default", frame: "default", title: "", background: "default", c4Skin: "default", bjFelt: "default", goldenSpatula: false };
+        currentUser=null; currentUserAvatar="/static/icons/default-avatar.png"; customApiKey="";
+        chatsHistory=[]; chatHistory=[]; activeChatId=null; myFriends=[]; myRequests=[]; mySentRequests=[]; currentDmUser=null;
+        userBurgers=100; clickerBurgers=0; autoChefs=0; burgerStands=0; burgerFactories=0; clickPower=1; rebirths=0;
+        inventory=[]; userPresets=[]; claimedCodes=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
         updateBurgerUI(); updateProfileUI(); applyEquippedCosmetics(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
     });
 }
 
-// =========================================================================
-// --- CLOUD PERSISTENCE & SETTINGS ---
-// =========================================================================
-
+// --- CLOUD PERSISTENCE ---
+let myFriends=[], myRequests=[], mySentRequests=[];
 async function loadUserDataFromCloud() {
     if (!firebaseUserId) return;
     db.collection("users").doc(firebaseUserId).onSnapshot(async (doc) => {
         if (doc.exists) {
-            const data = doc.data(); 
-            customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
-            if (!isDM) activeChatId = data.activeChatId || null; 
-            applyTheme(data.theme || "dark");
+            const data = doc.data(); customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
+            if (!isDM) activeChatId = data.activeChatId || null; applyTheme(data.theme || "dark");
             userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0; autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0; clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
             myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || []; 
-            inventory = data.inventory || []; userPresets = data.presets || []; claimedCodes = data.claimedCodes || [];
+            inventory = data.inventory || [];
+            userPresets = data.presets || [];
+            claimedCodes = data.claimedCodes || [];
             if (data.equipped) equipped = { ...equipped, ...data.equipped };
             updateBurgerUI();
             if (data.avatar) currentUserAvatar = data.avatar; if (data.username) currentUser = data.username;
@@ -270,7 +240,6 @@ async function loadUserDataFromCloud() {
         } else { saveSessionData(); startNewChat(); }
     }, e => console.error("Error:", e));
 }
-
 function saveSessionData() {
     if (!firebaseUserId) return; const cur = isDM ? (chatsHistory.length > 0 ? chatsHistory[0].id : null) : activeChatId;
     db.collection("users").doc(firebaseUserId).set({
@@ -280,10 +249,14 @@ function saveSessionData() {
     }, { merge: true }).catch(e => console.error("Error saving:", e));
 }
 
+// --- PROFILE & COSMETICS UI ---
 function applyTheme(theme) { const b=document.body, ts=document.getElementById('theme-toggle-switch'); if(theme==="light"){ b.classList.remove("dark-mode"); b.classList.add("light-mode"); if(ts) ts.checked=true; } else { b.classList.remove("light-mode"); b.classList.add("dark-mode"); if(ts) ts.checked=false; } }
 function toggleTheme() { const b=document.body, ts=document.getElementById('theme-toggle-switch'); if(b.classList.contains('dark-mode')){ b.classList.remove('dark-mode'); b.classList.add('light-mode'); if(ts) ts.checked=true; } else { b.classList.remove('light-mode'); b.classList.add('dark-mode'); if(ts) ts.checked=false; } saveSessionData(); }
-function updateProfileUI() { const a=document.getElementById("header-user-avatar"), n=document.getElementById("header-user-name"); if(a) a.src=currentUserAvatar; if(n) n.innerText=currentUser||"Guest"; }
-
+function updateProfileUI() { 
+    const a=document.getElementById("header-user-avatar"), n=document.getElementById("header-user-name"); 
+    if(a) a.src=currentUserAvatar; 
+    if(n) n.innerText=currentUser||"Guest"; 
+}
 function applyEquippedCosmetics() {
     const fWrap = document.getElementById("header-avatar-wrapper");
     if (fWrap) {
@@ -315,7 +288,6 @@ function applyEquippedCosmetics() {
         if (equipped.bjFelt && equipped.bjFelt !== "default") bjArena.classList.add(`felt-${equipped.bjFelt}`);
     }
 }
-
 function updateUsernameFromSettings() { const inp=document.getElementById("settings-username-input"); if(!inp||!currentUser) return; const nn=inp.value.trim(); if(nn.length>=3 && nn.length<=20){ currentUser=nn; updateProfileUI(); saveSessionData(); } else { alert("Username must be between 3 and 20 characters!"); inp.value=currentUser||""; } }
 function handleAvatarUpload(e) { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(ev){ currentUserAvatar=ev.target.result; updateProfileUI(); saveSessionData(); }; r.readAsDataURL(f); }
 function saveSettings() { const ki=document.getElementById('user-api-key'); if(ki) customApiKey=ki.value.trim(); const np=document.getElementById('settings-new-pass').value, cp=document.getElementById('settings-confirm-pass').value; if(np||cp){ if(np===cp){ auth.currentUser.updatePassword(np).then(()=>{ alert("Password updated successfully."); document.getElementById('settings-new-pass').value=""; document.getElementById('settings-confirm-pass').value=""; }).catch(e=>alert(e.message)); } else alert("Passwords do not match!"); } saveSessionData(); updateUsageUI(); }
@@ -567,19 +539,39 @@ function launchGame() {
 
 // --- BURGER CLICKER LOGIC ---
 function clickBurger() {
-    let amount = getClickValue(); clickerBurgers += amount; updateBurgerUI();
-    const btn = document.getElementById("carl-clicker-btn"), floater = document.createElement("div");
-    floater.className = "floating-number"; floater.innerText = "+" + amount.toLocaleString();
-    floater.style.left = (Math.random() * 80 + 10) + "%"; floater.style.top = (Math.random() * 80 + 10) + "%";
-    btn.appendChild(floater); setTimeout(() => floater.remove(), 1000);
+    let amount = getClickValue();
+    clickerBurgers += amount;
+    updateBurgerUI();
+    
+    const btn = document.getElementById("carl-clicker-btn");
+    const floater = document.createElement("div");
+    floater.className = "floating-number";
+    floater.innerText = "+" + amount.toLocaleString();
+    floater.style.left = (Math.random() * 80 + 10) + "%";
+    floater.style.top = (Math.random() * 80 + 10) + "%";
+    btn.appendChild(floater);
+    setTimeout(() => floater.remove(), 1000);
 }
 
 function buyUpgrade(type) {
     let cost = 0;
-    if (type === 'click') { cost = Math.floor(100 * Math.pow(1.5, clickPower - 1)); if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; } else { alert("Not enough Clicker Burgers!"); return; } } 
-    else if (type === 'chef') { cost = Math.floor(50 * Math.pow(1.15, autoChefs)); if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; } else { alert("Not enough Clicker Burgers!"); return; } } 
-    else if (type === 'stand') { cost = Math.floor(500 * Math.pow(1.15, burgerStands)); if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; } else { alert("Not enough Clicker Burgers!"); return; } } 
-    else if (type === 'factory') { cost = Math.floor(5000 * Math.pow(1.15, burgerFactories)); if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; } else { alert("Not enough Clicker Burgers!"); return; } }
+    if (type === 'click') {
+        cost = Math.floor(100 * Math.pow(1.5, clickPower - 1));
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; }
+        else { alert("Not enough Clicker Burgers!"); return; }
+    } else if (type === 'chef') {
+        cost = Math.floor(50 * Math.pow(1.15, autoChefs));
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; }
+        else { alert("Not enough Clicker Burgers!"); return; }
+    } else if (type === 'stand') {
+        cost = Math.floor(500 * Math.pow(1.15, burgerStands));
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; }
+        else { alert("Not enough Clicker Burgers!"); return; }
+    } else if (type === 'factory') {
+        cost = Math.floor(5000 * Math.pow(1.15, burgerFactories));
+        if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
+        else { alert("Not enough Clicker Burgers!"); return; }
+    }
     updateBurgerUI(); updateUpgradesUI(); saveSessionData();
 }
 
@@ -618,7 +610,10 @@ function updateUpgradesUI() {
 // =========================================================================
 const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
 
-function getAvatarColor(str) { let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash); return avatarColors[Math.abs(hash) % avatarColors.length]; }
+function getAvatarColor(str) {
+    let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    return avatarColors[Math.abs(hash) % avatarColors.length];
+}
 
 function getAvatarHTML(u) {
     const frameClass = (u.equipped && u.equipped.frame && u.equipped.frame !== 'default') ? `frame-${u.equipped.frame}` : '';
@@ -670,6 +665,7 @@ function renderFriendsView() {
 
     let searchResults = [];
     const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
+    
     incomingReqs.forEach(user => {
         const item = document.createElement("div"); item.className = "friend-item";
         const titleBadge = user.equipped?.title ? `<span class="user-title-badge" style="display:inline-block;">${user.equipped.title}</span>` : '';
@@ -759,7 +755,9 @@ function openDirectMessage(user) {
     switchView('view-dm');
 }
 
-async function deleteDmMessage(msgId) { if(confirm("Delete this message?")) await db.collection("dms").doc(activeChatId).collection("messages").doc(msgId).delete(); }
+async function deleteDmMessage(msgId) {
+    if(confirm("Delete this message?")) await db.collection("dms").doc(activeChatId).collection("messages").doc(msgId).delete();
+}
 
 function processDmFile(file) {
     if (file.type.startsWith('image/')) {
@@ -775,11 +773,16 @@ function processDmFile(file) {
 
 const dmFilePicker = document.getElementById('dm-native-file-picker');
 if (dmFilePicker) dmFilePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processDmFile(file); dmFilePicker.value = ""; });
-function clearDmPendingImage() { pendingDmImageBase64 = null; pendingDmImageMime = null; pendingDmImageSrc = null; const box = document.getElementById('dm-image-preview-box'); if (box) box.classList.remove('active'); }
+
+function clearDmPendingImage() {
+    pendingDmImageBase64 = null; pendingDmImageMime = null; pendingDmImageSrc = null;
+    const box = document.getElementById('dm-image-preview-box'); if (box) box.classList.remove('active');
+}
 
 async function sendDmMessage() {
     const input = document.getElementById("dm-input"); if (!input) return;
-    const text = input.value.trim(); if (!text && !pendingDmImageBase64) return;
+    const text = input.value.trim();
+    if (!text && !pendingDmImageBase64) return;
     if (!activeChatId || !isDM) return;
     
     input.value = ""; const imageSrc = pendingDmImageSrc; clearDmPendingImage();
@@ -787,150 +790,7 @@ async function sendDmMessage() {
 }
 
 // =========================================================================
-// --- MEDIA CLEANUP (WebRTC) ---
-// =========================================================================
-function stopAllMedia() {
-    if(localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
-    if(window.localVideoTrack) { window.localVideoTrack.stop(); window.localVideoTrack=null; }
-    if(peerConnection) { peerConnection.close(); peerConnection=null; }
-    if(recognition) { try{recognition.stop();}catch(e){} recognition=null; }
-    if(callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval=null; }
-    if(ringInterval) { clearInterval(ringInterval); ringInterval=null; }
-    if(ringTimeout) { clearTimeout(ringTimeout); ringTimeout=null; }
-    if(window.speechSynthesis) window.speechSynthesis.cancel();
-    if(callAbortController) callAbortController.abort();
-    
-    isFcVideoActive = false;
-    const localVid = document.getElementById("fc-local-video"), remoteVid = document.getElementById("fc-remote-video");
-    if(localVid) localVid.style.display = "none"; if(remoteVid) remoteVid.style.display = "none";
-    const btn = document.getElementById("fc-facetime-btn"); if(btn) btn.style.opacity = "0.4";
-    const ftVid = document.getElementById("facetime-video"); if(ftVid) ftVid.style.display = "none";
-    const ftBtn = document.getElementById("facetime-btn"); if(ftBtn) ftBtn.style.opacity = "0.4";
-}
-
-// =========================================================================
-// --- WEBRTC CALLING SYSTEM ---
-// =========================================================================
-const rtcServers = { iceServers: [ { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] } ], iceCandidatePoolSize: 10 };
-let peerConnection=null, localStream=null, activeCallDocId=null, callListenerUnsubscribe=null;
-
-function listenForIncomingCalls() {
-    if(!firebaseUserId) return;
-    db.collection("calls").where("receiverId","==",firebaseUserId).where("status","==","calling").onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const d=c.doc.data(); showIncomingCallUI(c.doc.id, d); } }); });
-}
-
-function getDummyVideoTrack() {
-    const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
-    const stream = canvas.captureStream(); const track = stream.getVideoTracks()[0]; track.enabled = false; return track;
-}
-
-async function startFriendCall() {
-    if(!currentDmUser||!firebaseUserId) return;
-    stopAllMedia();
-    try {
-        localStream=await navigator.mediaDevices.getUserMedia({audio:true, video:false});
-        peerConnection=new RTCPeerConnection(rtcServers);
-        
-        localStream.getTracks().forEach(t=>peerConnection.addTrack(t, localStream));
-        peerConnection.addTrack(getDummyVideoTrack(), localStream); 
-        
-        peerConnection.ontrack=(e)=>{ 
-            if(e.track.kind === 'video') { const rv = document.getElementById("fc-remote-video"); if (rv.srcObject !== e.streams[0]) rv.srcObject=e.streams[0]; rv.style.display = "block"; } 
-            else { const ra = document.getElementById("remote-audio"); if (ra.srcObject !== e.streams[0]) ra.srcObject=e.streams[0]; ra.play().catch(console.error); }
-        };
-        
-        const cd=db.collection("calls").doc(); activeCallDocId=cd.id;
-        const oc=cd.collection("offerCandidates"), ac=cd.collection("answerCandidates");
-        peerConnection.onicecandidate=(e)=>{ if(e.candidate) oc.add(e.candidate.toJSON()); };
-        const oDesc=await peerConnection.createOffer(); await peerConnection.setLocalDescription(oDesc);
-        await cd.set({ callerId:firebaseUserId, callerName:currentUser, callerAvatar:currentUserAvatar, receiverId:currentDmUser.id, status:"calling", offer:{ type:oDesc.type, sdp:oDesc.sdp } });
-        
-        document.getElementById("fc-title").innerText=currentDmUser.username; document.getElementById("fc-status").innerText="Calling..."; document.getElementById("fc-status").style.display="block"; document.getElementById("fc-timer").innerText="00:00";
-        callSeconds = 0; switchView('view-friend-call');
-        
-        callListenerUnsubscribe=cd.onSnapshot(sn=>{ 
-            const d=sn.data(); 
-            if(d?.answer && !peerConnection.currentRemoteDescription){ 
-                const aDesc=new RTCSessionDescription(d.answer); peerConnection.setRemoteDescription(aDesc); 
-                document.getElementById("fc-status").style.display="none"; 
-                if (callTimerInterval) clearInterval(callTimerInterval);
-                callTimerInterval = setInterval(() => { callSeconds++; const m = String(Math.floor(callSeconds / 60)).padStart(2, '0'); const s = String(Math.floor(callSeconds % 60)).padStart(2, '0'); document.getElementById("fc-timer").innerText = `${m}:${s}`; }, 1000);
-            } 
-            if(d?.status==="ended") endFriendCall(false); 
-        });
-        ac.onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const cnd=new RTCIceCandidate(c.doc.data()); peerConnection.addIceCandidate(cnd); } }); });
-    } catch(e) { alert("Mic required for calling. Please ensure your microphone is plugged in and allowed."); stopAllMedia(); switchView('view-dm'); }
-}
-
-function showIncomingCallUI(cId, d) { activeCallDocId=cId; document.getElementById("friend-call-name").innerText=d.callerName; document.getElementById("friend-call-status").innerText="Incoming Voice Call..."; document.getElementById("friend-call-avatar").innerHTML=getAvatarHTML({username:d.callerName, avatar:d.callerAvatar}); document.getElementById("accept-call-btn").style.display="inline-block"; document.getElementById("friend-call-modal").classList.remove("hidden"); }
-
-async function answerFriendCall() {
-    stopAllMedia();
-    try {
-        localStream=await navigator.mediaDevices.getUserMedia({audio:true, video:false});
-        peerConnection=new RTCPeerConnection(rtcServers);
-        
-        localStream.getTracks().forEach(t=>peerConnection.addTrack(t, localStream));
-        peerConnection.addTrack(getDummyVideoTrack(), localStream); 
-        
-        peerConnection.ontrack=(e)=>{ 
-            if(e.track.kind === 'video') { const rv = document.getElementById("fc-remote-video"); if (rv.srcObject !== e.streams[0]) rv.srcObject=e.streams[0]; rv.style.display = "block"; } 
-            else { const ra = document.getElementById("remote-audio"); if (ra.srcObject !== e.streams[0]) ra.srcObject=e.streams[0]; ra.play().catch(console.error); }
-        };
-        
-        const cd=db.collection("calls").doc(activeCallDocId), ac=cd.collection("answerCandidates"), oc=cd.collection("offerCandidates");
-        peerConnection.onicecandidate=(e)=>{ if(e.candidate) ac.add(e.candidate.toJSON()); };
-        const cSn=await cd.get(), cD=cSn.data(); await peerConnection.setRemoteDescription(new RTCSessionDescription(cD.offer));
-        const aDesc=await peerConnection.createAnswer(); await peerConnection.setLocalDescription(aDesc);
-        await cd.update({ status:"connected", answer:{ type:aDesc.type, sdp:aDesc.sdp } });
-        
-        document.getElementById("friend-call-modal").classList.add("hidden");
-        document.getElementById("fc-title").innerText=cD.callerName; document.getElementById("fc-status").style.display="none"; document.getElementById("fc-timer").innerText="00:00";
-        callSeconds = 0; switchView('view-friend-call');
-        
-        if (callTimerInterval) clearInterval(callTimerInterval);
-        callTimerInterval = setInterval(() => { callSeconds++; const m = String(Math.floor(callSeconds / 60)).padStart(2, '0'); const s = String(Math.floor(callSeconds % 60)).padStart(2, '0'); document.getElementById("fc-timer").innerText = `${m}:${s}`; }, 1000);
-        
-        oc.onSnapshot(sn=>{ sn.docChanges().forEach(c=>{ if(c.type==="added"){ const cnd=new RTCIceCandidate(c.doc.data()); peerConnection.addIceCandidate(cnd); } }); });
-        callListenerUnsubscribe=cd.onSnapshot(sn=>{ const d=sn.data(); if(d?.status==="ended") endFriendCall(false); });
-    } catch(e) { alert("Mic required. Please check your browser permissions."); stopAllMedia(); document.getElementById("friend-call-modal").classList.add("hidden"); }
-}
-
-async function endFriendCall(notify=true) {
-    if(notify&&activeCallDocId) await db.collection("calls").doc(activeCallDocId).update({status:"ended"}).catch(()=>{});
-    stopAllMedia(); activeCallDocId=null; document.getElementById("friend-call-modal").classList.add("hidden"); switchView('view-dm');
-}
-function declineFriendCall() { if(activeCallDocId) db.collection("calls").doc(activeCallDocId).update({status:"ended"}).catch(()=>{}); activeCallDocId=null; document.getElementById("friend-call-modal").classList.add("hidden"); }
-
-let isFcVideoActive = false;
-window.localVideoTrack = null;
-async function toggleFcVideo() {
-    const btn = document.getElementById("fc-facetime-btn"), localVid = document.getElementById("fc-local-video");
-    if (!isFcVideoActive) {
-        try {
-            const videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            window.localVideoTrack = videoStream.getVideoTracks()[0];
-            localVid.srcObject = new MediaStream([window.localVideoTrack]); localVid.style.display = "block";
-            if (peerConnection) {
-                const vt = peerConnection.getTransceivers().find(t => t.receiver.track.kind === 'video');
-                if (vt) { vt.direction = 'sendrecv'; vt.sender.replaceTrack(window.localVideoTrack); }
-            }
-            isFcVideoActive = true; if (btn) btn.style.opacity = "1";
-        } catch (e) { alert("Camera access denied."); }
-    } else {
-        if (window.localVideoTrack) { window.localVideoTrack.stop(); window.localVideoTrack = null; }
-        if (peerConnection) { const vt = peerConnection.getTransceivers().find(t => t.receiver.track.kind === 'video'); if (vt) { vt.direction = 'recvonly'; vt.sender.replaceTrack(null); } }
-        localVid.style.display = "none"; isFcVideoActive = false; if (btn) btn.style.opacity = "0.4";
-    }
-}
-
-let isFcMuted = false;
-function toggleFcMute() { isFcMuted = !isFcMuted; const btn = document.getElementById("fc-mute-btn"); if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = !isFcMuted); if (btn) btn.style.opacity = isFcMuted ? "0.4" : "1"; }
-let isFcSpeakerOn = true;
-function toggleFcSpeaker() { isFcSpeakerOn = !isFcSpeakerOn; const remoteVid = document.getElementById("fc-remote-video"), remoteAud = document.getElementById("remote-audio"); if (remoteVid) remoteVid.muted = !isFcSpeakerOn; if (remoteAud) remoteAud.muted = !isFcSpeakerOn; const btn = document.getElementById("fc-speaker-btn"); if (btn) btn.style.opacity = isFcSpeakerOn ? "1" : "0.4"; }
-
-// =========================================================================
-// --- AI CHAT LOGIC ---
+// --- GENERAL APP LOGIC & CHAT ---
 // =========================================================================
 
 function checkDailyMessageLimit() {
@@ -1215,7 +1075,6 @@ function appendMessage(msg, sender, imgSrc = null) {
     const bubble = document.createElement("div"); 
     bubble.className = `chat-bubble ${sender}`;
     
-    // Apply custom equipped chat bubble style
     if (sender === "user" && equipped.bubble && equipped.bubble !== "default") {
         bubble.classList.add(`bubble-${equipped.bubble}`);
     }
@@ -1226,229 +1085,23 @@ function appendMessage(msg, sender, imgSrc = null) {
 }
 
 // =========================================================================
-// --- CARL AI CALL FEATURE ---
+// --- MEDIA CLEANUP ---
 // =========================================================================
-function loadCarlVoice() { 
-    if (!('speechSynthesis' in window)) return; 
-    const voices = window.speechSynthesis.getVoices(); 
-    if (voices.length === 0) return;
-    carlVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google US English') || v.name.includes('Aaron') || v.name.includes('Guy') || v.name.includes('Male'))) || voices.find(v => v.lang.startsWith('en')) || voices[0]; 
-}
-if ('speechSynthesis' in window) { 
-    window.speechSynthesis.onvoiceschanged = loadCarlVoice; 
-    loadCarlVoice(); 
-}
-
-function getAudioContext() { 
-    if (!audioCtx) { 
-        const AudioContext = window.AudioContext || window.webkitAudioContext; 
-        audioCtx = new AudioContext(); 
-    } 
-    if (audioCtx.state === 'suspended') audioCtx.resume(); 
-    return audioCtx; 
-}
-
-function playToneBurst(freq1, freq2, duration) { 
-    try { 
-        const ctx = getAudioContext(), osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator(), gain = ctx.createGain(); 
-        osc1.frequency.value = freq1; osc2.frequency.value = freq2; 
-        gain.gain.setValueAtTime(0.15, ctx.currentTime); 
-        gain.gain.setValueAtTime(0.15, ctx.currentTime + duration - 0.05); 
-        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + duration); 
-        osc1.connect(gain); osc2.connect(gain); 
-        gain.connect(ctx.destination); 
-        osc1.start(ctx.currentTime); osc2.start(ctx.currentTime); 
-        osc1.stop(ctx.currentTime + duration); osc2.stop(ctx.currentTime + duration); 
-    } catch (e) {} 
-}
-
-function startRingingSound() { 
-    playToneBurst(440, 480, 2.0); 
-    ringInterval = setInterval(() => { 
-        if (!isCallActive || isCallConnected) { clearInterval(ringInterval); return; } 
-        playToneBurst(440, 480, 2.0); 
-    }, 4000); 
-}
-
-function stopRingingSound() { 
-    if (ringInterval) { clearInterval(ringInterval); ringInterval = null; } 
-}
-
-function playPickupClick() { 
-    try { 
-        const ctx = getAudioContext(), osc = ctx.createOscillator(), gain = ctx.createGain(); 
-        osc.type = 'triangle'; 
-        osc.frequency.setValueAtTime(800, ctx.currentTime); 
-        osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.08); 
-        gain.gain.setValueAtTime(0.3, ctx.currentTime); 
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08); 
-        osc.connect(gain); gain.connect(ctx.destination); 
-        osc.start(); osc.stop(ctx.currentTime + 0.08); 
-    } catch (e) {} 
-}
-
-function startCall() { 
-    if (!hasValidApiKey()) { 
-        alert("Calling Carl requires a custom Gemini API Key in Settings!"); 
-        switchView('view-settings'); 
-        return; 
-    } 
-    stopAllMedia(); switchView('view-call'); 
-    isCallActive = true; isCallConnected = false; isMuted = false; callSeconds = 0; 
-    getAudioContext(); 
-    if ('speechSynthesis' in window) { 
-        let w = new SpeechSynthesisUtterance(''); w.volume = 0; window.speechSynthesis.speak(w); 
-    } 
-    document.getElementById("call-status").innerText = "Calling Carl..."; 
-    document.getElementById("call-status").style.display = "block"; 
-    document.getElementById("call-timer").innerText = "00:00"; 
-    document.getElementById("mute-btn").style.opacity = "1"; 
-    document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4"; 
+function stopAllMedia() {
+    if(localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+    if(window.localVideoTrack) { window.localVideoTrack.stop(); window.localVideoTrack=null; }
+    if(peerConnection) { peerConnection.close(); peerConnection=null; }
+    if(recognition) { try{recognition.stop();}catch(e){} recognition=null; }
+    if(callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval=null; }
+    if(ringInterval) { clearInterval(ringInterval); ringInterval=null; }
+    if(ringTimeout) { clearTimeout(ringTimeout); ringTimeout=null; }
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+    if(callAbortController) callAbortController.abort();
     
-    startRingingSound(); 
-    const d = Math.floor(Math.random() * 4000) + 1500; 
-    ringTimeout = setTimeout(() => { 
-        if (!isCallActive) return; 
-        stopRingingSound(); playPickupClick(); isCallConnected = true; 
-        document.getElementById("call-status").style.display = "none"; 
-        callTimerInterval = setInterval(() => { 
-            callSeconds++; 
-            const m = String(Math.floor(callSeconds / 60)).padStart(2, '0'), 
-                  s = String(Math.floor(callSeconds % 60)).padStart(2, '0'); 
-            document.getElementById("call-timer").innerText = `${m}:${s}`; 
-        }, 1000); 
-        initSpeechRecognition(); 
-        speakCarl("Hey! Carl here. What's on your mind?"); 
-    }, d); 
-}
-
-function endCall() { 
-    stopAllMedia();
-    isCallActive = false; isCallConnected = false; 
-    document.getElementById("call-timer").innerText = "00:00"; 
-    document.getElementById("call-status").style.display = "none"; 
-    switchView('view-chat'); 
-}
-
-function toggleMute() { 
-    isMuted = !isMuted; 
-    const b = document.getElementById("mute-btn"); 
-    if (isMuted) { 
-        b.style.opacity = "0.4"; 
-        if (recognition) try { recognition.stop(); } catch (e) {} 
-    } else { 
-        b.style.opacity = "1"; 
-        if (recognition && isCallActive && isCallConnected) try { recognition.start(); } catch (e) {} 
-    } 
-}
-
-function toggleSpeaker() { 
-    isSpeakerOn = !isSpeakerOn; 
-    document.getElementById("speaker-btn").style.opacity = isSpeakerOn ? "1" : "0.4"; 
-}
-
-function speakCarl(txt) { 
-    if (!('speechSynthesis' in window) || !isCallActive) return; 
-    let ct = txt.replace(/```[\s\S]*?```/g, '').replace(/`[^`]*`/g, '').replace(/[*_#~]/g, '').trim(); 
-    if (!ct) return; 
-    const u = new SpeechSynthesisUtterance(ct); 
-    if (!carlVoice) loadCarlVoice(); 
-    if (carlVoice) u.voice = carlVoice; 
-    u.rate = 1.05; u.volume = isSpeakerOn ? 1.0 : 0.15; 
-    window.speechSynthesis.speak(u); 
-}
-
-function initSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { 
-        document.getElementById("call-status").innerText = "Browser doesn't support mic!"; 
-        document.getElementById("call-status").style.display = "block"; 
-        return; 
-    }
-    recognition = new SpeechRecognition(); 
-    recognition.continuous = true; 
-    recognition.interimResults = true; 
-    recognition.lang = 'en-US';
-    recognition.onresult = async (event) => {
-        if (isMuted || !isCallActive || !isCallConnected) return;
-        let interimTranscript = '', finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
-            else interimTranscript += event.results[i][0].transcript;
-        }
-        let combined = finalTranscript + interimTranscript;
-        if (combined.trim().length > 3 && window.speechSynthesis.speaking) { 
-            window.speechSynthesis.cancel(); 
-            if (callAbortController) callAbortController.abort(); 
-        }
-        if (finalTranscript.trim().length > 0) {
-            const userQuery = finalTranscript.trim();
-            window.speechSynthesis.cancel(); 
-            if (callAbortController) callAbortController.abort();
-            document.getElementById("call-status").innerText = "Carl is thinking..."; 
-            document.getElementById("call-status").style.display = "block";
-            await processCallUserMessage(userQuery);
-        }
-    };
-    recognition.onerror = (e) => { 
-        if (e.error === 'not-allowed') { 
-            document.getElementById("call-status").innerText = "Mic Permission Denied"; 
-            document.getElementById("call-status").style.display = "block"; 
-        } 
-    };
-    recognition.onend = () => { 
-        if (isCallActive && isCallConnected && !isMuted) try { recognition.start(); } catch (e) {} 
-    };
-    try { recognition.start(); } catch (e) {}
-}
-
-async function processCallUserMessage(t) {
-    if (!isCallActive) return;
-    callAbortController = new AbortController(); 
-    chatHistory.push({ role: "user", content: t });
-    const uLT = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), 
-          uTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    let personaPrompt = "";
-    if (equipped.persona === "pirate") personaPrompt = " [SYSTEM INSTRUCTION: You are a swashbuckling pirate. Answer the query speaking strictly like a pirate matey!]";
-    else if (equipped.persona === "chef") personaPrompt = " [SYSTEM INSTRUCTION: You are Gordon Ramsay. Answer the query passionately and critique things like a world-class furious chef!]";
-    else if (equipped.persona === "cyber") personaPrompt = " [SYSTEM INSTRUCTION: You are an elite underground Cyberpunk AI. Use cool hacker and sci-fi terminology!]";
-    else if (equipped.persona === "sarcastic") personaPrompt = " [SYSTEM INSTRUCTION: Answer the query with clever sarcasm, dry wit, and humorous irony!]";
-
-    const p = { 
-        message: t + personaPrompt, 
-        history: chatHistory, 
-        image_b64: null, 
-        image_mime: null, 
-        api_key: customApiKey, 
-        user_time: uLT, 
-        user_timezone: uTZ, 
-        client_time: `${uLT} (${uTZ})` 
-    };
-    try {
-        const res = await fetch("/api/chat", { 
-            method: "POST", headers: { "Content-Type": "application/json" }, 
-            body: JSON.stringify(p), signal: callAbortController.signal 
-        });
-        if (!res.ok) return;
-        const rdr = res.body.getReader(), dcd = new TextDecoder(); 
-        let fR = "", sB = "";
-        document.getElementById("call-status").style.display = "none";
-        while (true) {
-            const { done, value } = await rdr.read(); if (done) break;
-            const chk = dcd.decode(value, { stream: true }); fR += chk; sB += chk;
-            let m;
-            while ((m = sB.match(/([^.!?]+[.!?])/))) {
-                let s = m[0].trim(); sB = sB.substring(m[0].length);
-                for (let px of ["Carl:", "carl:", "Carl - "]) if (s.startsWith(px)) s = s.replace(px, "").trim();
-                if (s) speakCarl(s);
-            }
-        }
-        if (sB.trim()) { 
-            let lo = sB.trim(); 
-            for (let px of ["Carl:", "carl:", "Carl - "]) if (lo.startsWith(px)) lo = lo.replace(px, "").trim(); 
-            speakCarl(lo); 
-        }
-        chatHistory.push({ role: "assistant", content: fR });
-    } catch (e) {}
+    isFcVideoActive = false;
+    const localVid = document.getElementById("fc-local-video"), remoteVid = document.getElementById("fc-remote-video");
+    if(localVid) localVid.style.display = "none"; if(remoteVid) remoteVid.style.display = "none";
+    const btn = document.getElementById("fc-facetime-btn"); if(btn) btn.style.opacity = "0.4";
+    const ftVid = document.getElementById("facetime-video"); if(ftVid) ftVid.style.display = "none";
+    const ftBtn = document.getElementById("facetime-btn"); if(ftBtn) ftBtn.style.opacity = "0.4";
 }
