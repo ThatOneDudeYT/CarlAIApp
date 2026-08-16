@@ -150,7 +150,7 @@ function updateBurgerUI() {
 }
 setInterval(() => { let bps = getBps(); if (bps > 0) { clickerBurgers += bps; updateBurgerUI(); } }, 1000);
 
-const normalPhrases=["Ready When You Are", "What Time Is It?", "I Need Help With Math", "The Floor Is Yours!"], rarePhrases=["Mmmm Burgers", "I weigh 700 pounds", "67"];
+const normalPhrases=["Ready When You Are", "What Time Is It?", "I Need Help With Math", "The Floor Is Yours!"], rarePhrases=["Mmmm Burgers", "I weigh 700 pounds", "67", "The ultimate burger fun fact centers on Don Gorske of Wisconsin, who has eaten more than 34,000 Big Macs over a meticulous 50-year streak that began on May 17, 1972. After buying his first car and eating three Big Macs to celebrate, Gorske decided to make the sandwich his primary daily meal, eventually earning a Guinness World Record by keeping every single receipt and carton in organized binders. While modern health logic and documentaries like Super Size Me suggest a strict fast-food diet would cause severe medical issues, Gorske has baffled doctors for decades with excellent cholesterol and normal blood pressure. His secret to surviving tens of thousands of processed burgers relies on a strict lifestyle quirk: he consistently walks six miles a day, drinks only diet soda, and crucially, always skips the French fries."];
 let typingTimeout=null;
 function initTypingAnimation() {
     const t=document.getElementById("startup-title"); if(!t) return; if(typingTimeout) clearTimeout(typingTimeout);
