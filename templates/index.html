@@ -17,18 +17,18 @@
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">
             <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo" draggable="false">
-            <h2>Welcome Back</h2>
-            <p>Sign in to start chatting with Carl</p>
+            <h2>Log In/Sign Up</h2>
             <form id="login-form" onsubmit="handleLogin(event)">
-                <input type="email" id="auth-username" placeholder="Email Address" required autocomplete="off">
+                <input type="email" id="auth-username" placeholder="Email" required autocomplete="off">
                 <input type="password" id="auth-password" placeholder="Password" required>
                 <button type="submit" class="auth-btn">Sign In / Register</button>
             </form>
             <div class="auth-divider"><span>OR</span></div>
             <button type="button" class="google-auth-btn" onclick="signInWithGoogle()">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" draggable="false">
-                Continue with Google
+                Sign in with Google
             </button>
+            <button type="button" class="guest-auth-btn" onclick="continueAsGuest()">Continue as Guest</button>
         </div>
     </div>
 
@@ -49,22 +49,22 @@
                 <div class="full-nav-items">
                     <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat" draggable="false">
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
-                    <img src="/static/icons/Friends.png" class="pc-nav-btn" onclick="switchView('view-friends')" alt="Friends" draggable="false">
+                    <img src="/static/icons/Friends.png" class="pc-nav-btn req-login" onclick="switchView('view-friends')" alt="Friends" draggable="false">
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
-                    <img src="/static/icons/Call.png" class="pc-nav-btn" onclick="startCall()" alt="Call" draggable="false">
-                    <img src="/static/icons/Shop .png" class="pc-nav-btn" onclick="switchView('view-shop')" alt="Shop" draggable="false">
-                    <img src="/static/icons/Inventory.png" class="pc-nav-btn" onclick="switchView('view-inventory')" alt="Inventory" draggable="false">
+                    <img src="/static/icons/Call.png" class="pc-nav-btn req-login" onclick="startCall()" alt="Call" draggable="false">
+                    <img src="/static/icons/Shop .png" class="pc-nav-btn req-login" onclick="switchView('view-shop')" alt="Shop" draggable="false">
+                    <img src="/static/icons/Inventory.png" class="pc-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" draggable="false">
                 </div>
                 
                 <!-- Collapsed PC Buttons -->
                 <div class="mini-nav-items">
                     <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat" draggable="false">
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search" draggable="false">
-                    <img src="/static/icons/FriendsIcon.png" class="mini-nav-btn" onclick="switchView('view-friends')" alt="Friends" title="Friends" draggable="false">
+                    <img src="/static/icons/FriendsIcon.png" class="mini-nav-btn req-login" onclick="switchView('view-friends')" alt="Friends" title="Friends" draggable="false">
                     <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games" draggable="false">
-                    <img src="/static/icons/CallIcon.png" class="mini-nav-btn" onclick="startCall()" alt="Call" title="Call" draggable="false">
-                    <img src="/static/icons/ShopIcon.png" class="mini-nav-btn" onclick="switchView('view-shop')" alt="Shop" title="Shop" draggable="false">
-                    <img src="/static/icons/InventoryIcon.png" class="mini-nav-btn" onclick="switchView('view-inventory')" alt="Inventory" title="Inventory" draggable="false">
+                    <img src="/static/icons/CallIcon.png" class="mini-nav-btn req-login" onclick="startCall()" alt="Call" title="Call" draggable="false">
+                    <img src="/static/icons/ShopIcon.png" class="mini-nav-btn req-login" onclick="switchView('view-shop')" alt="Shop" title="Shop" draggable="false">
+                    <img src="/static/icons/InventoryIcon.png" class="mini-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" title="Inventory" draggable="false">
                 </div>
             </div>
 
@@ -127,7 +127,6 @@
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
                     <div id="dm-header-avatar" class="dm-header-avatar-container"></div>
                     <h1 id="dm-header-name">Friend</h1>
-                    <button class="dm-call-btn" onclick="startFriendCall()" title="Start Voice Call">📞</button>
                 </div>
                 <div id="dm-chat-log" class="dm-chat-log"></div>
                 <div class="dm-input-wrapper">
@@ -230,23 +229,23 @@
                             4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats!
                         </p>
                     </div>
-                    <div class="settings-row vertical-on-mobile">
+                    <div class="settings-row vertical-on-mobile req-login">
                         <label class="settings-label" for="settings-username-input">Username</label>
                         <input type="text" id="settings-username-input" placeholder="Your Username (3–20 Characters)" maxlength="20" onchange="updateUsernameFromSettings()">
                     </div>
-                    <div class="settings-row vertical-on-mobile">
+                    <div class="settings-row vertical-on-mobile req-login">
                         <label class="settings-label">Password</label>
                         <div class="password-inputs">
                             <input type="password" id="settings-new-pass" placeholder="New Password" autocomplete="new-password">
                             <input type="password" id="settings-confirm-pass" placeholder="Confirm Password" autocomplete="new-password">
                         </div>
                     </div>
-                    <div class="settings-row">
+                    <div class="settings-row req-login">
                         <label class="settings-label">Profile Picture</label>
                         <button class="settings-upload-btn" onclick="document.getElementById('avatar-file-picker').click();">Upload Profile</button>
                         <input type="file" id="avatar-file-picker" style="display: none;" accept="image/*" onchange="handleAvatarUpload(event)">
                     </div>
-                    <div class="settings-row">
+                    <div class="settings-row req-login">
                         <label class="settings-label">Contacts</label>
                         <button class="settings-upload-btn" onclick="switchView('view-friends')">Manage Friends</button>
                     </div>
@@ -269,7 +268,31 @@
                 </div>
             </div>
 
-            <!-- GAMES VIEW -->
+            <!-- CARL AI CALL VIEW -->
+            <div id="view-call" class="view">
+                <div class="call-top-section">
+                    <h1>Carl AI</h1>
+                    <div id="call-timer">00:00</div>
+                    <div id="call-status" style="display: none;">Calling Carl...</div>
+                </div>
+                
+                <div class="call-bottom-section">
+                    <div class="call-option-row">
+                        <button class="call-icon-btn" onclick="toggleSpeaker()">
+                            <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" draggable="false" />
+                        </button>
+                        <button class="call-icon-btn" onclick="toggleMute()">
+                            <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" draggable="false" />
+                        </button>
+                    </div>
+                    <button class="call-end-btn" onclick="endCall()">
+                        <img src="/static/icons/EndCallButton.png" alt="End Call" draggable="false" />
+                    </button>
+                </div>
+                <div class="copyright">@Dalted Copyright Issued 2026</div>
+            </div>
+
+            <!-- GAMES MENU VIEW -->
             <div id="view-games" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
