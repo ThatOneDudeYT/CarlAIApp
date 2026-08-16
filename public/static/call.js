@@ -1,69 +1,51 @@
-// --- CARL AI VOICE CALL HANDLER ---
+// --- CARL AI NATIVE VOICE CALL HANDLER ---
 
-// 1. Create the Call Modal UI
-const callModal = document.createElement("div");
-callModal.id = "carl-call-modal";
-callModal.innerHTML = `
-    <div style="text-align: center;">
-        <img src="https://carlai.app/static/icons/CarlAILogo.png" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; animation: pulse 2s infinite;">
-        <h2 style="color: white; font-family: sans-serif; margin: 0 0 10px 0;">Carl AI</h2>
-        <p id="carl-call-status" style="color: #aaaaaa; font-family: sans-serif; margin-bottom: 30px;">Connecting...</p>
-        <button id="carl-end-call" style="background-color: #ef4444; color: white; border: none; padding: 15px 30px; border-radius: 30px; font-size: 16px; cursor: pointer; font-weight: bold; transition: transform 0.1s;">End Call</button>
-    </div>
-    <style>
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(147, 51, 234, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); }
-        }
-    </style>
-`;
-// Style the full-screen modal
-Object.assign(callModal.style, {
-    position: "fixed", top: "0", left: "0", width: "100vw", height: "100vh",
-    backgroundColor: "rgba(17, 17, 17, 0.95)", zIndex: "999999",
-    display: "none", flexDirection: "column", justifyContent: "center", alignItems: "center"
-});
-document.body.appendChild(callModal);
-
-// 2. Setup Web Speech API
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const synth = window.speechSynthesis;
 let recognition = null;
 let isCallActive = false;
 let callHistory = [];
+let isMuted = false;
+
+// Grab existing UI elements from your native index.html
+const callStatusText = document.getElementById("call-status");
+const muteBtnImg = document.getElementById("mute-btn");
 
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
-    recognition.continuous = false; // Stop listening when user stops talking
+    recognition.continuous = false;
     recognition.interimResults = false;
     
     // When you finish talking...
     recognition.onresult = (event) => {
         if (!isCallActive) return;
         const userSaid = event.results[0][0].transcript;
-        document.getElementById("carl-call-status").innerText = "Carl is thinking...";
+        
+        if (callStatusText) {
+            callStatusText.style.display = "block";
+            callStatusText.innerText = "Carl is thinking...";
+        }
+        
         sendVoiceToCarl(userSaid);
     };
 
     // When Carl finishes speaking, automatically start listening again
     recognition.onend = () => {
-        if (isCallActive && !synth.speaking) {
-            document.getElementById("carl-call-status").innerText = "Listening...";
+        if (isCallActive && !synth.speaking && !isMuted) {
+            if (callStatusText) callStatusText.innerText = "Listening...";
             try { recognition.start(); } catch (e) {}
         }
     };
 }
 
-// 3. Connect to your Render Backend
+// Connect to your Render Backend
 function sendVoiceToCarl(text) {
     callHistory.push({ role: 'user', text: text });
 
-    // Use default server API key by passing an empty string
     const payload = {
         message: text,
         history: callHistory.map(h => ({ role: h.role, content: h.text })),
-        api_key: "" 
+        api_key: "" // Uses your default server API key
     };
 
     fetch("https://carlai.app/api/chat", {
@@ -82,8 +64,8 @@ function sendVoiceToCarl(text) {
             fullText += decoder.decode(value, { stream: true });
         }
         
-        // Clean up text so TTS doesn't read out weird symbols
-        const cleanResponse = fullText.replace(/Carl:|carl:|Assistant:/g, "").replace(/\\*/g, "").trimStart();
+        // Clean up text so TTS doesn't read out weird formatting symbols
+        const cleanResponse = fullText.replace(/Carl:|carl:|Assistant:/g, "").replace(/\*/g, "").trimStart();
         callHistory.push({ role: 'model', text: cleanResponse });
         
         speakCarlsResponse(cleanResponse);
@@ -93,13 +75,14 @@ function sendVoiceToCarl(text) {
     });
 }
 
-// 4. Handle Carl Speaking
+// Handle Carl Speaking
 function speakCarlsResponse(text) {
     if (!isCallActive) return;
-    document.getElementById("carl-call-status").innerText = "Carl is speaking...";
+    if (callStatusText) callStatusText.innerText = "Carl is speaking...";
     
     const utterance = new SpeechSynthesisUtterance(text);
-    // Find a decent english voice
+    
+    // Find a decent English voice
     const voices = synth.getVoices();
     const preferredVoice = voices.find(v => v.name.includes("Google US English") || v.lang === "en-US");
     if (preferredVoice) utterance.voice = preferredVoice;
@@ -108,8 +91,8 @@ function speakCarlsResponse(text) {
     utterance.rate = 1.0;
 
     utterance.onend = () => {
-        if (isCallActive) {
-            document.getElementById("carl-call-status").innerText = "Listening...";
+        if (isCallActive && !isMuted) {
+            if (callStatusText) callStatusText.innerText = "Listening...";
             try { recognition.start(); } catch (e) {}
         }
     };
@@ -117,24 +100,57 @@ function speakCarlsResponse(text) {
     synth.speak(utterance);
 }
 
-// 5. Start and End Call Triggers
-window.startCarlCall = function() {
+// --- HOOK INTO YOUR EXISTING BUTTONS ---
+
+// Overrides the startCall function tied to your sidebar button
+window.startCall = function() {
     if (!recognition) {
-        alert("Your browser does not support voice calls. Try Google Chrome!");
+        alert("Your browser does not support voice calls. Try using Google Chrome!");
         return;
     }
-    isCallActive = true;
-    callHistory = [];
-    callModal.style.display = "flex";
-    document.getElementById("carl-call-status").innerText = "Connecting...";
     
+    // Switch to your native Call View
+    if (typeof switchView === "function") switchView('view-call');
+    
+    isCallActive = true;
+    isMuted = false;
+    callHistory = [];
+    
+    if (callStatusText) {
+        callStatusText.style.display = "block";
+        callStatusText.innerText = "Connecting...";
+    }
+    
+    if (muteBtnImg) muteBtnImg.style.opacity = "1.0";
+
     // Greet the user to start the loop
-    setTimeout(() => { speakCarlsResponse("Hey! Carl here. What's on your mind?"); }, 500);
+    setTimeout(() => { 
+        speakCarlsResponse("Hey! Carl here. What's on your mind?"); 
+    }, 500);
 };
 
-document.getElementById("carl-end-call").addEventListener("click", () => {
+// Overrides the endCall function tied to your red End button
+window.endCall = function() {
     isCallActive = false;
-    callModal.style.display = "none";
     synth.cancel(); // Stop Carl from talking instantly
     try { recognition.stop(); } catch(e) {}
-});
+    
+    // Send user back to chat screen
+    if (typeof switchView === "function") switchView('view-chat');
+};
+
+// Overrides the toggleMute function tied to your Mute button
+window.toggleMute = function() {
+    if (!isCallActive) return;
+    
+    isMuted = !isMuted;
+    if (isMuted) {
+        try { recognition.stop(); } catch(e) {}
+        if (callStatusText) callStatusText.innerText = "Muted";
+        if (muteBtnImg) muteBtnImg.style.opacity = "0.5";
+    } else {
+        if (callStatusText) callStatusText.innerText = "Listening...";
+        if (muteBtnImg) muteBtnImg.style.opacity = "1.0";
+        try { recognition.start(); } catch(e) {}
+    }
+};
