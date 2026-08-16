@@ -7,6 +7,7 @@ let chatsHistory=[], activeChatId=null, chatHistory=[];
 let selectedGame="Burger Clicker"; const gamesWithDifficulty=["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
 let pendingImageBase64=null, pendingImageMime=null, pendingImageSrc=null, pendingDmImageBase64=null, pendingDmImageMime=null, pendingDmImageSrc=null, currentDmUser=null; 
 let isDM=false, currentDmUnsubscribe=null;
+let isGuest = false;
 
 // --- BURGER ECONOMY & SHOP INVENTORY ---
 let userBurgers=100, clickerBurgers=0, rebirths=0, clickPower=1, autoChefs=0, burgerStands=0, burgerFactories=0;   
@@ -76,12 +77,27 @@ window.addEventListener("DOMContentLoaded", () => {
 
 function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
 
+// --- AUTHENTICATION ---
+function continueAsGuest() {
+    isGuest = true;
+    document.getElementById('auth-overlay').classList.add('hidden');
+    document.body.classList.add('guest-mode');
+    currentUser = "Guest";
+    currentUserAvatar = "/static/icons/default-avatar.png";
+    updateProfileUI();
+    startNewChat();
+}
+
 auth.onAuthStateChanged(async (user) => {
     const ov = document.getElementById('auth-overlay');
     if (user) {
+        isGuest = false;
+        document.body.classList.remove('guest-mode');
         firebaseUserId = user.uid; currentUser = user.displayName || user.email.split('@')[0]; currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
         if (ov) ov.classList.add('hidden'); await loadUserDataFromCloud();
-    } else { firebaseUserId = null; if (ov) ov.classList.remove('hidden'); }
+    } else if (!isGuest) { 
+        firebaseUserId = null; if (ov) ov.classList.remove('hidden'); 
+    }
 });
 
 function signInWithGoogle() { const p = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(p).catch(e => alert("Google Sign-In Error: " + e.message)); }
@@ -95,6 +111,10 @@ function handleLogin(e) {
     });
 }
 function handleSignOut() {
+    if (isGuest) {
+        window.location.reload();
+        return;
+    }
     auth.signOut().then(() => {
         currentUser=null; currentUserAvatar="/static/icons/default-avatar.png"; customApiKey="";
         chatsHistory=[]; chatHistory=[]; activeChatId=null; myFriends=[]; myRequests=[]; mySentRequests=[]; currentDmUser=null;
@@ -146,34 +166,30 @@ function updateProfileUI() {
     if(n) n.innerText=currentUser||"Guest"; 
 }
 function applyEquippedCosmetics() {
-    // Frames
     const fWrap = document.getElementById("header-avatar-wrapper");
     if (fWrap) {
         fWrap.className = "avatar-frame-wrapper";
         if (equipped.frame && equipped.frame !== "default") fWrap.classList.add(`frame-${equipped.frame}`);
     }
-    // Badges / Titles
     const bBadge = document.getElementById("header-user-badge");
     if (bBadge) {
         if (equipped.title) { bBadge.innerText = equipped.title; bBadge.style.display = "inline-block"; }
         else { bBadge.style.display = "none"; }
     }
-    // Background Glow & Title Colors
     const glow = document.getElementById("glow-bg");
     const startupText = document.getElementById("startup-title");
     if (glow) {
         if (equipped.background === "gold") {
             glow.style.background = "radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 60%)";
-            if(startupText) startupText.style.color = "#fcd34d";
+            if(startupText) { startupText.style.color = "#fcd34d"; startupText.style.textShadow = "0 0 40px rgba(245, 158, 11, 0.6)"; }
         } else if (equipped.background === "cyber") {
             glow.style.background = "radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 60%)";
-            if(startupText) startupText.style.color = "#f472b6";
+            if(startupText) { startupText.style.color = "#f472b6"; startupText.style.textShadow = "0 0 40px rgba(236, 72, 153, 0.6)"; }
         } else {
             glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)";
-            if(startupText) startupText.style.color = "#d8b4fe";
+            if(startupText) { startupText.style.color = "#d8b4fe"; startupText.style.textShadow = "0 0 40px rgba(168, 85, 247, 0.6)"; }
         }
     }
-    // Blackjack Felts
     const bjArena = document.getElementById("bj-felt-arena");
     if (bjArena) {
         bjArena.className = "bj-arena";
@@ -203,21 +219,21 @@ function switchView(viewId) {
 // --- BURGER SHOP & INVENTORY SYSTEM ---
 // =========================================================================
 const shopCatalog = [
-    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
-    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 2000, desc: "Carl reviews your questions like a furious five-star culinary chef." },
-    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", icon: "🤖", cost: 2500, desc: "Carl talks in cool dystopian cyberpunk terminology." },
-    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", icon: "😏", cost: 1800, desc: "Carl answers your questions with maximum sarcasm and wit." },
-    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
-    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
-    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", icon: "🔮", cost: 2500, desc: "Deep purple-pink retro synthwave gradient." },
-    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
-    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
-    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", icon: "🔥", cost: 3500, desc: "Fiery red & orange border around your avatar." },
-    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
-    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
-    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", icon: "🐐", cost: 3000, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
-    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
-    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
+    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 2000, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
+    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 2500, desc: "Carl reviews your questions like a furious five-star culinary chef." },
+    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", icon: "🤖", cost: 3000, desc: "Carl talks in cool dystopian cyberpunk terminology." },
+    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", icon: "😏", cost: 2000, desc: "Carl answers your questions with maximum sarcasm and wit." },
+    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 2500, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
+    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 3500, desc: "Wraps your chat messages in shiny luxury gold." },
+    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", icon: "🔮", cost: 3000, desc: "Deep purple-pink retro synthwave gradient." },
+    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 3500, desc: "Surrounds your profile avatar with an aura of pure gold." },
+    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 3000, desc: "Animated pulsing cyber frame around your picture." },
+    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", icon: "🔥", cost: 4000, desc: "Fiery red & orange border around your avatar." },
+    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 2000, desc: "Displays the [BURGER BARON] badge next to your name." },
+    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 3000, desc: "Displays the [GRANDMASTER] badge next to your name." },
+    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", icon: "🐐", cost: 4500, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
+    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 2500, desc: "Changes the startup radial glow to ambient gold." },
+    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 2500, desc: "Changes the ambient background to magenta & purple." },
     { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", icon: "🍟", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
     { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", icon: "🃏", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
     { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", icon: "🎲", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
@@ -319,7 +335,7 @@ function renderInventoryView() {
             else isEq = (equipped[item.type] === item.val);
 
             const card = document.createElement("div"); card.className = "shop-card";
-            const btnClass = isEq ? "equipped-active" : "equip";
+            const btnClass = isEq ? "unequip" : "equip";
             const btnText = isEq ? "Unequip" : "Equip";
 
             card.innerHTML = `
@@ -327,7 +343,7 @@ function renderInventoryView() {
                     <div class="shop-card-header"><span class="shop-item-title">${item.name}</span><span class="shop-item-icon">${item.icon}</span></div>
                     <div class="shop-item-desc">${item.desc}</div>
                 </div>
-                <button class="shop-buy-btn ${btnClass}" onclick="toggleInventoryItem('${item.id}')">${btnText}</button>
+                <button class="inv-action-btn ${btnClass}" onclick="toggleInventoryItem('${item.id}')">${btnText}</button>
             `;
             container.appendChild(card);
         });
@@ -486,7 +502,7 @@ function getAvatarHTML(u) {
     } else {
         inner = `<img class="friend-avatar" src="${u.avatar}" draggable="false">`;
     }
-    return `<div class="avatar-frame-wrapper ${frameClass}" style="width: 100%; height: 100%;">${inner}</div>`;
+    return `<div class="avatar-frame-wrapper ${frameClass}">${inner}</div>`;
 }
 
 let allUsersCache = [];
@@ -591,7 +607,6 @@ function openDirectMessage(user) {
             const msgDiv = document.createElement("div"); msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`; msgDiv.dataset.id = doc.id;
             const contentDiv = document.createElement("div"); contentDiv.className = "dm-message-content";
             
-            // Inject Custom Bubbles
             if (isMe && equipped.bubble && equipped.bubble !== "default") contentDiv.classList.add(`bubble-${equipped.bubble}`);
             else if (!isMe && currentDmUser.equipped?.bubble && currentDmUser.equipped.bubble !== "default") contentDiv.classList.add(`bubble-${currentDmUser.equipped.bubble}`);
             
@@ -663,8 +678,13 @@ function checkDailyMessageLimit() {
     if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
     
     if (count >= 10 && !hasValidApiKey()) {
-        alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
-        switchView('view-settings'); return false;
+        if (isGuest) {
+            alert("Guest limit reached! Please refresh and sign in or create an account to continue.");
+        } else {
+            alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
+            switchView('view-settings');
+        }
+        return false;
     }
     return true;
 }
