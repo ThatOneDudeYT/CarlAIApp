@@ -109,11 +109,12 @@ def chat():
     try:
         genai.configure(api_key=api_key)
         
+        # Initialize model with system instruction
         generation_config = {"temperature": 0.7}
         model = genai.GenerativeModel(
             model_name="gemini-3.1-flash-lite",
             generation_config=generation_config,
-            system_instruction=f"You are Carl AI. Client Time: {client_time}."
+            system_instruction=f"You are Carl AI, a fun, highly intelligent executive assistant who is absolutely obsessed with burgers. You casually reference burgers, grilling, and fast food in your responses. Client Time: {client_time}."
         )
 
         formatted_history = []
