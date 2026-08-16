@@ -1,20 +1,13 @@
 import os
 import random
 import time
-import smtplib
-from email.mime.text import MIMEText
+import requests
 from flask import Flask, request, jsonify, send_from_directory, Response
 import google.generativeai as genai
 
-# Configure Flask to serve static assets and HTML directly from the 'public' folder
 app = Flask(__name__, static_folder='public/static', template_folder='public')
 
-# Temporary storage for OTPs: { email: { "code": "12345", "expires": timestamp } }
 otp_store = {}
-
-SMTP_EMAIL = "carlaisupport@gmail.com"
-# Put your 16-character Gmail App Password here (or set GMAIL_APP_PASSWORD in Render Environment)
-SMTP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "YOUR_16_CHAR_APP_PASSWORD")
 
 # --- SERVE WEBSITE ---
 @app.route('/')
@@ -25,7 +18,7 @@ def index():
 def serve_static(path):
     return send_from_directory('public', path)
 
-# --- OTP EMAIL ROUTES ---
+# --- OTP EMAIL ROUTES (USING BREVO HTTP API) ---
 @app.route('/api/send-otp', methods=['POST'])
 def send_otp():
     data = request.get_json() or {}
@@ -42,21 +35,42 @@ def send_otp():
     }
 
     try:
-        subject = "Your Carl AI Verification Code"
-        body = f"Here's your one time use Carl AI code!\n\n{code}\n\nThis code will expire in 10 minutes."
+        # Pull API key from Render Environment
+        api_key = os.environ.get("BREVO_API_KEY")
+        if not api_key:
+            return jsonify({"error": "Brevo API key is missing from Render"}), 500
+
+        # Brevo's API endpoint
+        url = "https://api.brevo.com/v3/smtp/email"
         
-        msg = MIMEText(body)
-        msg['Subject'] = subject
-        msg['From'] = f"Carl AI Support <{SMTP_EMAIL}>"
-        msg['To'] = email
+        # We pass the API key in the request headers for authentication
+        headers = {
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json"
+        }
+        
+        payload = {
+            "sender": {
+                "name": "Carl AI Support",
+                "email": "carlaisupport@gmail.com" # This MUST be verified in Brevo
+            },
+            "to": [{"email": email}],
+            "subject": "Your Carl AI Verification Code",
+            "textContent": f"Here is your one time use Carl AI code:\n\n{code}\n\nThis code will expire in 10 minutes."
+        }
 
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.sendmail(SMTP_EMAIL, [email], msg.as_string())
+        # Send the data over standard HTTPS (bypassing Render's SMTP block)
+        response = requests.post(url, json=payload, headers=headers)
+        
+        if response.status_code in [200, 201, 202]:
+            return jsonify({"success": True, "message": "Code sent successfully"})
+        else:
+            return jsonify({"error": f"API Error: {response.text}"}), 500
 
-        return jsonify({"success": True, "message": "Code sent successfully"})
     except Exception as e:
         return jsonify({"error": f"Failed to send email: {str(e)}"}), 500
+
 
 @app.route('/api/verify-otp', methods=['POST'])
 def verify_otp():
