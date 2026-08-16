@@ -47,17 +47,12 @@ def chat():
 
     contents.append(types.Content(role="user", parts=user_parts))
 
-    # --- TIME ZONE FIX ---
-    # Use client_time / user_time sent from script.js payload, fallback to server time if missing
-    client_time = data.get("client_time") or data.get("user_time")
-    if not client_time:
-        client_time = datetime.now().strftime("%I:%M %p on %A, %B %d, %Y")
-
+    current_time = datetime.now().strftime("%I:%M %p on %A, %B %d, %Y")
     system_instruction = (
-        "You are Carl, a friendly desktop buddy. Your favorite food is burgers. "
-        f"The user's local time is {client_time}. "
-        "Answer conversationally and naturally. Keep your responses concise (1 to 3 sentences). Do not use emojis. "
-        "Never act like a robot, act natural."
+        "You are Carl, a friendly desktop buddy. Your favorite food is burgers."
+        f"The local time is {current_time}. "
+        "Answer conversationally and naturally. Keep your responses concise (1 to 3 sentences). Do not use emojis."
+	"Never act like a robot, act natural."
     )
     
     config = types.GenerateContentConfig(
