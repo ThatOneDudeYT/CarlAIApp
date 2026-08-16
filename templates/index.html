@@ -204,6 +204,16 @@
             <div id="view-settings" class="view">
                 <div class="settings-header"><h1>Settings</h1></div>
                 <div class="settings-content-grid">
+                    
+                    <!-- Redeem Code Area -->
+                    <div class="settings-row vertical-on-mobile req-login">
+                        <label class="settings-label" for="promo-code-input">Redeem Code</label>
+                        <div class="input-with-help">
+                            <input type="text" id="promo-code-input" placeholder="Enter Promo Code..." autocomplete="off">
+                            <button type="button" class="settings-upload-btn" onclick="redeemCode()">Redeem</button>
+                        </div>
+                    </div>
+                    
                     <div class="settings-row">
                         <label class="settings-label">Theme</label>
                         <div class="toggle-switch-wrapper">
@@ -286,6 +296,36 @@
                         </button>
                     </div>
                     <button class="call-end-btn" onclick="endCall()">
+                        <img src="/static/icons/EndCallButton.png" alt="End Call" draggable="false" />
+                    </button>
+                </div>
+                <div class="copyright">@Dalted Copyright Issued 2026</div>
+            </div>
+
+            <!-- FRIEND CALL VIEW (WebRTC) -->
+            <div id="view-friend-call" class="view">
+                <video id="fc-remote-video" autoplay playsinline></video>
+                <video id="fc-local-video" autoplay playsinline muted></video>
+                
+                <div class="call-top-section">
+                    <h1 id="fc-title">Friend Name</h1>
+                    <div id="fc-timer">00:00</div>
+                    <div id="fc-status" style="display: none;">Calling...</div>
+                </div>
+
+                <div class="call-bottom-section">
+                    <div class="call-option-row">
+                        <button class="call-icon-btn" onclick="toggleFcSpeaker()">
+                            <img src="/static/icons/SpeakerButton.png" id="fc-speaker-btn" alt="Speaker" draggable="false" />
+                        </button>
+                        <button class="call-icon-btn" onclick="toggleFcVideo()">
+                            <img src="/static/icons/Facetime.png" id="fc-facetime-btn" alt="Facetime" style="opacity: 0.4;" draggable="false" />
+                        </button>
+                        <button class="call-icon-btn" onclick="toggleFcMute()">
+                            <img src="/static/icons/MuteButtonIcon.png" id="fc-mute-btn" alt="Mute" draggable="false" />
+                        </button>
+                    </div>
+                    <button class="call-end-btn" onclick="endFriendCall()">
                         <img src="/static/icons/EndCallButton.png" alt="End Call" draggable="false" />
                     </button>
                 </div>
