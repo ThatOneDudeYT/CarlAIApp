@@ -17,18 +17,36 @@
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">
             <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo" draggable="false">
-            <h2>Log In/Sign Up</h2>
-            <form id="login-form" onsubmit="handleLogin(event)">
-                <input type="email" id="auth-username" placeholder="Email" required autocomplete="off">
-                <input type="password" id="auth-password" placeholder="Password" required>
-                <button type="submit" class="auth-btn">Sign In / Register</button>
-            </form>
-            <div class="auth-divider"><span>OR</span></div>
-            <button type="button" class="google-auth-btn" onclick="signInWithGoogle()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" draggable="false">
-                Sign in with Google
-            </button>
-            <button type="button" class="guest-auth-btn" onclick="continueAsGuest()">Continue as Guest</button>
+            
+            <!-- STEP 1: EMAIL & PASSWORD -->
+            <div id="auth-step-credentials">
+                <h2>Log In / Sign Up</h2>
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <input type="email" id="auth-username" placeholder="Email" required autocomplete="off">
+                    <input type="password" id="auth-password" placeholder="Password" required>
+                    <button type="submit" id="auth-submit-btn" class="auth-btn">Sign In / Register</button>
+                </form>
+                <div class="auth-divider"><span>OR</span></div>
+                <button type="button" class="google-auth-btn" onclick="signInWithGoogle()">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" draggable="false">
+                    Sign in with Google
+                </button>
+                <button type="button" class="guest-auth-btn" onclick="continueAsGuest()">Continue as Guest</button>
+            </div>
+
+            <!-- STEP 2: 5-DIGIT OTP VERIFICATION -->
+            <div id="auth-step-otp" style="display: none;">
+                <h2>Check Your Email</h2>
+                <p style="color: var(--text-sub); font-size: 14px; margin-bottom: 16px;">
+                    We sent a 5-digit code to <br><b id="otp-sent-email-display" style="color: #fff;"></b>
+                </p>
+                <form id="otp-form" onsubmit="handleVerifyOtp(event)">
+                    <input type="text" id="auth-otp-code" placeholder="12345" maxlength="5" pattern="[0-9]{5}" required autocomplete="one-time-code" style="letter-spacing: 8px; font-size: 26px; text-align: center; width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); outline: none;">
+                    <button type="submit" id="otp-verify-btn" class="auth-btn" style="margin-top: 12px; width: 100%;">Verify Code</button>
+                </form>
+                <button type="button" class="guest-auth-btn" style="margin-top: 12px;" onclick="cancelOtpStep()">Back</button>
+            </div>
+
         </div>
     </div>
 
@@ -117,7 +135,7 @@
                         <button id="send-btn" class="send-btn">↑</button>
                     </div>
                     <input type="file" id="native-file-picker" style="display: none;" accept="image/*, .pdf, .txt, .doc, .docx, .py, .lua, .cs, .js, .json" />
-                    <div class="copyright">© 2026 CarlAI. All Rights Reserved.</div>
+                    <div class="copyright">@Dalted Copyright Issued 2026</div>
                 </div>
             </div>
 
@@ -127,6 +145,7 @@
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
                     <div id="dm-header-avatar" class="dm-header-avatar-container"></div>
                     <h1 id="dm-header-name">Friend</h1>
+                    <button class="dm-call-btn" onclick="startFriendCall()" title="Start Voice Call">📞</button>
                 </div>
                 <div id="dm-chat-log" class="dm-chat-log"></div>
                 <div class="dm-input-wrapper">
@@ -182,15 +201,11 @@
             <!-- INVENTORY VIEW -->
             <div id="view-inventory" class="view">
                 <div class="inventory-layout">
-                    <!-- Left: Main Items -->
                     <div class="inv-main">
                         <button class="back-btn" onclick="switchView('view-chat')">←</button>
-                        <div class="inv-grid" id="inventory-items-container">
-                            <!-- Items load here. If empty, the text below shows via JS -->
-                        </div>
+                        <div class="inv-grid" id="inventory-items-container"></div>
                     </div>
                     
-                    <!-- Right: Saved Presets Panel -->
                     <div class="inv-presets-panel">
                         <h1 class="inv-title">Inventory</h1>
                         <h2 class="inv-presets-title">Saved Presets</h2>
@@ -205,7 +220,6 @@
                 <div class="settings-header"><h1>Settings</h1></div>
                 <div class="settings-content-grid">
                     
-                    <!-- Redeem Code Area -->
                     <div class="settings-row vertical-on-mobile req-login">
                         <label class="settings-label" for="promo-code-input">Redeem Code</label>
                         <div class="input-with-help">
@@ -504,6 +518,22 @@
 
         </main>
     </div>
+
+    <!-- FRIEND INCOMING CALL MODAL -->
+    <div id="friend-call-modal" class="friend-call-modal hidden">
+        <div class="call-box">
+            <div id="friend-call-avatar" class="call-avatar"></div>
+            <h2 id="friend-call-name">Calling...</h2>
+            <p id="friend-call-status">Connecting...</p>
+            <div class="friend-call-actions">
+                <button id="accept-call-btn" class="call-btn accept" onclick="answerFriendCall()">Answer</button>
+                <button id="decline-call-btn" class="call-btn decline" onclick="declineFriendCall()">Decline</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden element to route friend audio safely -->
+    <audio id="remote-audio" autoplay playsinline style="position: absolute; width: 0; height: 0; visibility: hidden; pointer-events: none;"></audio>
 
     <script src="/static/script.js"></script>
     <script src="/static/games.js"></script>
