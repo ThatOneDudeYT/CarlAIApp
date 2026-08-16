@@ -39,7 +39,16 @@ async function handleLogin(e) {
                 document.getElementById("auth-otp-code").value = "";
                 document.getElementById("auth-otp-code").focus();
             } catch (networkErr) {
-                alert("Network error sending verification code. Ensure your server is running.");
+                // FALLBACK: If the server.js isn't running (e.g. on your live static site), default to Firebase Auth
+                console.warn("Backend missing, falling back to standard Firebase Auth...");
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
+                    await userCredential.user.sendEmailVerification();
+                    alert("Account created! A verification link has been sent to your email.");
+                    document.getElementById('auth-password').value = "";
+                } catch (fbErr) {
+                    alert("Sign Up Error: " + fbErr.message);
+                }
             }
         } else {
             alert(err.message);
