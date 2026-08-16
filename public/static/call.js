@@ -6,10 +6,21 @@ let recognition = null;
 let isCallActive = false;
 let callHistory = [];
 let isMuted = false;
+let callTimerInterval = null;
+let callSeconds = 0;
 
-// Grab existing UI elements from your native index.html
+// Grab UI elements
 const callStatusText = document.getElementById("call-status");
 const muteBtnImg = document.getElementById("mute-btn");
+const callTimerText = document.getElementById("call-timer");
+
+// Handle the call timer UI
+function updateTimer() {
+    callSeconds++;
+    const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+    const secs = String(callSeconds % 60).padStart(2, '0');
+    if (callTimerText) callTimerText.innerText = mins + ":" + secs;
+}
 
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
@@ -22,7 +33,7 @@ if (SpeechRecognition) {
         const userSaid = event.results[0][0].transcript;
         
         if (callStatusText) {
-            callStatusText.style.display = "block";
+            callStatusText.style.display = ""; // Leave empty to let your CSS handle the layout safely
             callStatusText.innerText = "Carl is thinking...";
         }
         
@@ -38,22 +49,22 @@ if (SpeechRecognition) {
     };
 }
 
-// Connect to your Render Backend
+// Connect to Backend
 function sendVoiceToCarl(text) {
     callHistory.push({ role: 'user', text: text });
 
-    const payload = {
-        message: text,
-        history: callHistory.map(h => ({ role: h.role, content: h.text })),
-        api_key: "" // Uses your default server API key
-    };
-
-    fetch("https://carlai.app/api/chat", {
+    // Using a relative path fixes all CORS/Domain connection errors!
+    fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+            message: text,
+            history: callHistory.map(h => ({ role: h.role, content: h.text }))
+        })
     })
     .then(async (response) => {
+        if (!response.ok) throw new Error("Server connection failed");
+        
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullText = "";
@@ -70,7 +81,8 @@ function sendVoiceToCarl(text) {
         
         speakCarlsResponse(cleanResponse);
     })
-    .catch(() => {
+    .catch((err) => {
+        console.error("Voice Error:", err);
         speakCarlsResponse("Sorry, I had trouble connecting to the server.");
     });
 }
@@ -102,7 +114,6 @@ function speakCarlsResponse(text) {
 
 // --- HOOK INTO YOUR EXISTING BUTTONS ---
 
-// Overrides the startCall function tied to your sidebar button
 window.startCall = function() {
     if (!recognition) {
         alert("Your browser does not support voice calls. Try using Google Chrome!");
@@ -112,12 +123,24 @@ window.startCall = function() {
     // Switch to your native Call View
     if (typeof switchView === "function") switchView('view-call');
     
+    // Close the sidebar if it's open (keeps UI clean on smaller screens)
+    const sidebar = document.getElementById("desktop-sidebar");
+    if (sidebar && sidebar.classList.contains("expanded") && window.innerWidth <= 768) {
+        sidebar.classList.remove("expanded");
+    }
+    
     isCallActive = true;
     isMuted = false;
     callHistory = [];
+    callSeconds = 0;
+    
+    // Start Timer
+    if (callTimerText) callTimerText.innerText = "00:00";
+    clearInterval(callTimerInterval);
+    callTimerInterval = setInterval(updateTimer, 1000);
     
     if (callStatusText) {
-        callStatusText.style.display = "block";
+        callStatusText.style.display = "";
         callStatusText.innerText = "Connecting...";
     }
     
@@ -129,9 +152,9 @@ window.startCall = function() {
     }, 500);
 };
 
-// Overrides the endCall function tied to your red End button
 window.endCall = function() {
     isCallActive = false;
+    clearInterval(callTimerInterval);
     synth.cancel(); // Stop Carl from talking instantly
     try { recognition.stop(); } catch(e) {}
     
@@ -139,7 +162,6 @@ window.endCall = function() {
     if (typeof switchView === "function") switchView('view-chat');
 };
 
-// Overrides the toggleMute function tied to your Mute button
 window.toggleMute = function() {
     if (!isCallActive) return;
     
