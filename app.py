@@ -111,7 +111,7 @@ def chat():
         # Initialize model with system instruction
         generation_config = {"temperature": 0.7}
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-3.1-flash-lite",  # <--- Update this line!
             generation_config=generation_config,
             system_instruction=f"You are Carl AI. Client Time: {client_time}."
         )
