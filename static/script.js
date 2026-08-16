@@ -203,6 +203,28 @@ function toggleApiKeyHelp() { const hb=document.getElementById('api-key-help-box
 function toggleSidebar() { const sb=document.getElementById('desktop-sidebar'), btn=document.getElementById('sidebar-toggle-btn'); if(!sb) return; if(sb.classList.contains('expanded')){ sb.classList.remove('expanded'); sb.classList.add('collapsed'); if(btn) btn.innerText="❯"; } else { sb.classList.remove('collapsed'); sb.classList.add('expanded'); if(btn) btn.innerText="❮"; } }
 function getDifficulty() { const s=document.getElementById("difficulty-select"); return s?s.value:"medium"; }
 
+function redeemCode() {
+    const inp = document.getElementById("promo-code-input");
+    if(!inp) return;
+    const code = inp.value.trim();
+    if(!code) return;
+
+    if (code === "Burgers 1000") {
+        userBurgers += 1000;
+        updateBurgerUI();
+        saveSessionData();
+        alert("Successfully redeemed 1,000 Burgers!");
+    } else if (code === "Admin1234") {
+        equipped.title = "Admin";
+        applyEquippedCosmetics();
+        saveSessionData();
+        alert("Admin Title equipped!");
+    } else {
+        alert("Invalid or expired promo code.");
+    }
+    inp.value = "";
+}
+
 function switchView(viewId) {
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); 
     const t=document.getElementById(viewId); if(t) t.classList.add('active');
@@ -219,21 +241,21 @@ function switchView(viewId) {
 // --- BURGER SHOP & INVENTORY SYSTEM ---
 // =========================================================================
 const shopCatalog = [
-    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 2000, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
-    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 2500, desc: "Carl reviews your questions like a furious five-star culinary chef." },
-    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", icon: "🤖", cost: 3000, desc: "Carl talks in cool dystopian cyberpunk terminology." },
-    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", icon: "😏", cost: 2000, desc: "Carl answers your questions with maximum sarcasm and wit." },
-    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 2500, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
-    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 3500, desc: "Wraps your chat messages in shiny luxury gold." },
-    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", icon: "🔮", cost: 3000, desc: "Deep purple-pink retro synthwave gradient." },
-    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 3500, desc: "Surrounds your profile avatar with an aura of pure gold." },
-    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 3000, desc: "Animated pulsing cyber frame around your picture." },
-    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", icon: "🔥", cost: 4000, desc: "Fiery red & orange border around your avatar." },
-    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 2000, desc: "Displays the [BURGER BARON] badge next to your name." },
-    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 3000, desc: "Displays the [GRANDMASTER] badge next to your name." },
-    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", icon: "🐐", cost: 4500, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
-    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 2500, desc: "Changes the startup radial glow to ambient gold." },
-    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 2500, desc: "Changes the ambient background to magenta & purple." },
+    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
+    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 2000, desc: "Carl reviews your questions like a furious five-star culinary chef." },
+    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", icon: "🤖", cost: 2500, desc: "Carl talks in cool dystopian cyberpunk terminology." },
+    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", icon: "😏", cost: 1800, desc: "Carl answers your questions with maximum sarcasm and wit." },
+    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
+    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
+    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", icon: "🔮", cost: 2500, desc: "Deep purple-pink retro synthwave gradient." },
+    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
+    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
+    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", icon: "🔥", cost: 3500, desc: "Fiery red & orange border around your avatar." },
+    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
+    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
+    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", icon: "🐐", cost: 3000, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
+    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
+    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
     { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", icon: "🍟", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
     { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", icon: "🃏", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
     { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", icon: "🎲", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
