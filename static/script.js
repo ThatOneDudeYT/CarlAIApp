@@ -9,10 +9,11 @@ let pendingImageBase64=null, pendingImageMime=null, pendingImageSrc=null, pendin
 let isDM=false, currentDmUnsubscribe=null;
 let isGuest = false;
 
-// --- BURGER ECONOMY & SHOP INVENTORY ---
+// --- BURGER ECONOMY, SHOP INVENTORY & CODES ---
 let userBurgers=100, clickerBurgers=0, rebirths=0, clickPower=1, autoChefs=0, burgerStands=0, burgerFactories=0;   
 let inventory = [];
 let userPresets = [];
+let claimedCodes = []; // Tracks which promo codes the user has used
 let equipped = {
     persona: "default",
     bubble: "default",
@@ -119,7 +120,7 @@ function handleSignOut() {
         currentUser=null; currentUserAvatar="/static/icons/default-avatar.png"; customApiKey="";
         chatsHistory=[]; chatHistory=[]; activeChatId=null; myFriends=[]; myRequests=[]; mySentRequests=[]; currentDmUser=null;
         userBurgers=100; clickerBurgers=0; autoChefs=0; burgerStands=0; burgerFactories=0; clickPower=1; rebirths=0;
-        inventory=[]; userPresets=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
+        inventory=[]; userPresets=[]; claimedCodes=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
         updateBurgerUI(); updateProfileUI(); applyEquippedCosmetics(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
     });
 }
@@ -136,6 +137,7 @@ async function loadUserDataFromCloud() {
             myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || []; 
             inventory = data.inventory || [];
             userPresets = data.presets || [];
+            claimedCodes = data.claimedCodes || [];
             if (data.equipped) equipped = { ...equipped, ...data.equipped };
             updateBurgerUI();
             if (data.avatar) currentUserAvatar = data.avatar; if (data.username) currentUser = data.username;
@@ -153,7 +155,7 @@ function saveSessionData() {
     db.collection("users").doc(firebaseUserId).set({
         apiKey: customApiKey, chats: chatsHistory, activeChatId: cur, theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
         avatar: currentUserAvatar, username: currentUser, burgers: userBurgers, clickerBurgers: clickerBurgers, autoChefs: autoChefs, burgerStands: burgerStands, burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths,
-        inventory: inventory, equipped: equipped, presets: userPresets
+        inventory: inventory, equipped: equipped, presets: userPresets, claimedCodes: claimedCodes
     }, { merge: true }).catch(e => console.error("Error saving:", e));
 }
 
@@ -198,29 +200,43 @@ function applyEquippedCosmetics() {
 }
 function updateUsernameFromSettings() { const inp=document.getElementById("settings-username-input"); if(!inp||!currentUser) return; const nn=inp.value.trim(); if(nn.length>=3 && nn.length<=20){ currentUser=nn; updateProfileUI(); saveSessionData(); } else { alert("Username must be between 3 and 20 characters!"); inp.value=currentUser||""; } }
 function handleAvatarUpload(e) { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(ev){ currentUserAvatar=ev.target.result; updateProfileUI(); saveSessionData(); }; r.readAsDataURL(f); }
-function saveSettings() { const ki=document.getElementById('user-api-key'); if(ki) customApiKey=ki.value.trim(); const np=document.getElementById('settings-new-pass').value, cp=document.getElementById('settings-confirm-pass').value; if(np||cp){ if(np===cp){ auth.currentUser.updatePassword(np).then(()=>{ alert("Password updated."); document.getElementById('settings-new-pass').value=""; document.getElementById('settings-confirm-pass').value=""; }).catch(e=>alert(e.message)); } else alert("Passwords do not match!"); } saveSessionData(); updateUsageUI(); }
+function saveSettings() { const ki=document.getElementById('user-api-key'); if(ki) customApiKey=ki.value.trim(); const np=document.getElementById('settings-new-pass').value, cp=document.getElementById('settings-confirm-pass').value; if(np||cp){ if(np===cp){ auth.currentUser.updatePassword(np).then(()=>{ alert("Password updated successfully."); document.getElementById('settings-new-pass').value=""; document.getElementById('settings-confirm-pass').value=""; }).catch(e=>alert(e.message)); } else alert("Passwords do not match!"); } saveSessionData(); updateUsageUI(); }
 function toggleApiKeyHelp() { const hb=document.getElementById('api-key-help-box'); if(hb) hb.classList.toggle('hidden'); }
 function toggleSidebar() { const sb=document.getElementById('desktop-sidebar'), btn=document.getElementById('sidebar-toggle-btn'); if(!sb) return; if(sb.classList.contains('expanded')){ sb.classList.remove('expanded'); sb.classList.add('collapsed'); if(btn) btn.innerText="❯"; } else { sb.classList.remove('collapsed'); sb.classList.add('expanded'); if(btn) btn.innerText="❮"; } }
 function getDifficulty() { const s=document.getElementById("difficulty-select"); return s?s.value:"medium"; }
 
+// --- PROMO CODE REDEMPTION ---
 function redeemCode() {
     const inp = document.getElementById("promo-code-input");
     if(!inp) return;
     const code = inp.value.trim();
     if(!code) return;
 
+    if (claimedCodes.includes(code)) {
+        alert("You have already claimed this code!");
+        inp.value = "";
+        return;
+    }
+
+    let success = false;
+
     if (code === "Burgers 1000") {
         userBurgers += 1000;
         updateBurgerUI();
-        saveSessionData();
+        success = true;
         alert("Successfully redeemed 1,000 Burgers!");
     } else if (code === "Admin1234") {
-        equipped.title = "Admin";
-        applyEquippedCosmetics();
-        saveSessionData();
-        alert("Admin Title equipped!");
+        if (!inventory.includes("title_admin")) inventory.push("title_admin");
+        equipShopItem("title_admin", false);
+        success = true;
+        alert("Admin Title added to your inventory and equipped!");
     } else {
         alert("Invalid or expired promo code.");
+    }
+
+    if (success) {
+        claimedCodes.push(code);
+        saveSessionData();
     }
     inp.value = "";
 }
@@ -260,7 +276,10 @@ const shopCatalog = [
     { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", icon: "🃏", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
     { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", icon: "🎲", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
     { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", icon: "🔮", cost: 1500, desc: "Deep cosmic purple Blackjack felt." },
-    { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", icon: "🍳", cost: 5000, desc: "Permanent +50% production boost across all Burger Clicker businesses!" }
+    { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", icon: "🍳", cost: 5000, desc: "Permanent +50% production boost across all Burger Clicker businesses!" },
+    
+    // Hidden Items (Unobtainable in Shop, given via promo code)
+    { id: "title_admin", type: "title", val: "Admin", name: "Title: Admin", icon: "🛠️", cost: 0, desc: "Exclusive developer badge.", hidden: true }
 ];
 
 function renderShopView() {
@@ -269,6 +288,8 @@ function renderShopView() {
     container.innerHTML = "";
 
     shopCatalog.forEach(item => {
+        if (item.hidden) return; // Do not show hidden items in the shop
+
         const owned = inventory.includes(item.id);
         let isEq = false;
         if (item.type === "goldenSpatula") isEq = equipped.goldenSpatula;
@@ -975,7 +996,6 @@ function appendMessage(msg, sender, imgSrc = null) {
     const bubble = document.createElement("div"); 
     bubble.className = `chat-bubble ${sender}`;
     
-    // Apply custom equipped chat bubble style
     if (sender === "user" && equipped.bubble && equipped.bubble !== "default") {
         bubble.classList.add(`bubble-${equipped.bubble}`);
     }
