@@ -225,7 +225,7 @@ function handleSignOut() {
         const editor = document.getElementById("notepad-editor");
         if (editor) editor.innerHTML = "";
         const floatingNotepad = document.getElementById("floating-notepad");
-        if (floatingNotepad) floatingNotepad.style.display = "none";
+        if (floatingNotepad) floatingNotepad.classList.remove("active");
         
         updateBurgerUI(); updateProfileUI(); applyEquippedCosmetics(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
     });
@@ -1292,11 +1292,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function toggleNotepad() {
     const np = document.getElementById("floating-notepad");
     if (!np) return;
-    if (np.style.display === "none") {
-        np.style.display = "flex";
-    } else {
-        np.style.display = "none";
-    }
+    np.classList.toggle("active");
 }
 
 function makeDraggable(element, dragHandle) {
