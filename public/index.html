@@ -143,6 +143,7 @@
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
                     <div id="dm-header-avatar" class="dm-header-avatar-container"></div>
                     <h1 id="dm-header-name">Friend</h1>
+                    <button class="dm-call-btn" onclick="openGiftModal()" title="Gift Burgers">🎁</button>
                     <button class="dm-call-btn" onclick="startFriendCall()" title="Start Voice Call">📞</button>
                 </div>
                 <div id="dm-chat-log" class="dm-chat-log"></div>
@@ -288,30 +289,6 @@
                     <div class="social-link"><img src="/static/icons/YouTubeIcon.png" alt="YouTube" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> @CarlAIApp</div>
                     <div class="social-link"><img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> https://discord.gg/kkq7gPPqMB</div>
                 </div>
-            </div>
-
-            <!-- CARL AI CALL VIEW -->
-            <div id="view-call" class="view">
-                <div class="call-top-section">
-                    <h1>Carl AI</h1>
-                    <div id="call-timer">00:00</div>
-                    <div id="call-status" style="display: none;">Calling Carl...</div>
-                </div>
-                
-                <div class="call-bottom-section">
-                    <div class="call-option-row">
-                        <button class="call-icon-btn" onclick="toggleSpeaker()">
-                            <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" draggable="false" />
-                        </button>
-                        <button class="call-icon-btn" onclick="toggleMute()">
-                            <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" draggable="false" />
-                        </button>
-                    </div>
-                    <button class="call-end-btn" onclick="endCall()">
-                        <img src="/static/icons/EndCallButton.png" alt="End Call" draggable="false" />
-                    </button>
-                </div>
-                <div class="copyright">© 2026 CarlAI. All Rights Reserved.</div>
             </div>
 
             <!-- FRIEND CALL VIEW (WebRTC) -->
@@ -530,11 +507,31 @@
         </div>
     </div>
     
+    <!-- GIFT BURGERS MODAL -->
+    <div id="gift-modal" class="auth-overlay" style="display: none;">
+        <div class="auth-card" style="text-align: center;">
+            <h2>Send Burgers 🎁</h2>
+            <p style="color: var(--text-sub); margin-bottom: 15px;">Send some 🍔 to <span id="gift-friend-name" style="color: #fff; font-weight: bold;">your friend</span>!</p>
+            <input type="number" id="gift-amount" placeholder="Amount (e.g. 100)" min="1" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); margin-bottom: 15px; text-align: center; font-size: 20px; outline: none;">
+            <button class="auth-btn" style="width: 100%; margin-bottom: 10px;" onclick="confirmSendBurgers()">Send Burgers</button>
+            <button type="button" class="guest-auth-btn" style="width: 100%;" onclick="closeGiftModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- LOOT BOX ANIMATION MODAL -->
+    <div id="loot-modal" class="auth-overlay" style="display: none; z-index: 10000;">
+        <div class="auth-card" style="text-align: center; background: radial-gradient(circle, #2a0845 0%, #111 80%); border: 2px solid #9333ea;">
+            <h2 id="loot-title">Opening Crate...</h2>
+            <div id="loot-icon" style="font-size: 80px; margin: 30px 0;">📦</div>
+            <p id="loot-result-text" style="color: #fff; font-size: 18px; margin-bottom: 20px; display: none;"></p>
+            <button id="loot-close-btn" class="auth-btn" style="width: 100%; display: none;" onclick="document.getElementById('loot-modal').style.display='none'">Awesome!</button>
+        </div>
+    </div>
+
     <!-- Hidden element to route friend audio safely -->
     <audio id="remote-audio" autoplay playsinline style="position: absolute; width: 0; height: 0; visibility: hidden; pointer-events: none;"></audio>
 
     <script src="/static/script.js"></script>
     <script src="/static/games.js"></script>
-    <script src="/static/call.js"></script>
 </body>
 </html>
