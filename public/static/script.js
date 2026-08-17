@@ -39,7 +39,6 @@ async function handleLogin(e) {
                 document.getElementById("auth-otp-code").value = "";
                 document.getElementById("auth-otp-code").focus();
             } catch (networkErr) {
-                // FALLBACK: If the server.js isn't running (e.g. on your live static site), default to Firebase Auth
                 console.warn("Backend missing, falling back to standard Firebase Auth...");
                 try {
                     const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
@@ -345,7 +344,7 @@ function switchView(viewId) {
 }
 
 // =========================================================================
-// --- BURGER SHOP & INVENTORY SYSTEM ---
+// --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
 // =========================================================================
 const shopCatalog = [
     { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
@@ -375,6 +374,16 @@ function renderShopView() {
     const container = document.getElementById("shop-items-container");
     if (!container) return;
     container.innerHTML = "";
+
+    // Insert Mystery Loot Box at the top of the shop
+    const lootBanner = document.createElement("div");
+    lootBanner.className = "loot-box-banner";
+    lootBanner.innerHTML = `
+        <h2>Mystery Burger Crate 🎁</h2>
+        <p style="margin-bottom: 15px; font-family: Arial, sans-serif; font-size: 14px;">Win rare badges, themes, or massive burger jackpots!</p>
+        <button class="open-crate-btn" onclick="openLootBox()">Open for 250 🍔</button>
+    `;
+    container.appendChild(lootBanner);
 
     shopCatalog.forEach(item => {
         if (item.hidden) return; 
@@ -410,6 +419,133 @@ function renderShopView() {
         `;
         container.appendChild(card);
     });
+}
+
+async function openLootBox() {
+    if (isGuest) {
+        if (userBurgers < 250) return alert("Not enough burgers! You need 250 🍔.");
+        userBurgers -= 250;
+        const roll = Math.random();
+        let prizeText = "", emoji = "", payout = 0;
+        if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
+        else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
+        else if (roll < 0.40) { prizeText = "RARE! 500 🍔 Refund!"; emoji = "✨"; payout = 500; }
+        else { prizeText = "Common. Here is 50 🍔 back."; emoji = "🍔"; payout = 50; }
+        userBurgers += payout;
+        updateBurgerUI();
+        triggerLootAnimation(prizeText, emoji);
+        return;
+    }
+
+    if (!firebaseUserId) return alert("You must be logged in to open crates!");
+    const cost = 250;
+    const userRef = db.collection("users").doc(firebaseUserId);
+
+    try {
+        await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(userRef);
+            if (!doc.exists) throw "User data not found!";
+            
+            const currentBurgers = doc.data().burgers || 0;
+            if (currentBurgers < cost) throw "Not enough burgers! You need 250 🍔.";
+            
+            const roll = Math.random();
+            let prizeText = "", emoji = "", payout = 0;
+            
+            if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
+            else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
+            else if (roll < 0.40) { prizeText = "RARE! 500 🍔 Refund!"; emoji = "✨"; payout = 500; }
+            else { prizeText = "Common. Here is 50 🍔 back."; emoji = "🍔"; payout = 50; }
+            
+            transaction.update(userRef, { burgers: currentBurgers - cost + payout });
+            return { prizeText, emoji };
+        }).then((result) => {
+            triggerLootAnimation(result.prizeText, result.emoji);
+        });
+    } catch (error) {
+        alert(error);
+    }
+}
+
+function triggerLootAnimation(prizeText, emoji) {
+    const modal = document.getElementById("loot-modal");
+    const title = document.getElementById("loot-title");
+    const icon = document.getElementById("loot-icon");
+    const resultDisplay = document.getElementById("loot-result-text");
+    const closeBtn = document.getElementById("loot-close-btn");
+    
+    modal.style.display = "flex";
+    title.innerText = "Opening Crate...";
+    title.style.animation = "pulse 1s infinite";
+    icon.innerText = "📦";
+    icon.style.animation = "shake 0.5s infinite";
+    resultDisplay.style.display = "none";
+    closeBtn.style.display = "none";
+    
+    setTimeout(() => {
+        title.innerText = "You Won!";
+        title.style.animation = "none";
+        icon.innerText = emoji;
+        icon.style.animation = "popIn 0.5s ease forwards";
+        resultDisplay.innerText = prizeText;
+        resultDisplay.style.display = "block";
+        closeBtn.style.display = "block";
+    }, 1800);
+}
+
+// --- BURGER GIFTING SYSTEM ---
+function openGiftModal() {
+    if (!currentDmUser || !currentDmUser.id) {
+        return alert("Please open a chat with a friend first to send them burgers!");
+    }
+    document.getElementById("gift-friend-name").innerText = currentDmUser.username || "Friend";
+    document.getElementById("gift-amount").value = "";
+    document.getElementById("gift-modal").style.display = "flex";
+}
+
+function closeGiftModal() {
+    document.getElementById("gift-modal").style.display = "none";
+}
+
+async function confirmSendBurgers() {
+    if (isGuest) return alert("Guests cannot send burgers. Please create an account!");
+    if (!firebaseUserId || !currentDmUser || !currentDmUser.id) return;
+    
+    const amount = parseInt(document.getElementById("gift-amount").value, 10);
+    if (!amount || amount <= 0) return alert("Please enter a valid amount greater than 0.");
+    if (userBurgers < amount) return alert("You don't have enough burgers!");
+
+    const senderRef = db.collection("users").doc(firebaseUserId);
+    const receiverRef = db.collection("users").doc(currentDmUser.id);
+    
+    try {
+        await db.runTransaction(async (transaction) => {
+            const senderDoc = await transaction.get(senderRef);
+            const receiverDoc = await transaction.get(receiverRef);
+            
+            if (!senderDoc.exists || !receiverDoc.exists) throw "Database error: User not found.";
+            
+            const senderBurgers = senderDoc.data().burgers || 0;
+            if (senderBurgers < amount) throw "You don't have enough burgers!";
+            
+            transaction.update(senderRef, { burgers: senderBurgers - amount });
+            transaction.update(receiverRef, { burgers: (receiverDoc.data().burgers || 0) + amount });
+        });
+        
+        closeGiftModal();
+        alert(`Successfully sent ${amount.toLocaleString()} 🍔 to ${currentDmUser.username}!`);
+        
+        if (activeChatId && isDM) {
+            await db.collection("dms").doc(activeChatId).collection("messages").add({
+                text: `🎁 [GIFT] Sent ${amount.toLocaleString()} Burgers!`,
+                imageSrc: null,
+                senderId: firebaseUserId,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+    } catch (error) {
+        alert("Transaction failed: " + error);
+    }
 }
 
 function buyShopItem(itemId) {
@@ -953,11 +1089,9 @@ function searchChats() {
 
 function initMobileNavIcons() {
     const mobileChatBtn = document.getElementById("mobile-nav-chat");
-    const mobileCallBtn = document.getElementById("mobile-nav-call");
     const mobileGamesBtn = document.getElementById("mobile-nav-games");
     const mobileSettingsBtn = document.getElementById("mobile-nav-settings");
     if (mobileChatBtn) mobileChatBtn.onclick = () => startNewChat();
-    if (mobileCallBtn) mobileCallBtn.onclick = () => startCall();
     if (mobileGamesBtn) mobileGamesBtn.onclick = () => switchView('view-games');
     if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => switchView('view-settings');
 }
@@ -1100,7 +1234,6 @@ function stopAllMedia() {
     if(localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
     if(window.localVideoTrack) { window.localVideoTrack.stop(); window.localVideoTrack=null; }
     if(peerConnection) { peerConnection.close(); peerConnection=null; }
-    if(recognition) { try{recognition.stop();}catch(e){} recognition=null; }
     if(callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval=null; }
     if(ringInterval) { clearInterval(ringInterval); ringInterval=null; }
     if(ringTimeout) { clearTimeout(ringTimeout); ringTimeout=null; }
