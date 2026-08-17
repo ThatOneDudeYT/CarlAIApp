@@ -479,3 +479,81 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     .inv-presets-title { text-align: right; margin-bottom: 10px; }
     .inv-empty-text { font-size: 28px; }
 }
+
+/* --- PHASE 2: FLOATING NOTEPAD --- */
+.floating-notepad {
+    position: fixed;
+    top: 100px;
+    right: 40px;
+    width: 320px;
+    height: 450px;
+    background-color: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    z-index: 99999;
+    overflow: hidden;
+    resize: both; /* Native resize handle! */
+    min-width: 250px;
+    min-height: 250px;
+}
+
+.notepad-header {
+    background-color: var(--bg-input);
+    padding: 10px 15px;
+    cursor: grab;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: bold;
+    user-select: none;
+}
+
+.notepad-header:active {
+    cursor: grabbing;
+}
+
+.notepad-close-btn {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.notepad-close-btn:active {
+    transform: scale(0.9);
+}
+
+.notepad-editor {
+    flex: 1;
+    background: transparent;
+    color: var(--text-main);
+    padding: 15px;
+    font-size: 15px;
+    font-family: Arial, sans-serif;
+    outline: none;
+    overflow-y: auto;
+    text-align: left;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.notepad-editor img {
+    max-width: 100%;
+    border-radius: 6px;
+    margin: 5px 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.notepad-editor:empty:before {
+    content: attr(data-placeholder);
+    color: var(--text-sub);
+    pointer-events: none;
+    display: block;
+}
