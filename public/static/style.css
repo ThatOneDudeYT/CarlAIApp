@@ -189,12 +189,14 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 
 /* DIRECT MESSAGES */
 #view-dm { padding: 0 !important; height: 100%; width: 100%; display: flex; flex-direction: column; }
-.dm-header { display: flex; align-items: center; gap: 20px; padding: 30px 20px 20px 20px; border-bottom: 1px solid var(--border-color); }
+.dm-header { display: flex; align-items: center; gap: 14px; padding: 30px 20px 20px 20px; border-bottom: 1px solid var(--border-color); }
 .dm-header .back-btn { background: transparent; border: none; color: var(--text-sub); font-size: 28px; padding: 0; width: auto; height: auto; margin-left: 45px; }
 .dm-header .back-btn:hover { color: var(--text-main); }
 .dm-header-avatar-container { width: 60px; height: 60px; flex-shrink: 0; }
 .dm-header-avatar-container img, .dm-header-avatar-container .text-avatar { width: 100%; height: 100%; border-radius: 50%; font-size: 28px; }
 #dm-header-name { font-size: clamp(24px, 6vw, 42px); margin: 0; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.dm-call-btn { background: transparent; border: 2px solid var(--border-color); border-radius: 50%; width: 42px; height: 42px; font-size: 18px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; flex-shrink: 0; }
+.dm-call-btn:hover { border-color: #9333ea; background: var(--bg-input); }
 .dm-chat-log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
 .dm-message { display: flex; align-items: flex-end; gap: 8px; max-width: 80%; margin-bottom: 8px; }
 .dm-message.sent { align-self: flex-end; flex-direction: row-reverse; }
@@ -212,7 +214,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 #dm-input { width: 100%; background: transparent; border: none; color: var(--text-main); font-size: 16px; outline: none; letter-spacing: 0.5px; }
 #dm-input::placeholder { color: var(--text-sub); }
 
-/* SHOP VIEW */
+/* SHOP VIEW & PHASE 1 LOOT BOX STYLES */
 #view-shop { padding: 24px 20px 12px 20px; display: flex; flex-direction: column; height: 100%; }
 .shop-content-scroll { flex: 1; overflow-y: auto; padding: 10px 0; margin-bottom: 10px; }
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
@@ -226,6 +228,15 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .shop-buy-btn.buy { background-color: #9333ea; color: #fff; }
 .shop-buy-btn.equip { background-color: #84cc16; color: #111; }
 .shop-buy-btn.equipped { background-color: #3f3f46; color: #aaa; cursor: default; }
+
+.loot-box-banner { background: linear-gradient(135deg, #4f46e5, #9333ea); border-radius: 16px; padding: 20px; text-align: center; color: white; margin-bottom: 8px; box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4); border: 2px solid #c084fc; width: 100%; grid-column: 1 / -1; }
+.loot-box-banner h2 { margin: 0 0 8px 0; font-size: 26px; text-transform: uppercase; letter-spacing: 1.5px; }
+.open-crate-btn { background: #fbbf24; color: #000; border: none; padding: 12px 28px; font-size: 18px; font-weight: bold; border-radius: 30px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; box-shadow: 0 4px 0 #d97706; }
+.open-crate-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #d97706; }
+
+@keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 25% { transform: translate(-1px, -2px) rotate(-5deg); } 50% { transform: translate(-3px, 0px) rotate(5deg); } 75% { transform: translate(3px, 2px) rotate(-5deg); } 100% { transform: translate(1px, -1px) rotate(0deg); } }
+@keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 80% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
 /* INVENTORY VIEW */
 #view-inventory { padding: 0 !important; height: 100%; }
