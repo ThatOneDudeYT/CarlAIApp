@@ -257,7 +257,7 @@ function listenToMyGroups() {
 
 async function loadUserDataFromCloud() {
     if (!firebaseUserId) return;
-    listenToMyGroups(); // Phase 3
+    listenToMyGroups();
     db.collection("users").doc(firebaseUserId).onSnapshot(async (doc) => {
         if (doc.exists) {
             const data = doc.data(); customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
@@ -388,7 +388,7 @@ function switchView(viewId) {
 }
 
 // =========================================================================
-// --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
+// --- BURGER SHOP & INVENTORY SYSTEM ---
 // =========================================================================
 const shopCatalog = [
     { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
@@ -419,7 +419,6 @@ function renderShopView() {
     if (!container) return;
     container.innerHTML = "";
 
-    // Insert Mystery Loot Box at the top of the shop
     const lootBanner = document.createElement("div");
     lootBanner.className = "loot-box-banner";
     lootBanner.innerHTML = `
@@ -817,12 +816,44 @@ function getAvatarHTML(u) {
     return `<div class="avatar-frame-wrapper ${frameClass}">${inner}</div>`;
 }
 
+// FIX: Generate the sliced Group Avatar
+function getGroupAvatarHTML(membersArray) {
+    let membersInfo = [];
+    membersArray.forEach(uid => {
+        if (uid === firebaseUserId) {
+            membersInfo.push({ username: currentUser, avatar: currentUserAvatar });
+        } else {
+            const u = allUsersCache.find(x => x.id === uid);
+            if (u) membersInfo.push(u);
+        }
+    });
+    
+    // Slice up to 4 members for the grid
+    const displayMembers = membersInfo.slice(0, 4);
+    let collageClass = `group-avatar-${displayMembers.length}`;
+    if (displayMembers.length < 2) collageClass = "group-avatar-2";
+    
+    let innerHtml = '';
+    displayMembers.forEach(m => {
+        if (!m.avatar || m.avatar.includes('default-avatar.png')) {
+            const c = getAvatarColor(m.username);
+            const i = m.username ? m.username.charAt(0).toUpperCase() : '?';
+            innerHtml += `<div class="collage-text" style="background-color: ${c};">${i}</div>`;
+        } else {
+            innerHtml += `<img src="${m.avatar}" class="collage-img" draggable="false">`;
+        }
+    });
+    
+    return `<div class="avatar-frame-wrapper"><div class="group-avatar-collage ${collageClass}">${innerHtml}</div></div>`;
+}
+
 let allUsersCache = [];
 async function fetchAllUsers() {
     const list = document.getElementById("find-people-list"); if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
     try {
         if (firebaseUserId && db) {
             const snapshot = await db.collection("users").get(); allUsersCache = [];
+            // FIX: allUsersCache only ever contains people currently active in the database! Ghosting works automatically.
             snapshot.forEach(doc => { const data = doc.data(); if (doc.id !== firebaseUserId && data.username) allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "", equipped: data.equipped || {} }); });
         }
     } catch (err) { console.error("Error fetching real users", err); }
@@ -843,10 +874,12 @@ function renderFriendsView() {
             const item = document.createElement("div"); item.className = "friend-item";
             item.innerHTML = `
                 <div class="friend-info">
-                    <div class="avatar-frame-wrapper"><div class="text-avatar" style="background-color: #3b82f6;">👥</div></div>
+                    <div style="width: 48px; height: 48px; flex-shrink: 0;">
+                        ${getGroupAvatarHTML(group.members)}
+                    </div>
                     <span class="friend-name">${group.name}</span>
                 </div>
-                <button class="friend-msg-btn" onclick="openGroupChat('${group.id}', '${group.name}')">Chat</button>
+                <button class="friend-msg-btn" onclick="openGroupChat('${group.id}', '${group.name.replace(/'/g, "\\'")}', '${group.members.join(',')}')">Chat</button>
             `;
             groupsList.appendChild(item);
         });
@@ -870,9 +903,13 @@ function renderFriendsView() {
         });
     }
 
-    let searchResults = [];
-    const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
+    // FIX: Show everyone not your friend by default!
+    let displayList = allUsersCache.filter(u => !myFriends.includes(u.id) && !myRequests.includes(u.id));
+    if (query) {
+        displayList = displayList.filter(u => u.username.toLowerCase().includes(query));
+    }
     
+    const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
     incomingReqs.forEach(user => {
         const item = document.createElement("div"); item.className = "friend-item";
         const titleBadge = user.equipped?.title ? `<span class="user-title-badge" style="display:inline-block;">${user.equipped.title}</span>` : '';
@@ -880,22 +917,17 @@ function renderFriendsView() {
         findList.appendChild(item);
     });
 
-    if (query) {
-        searchResults = allUsersCache.filter(u => u.username.toLowerCase().includes(query) && !myFriends.includes(u.id) && !myRequests.includes(u.id));
-        if (searchResults.length === 0 && incomingReqs.length === 0) {
-            findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No users found.</p>";
-        } else {
-            searchResults.forEach(user => {
-                const item = document.createElement("div"); item.className = "friend-item";
-                const isSent = mySentRequests.includes(user.id);
-                const titleBadge = user.equipped?.title ? `<span class="user-title-badge" style="display:inline-block;">${user.equipped.title}</span>` : '';
-                const btnHTML = isSent ? `<button class="friend-msg-btn" style="opacity: 0.5;" disabled>Sent!</button>` : `<button class="friend-msg-btn" onclick="sendFriendRequest('${user.id}')">Add Friend</button>`;
-                item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username} ${titleBadge}</span></div>${btnHTML}`;
-                findList.appendChild(item);
-            });
-        }
-    } else if (incomingReqs.length === 0) {
-        findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>Search for a username above!</p>";
+    if (displayList.length === 0 && incomingReqs.length === 0) {
+        findList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px; text-align:center;'>No users found.</p>";
+    } else {
+        displayList.forEach(user => {
+            const item = document.createElement("div"); item.className = "friend-item";
+            const isSent = mySentRequests.includes(user.id);
+            const titleBadge = user.equipped?.title ? `<span class="user-title-badge" style="display:inline-block;">${user.equipped.title}</span>` : '';
+            const btnHTML = isSent ? `<button class="friend-msg-btn" style="opacity: 0.5;" disabled>Sent!</button>` : `<button class="friend-msg-btn" onclick="sendFriendRequest('${user.id}')">Add Friend</button>`;
+            item.innerHTML = `<div class="friend-info">${getAvatarHTML(user)}<span class="friend-name">${user.username} ${titleBadge}</span></div>${btnHTML}`;
+            findList.appendChild(item);
+        });
     }
 }
 
@@ -1015,7 +1047,7 @@ function renderChatSnapshot(snapshot, logElementId, isGlobal = false) {
         if (isMe) {
             avatarObj = { username: currentUser, avatar: currentUserAvatar, equipped: equipped };
         } else if (logElementId === "dm-chat-log" && currentDmUser) {
-            avatarObj = currentDmUser; // Saves rendering weirdness for direct DMs
+            avatarObj = currentDmUser; 
         } else {
             avatarObj = { username: data.senderName, avatar: data.senderAvatar, equipped: data.senderEquipped };
         }
@@ -1100,12 +1132,15 @@ async function sendGlobalMessage() {
 }
 
 // --- PHASE 3: GROUP CHATS ---
-function openGroupChat(groupId, groupName) {
+function openGroupChat(groupId, groupName, membersStr) {
     activeGroupId = groupId;
     document.getElementById("group-header-name").innerText = groupName;
     document.getElementById("group-input").placeholder = `Message ${groupName}...`;
     document.getElementById("group-chat-log").innerHTML = "";
     
+    const membersArray = membersStr ? membersStr.split(',') : [];
+    document.getElementById("group-header-avatar").innerHTML = getGroupAvatarHTML(membersArray);
+
     if (groupChatUnsubscribe) groupChatUnsubscribe();
     groupChatUnsubscribe = db.collection("groups").doc(activeGroupId).collection("messages").orderBy("timestamp", "asc").onSnapshot(snapshot => {
         renderChatSnapshot(snapshot, "group-chat-log", false);
@@ -1486,19 +1521,13 @@ let noteSaveTimeout = null;
 document.addEventListener("DOMContentLoaded", () => {
     const editor = document.getElementById("notepad-editor");
     if (editor) {
-        // Automatically trigger saves as the user types or pastes images
         editor.addEventListener("input", () => {
             userNotes = editor.innerHTML;
             if (noteSaveTimeout) clearTimeout(noteSaveTimeout);
-            
-            // Wait 1.5 seconds after the user stops typing to ping Firebase
-            noteSaveTimeout = setTimeout(() => {
-                saveSessionData();
-            }, 1500); 
+            noteSaveTimeout = setTimeout(() => { saveSessionData(); }, 1500); 
         });
     }
 
-    // Initialize dragging
     const notepad = document.getElementById("floating-notepad");
     const header = document.getElementById("notepad-header");
     if (notepad && header) makeDraggable(notepad, header);
@@ -1512,30 +1541,14 @@ function toggleNotepad() {
 
 function makeDraggable(element, dragHandle) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    
     dragHandle.onmousedown = function(e) {
-        // Prevent dragging if they clicked the close button
         if (e.target.tagName.toLowerCase() === "button") return;
-        
-        e.preventDefault();
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
+        e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY;
+        document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
     };
-
     function elementDrag(e) {
-        e.preventDefault();
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
+        e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px"; element.style.left = (element.offsetLeft - pos1) + "px";
     }
-
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-    }
+    function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
 }
