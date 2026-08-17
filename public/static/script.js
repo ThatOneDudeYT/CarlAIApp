@@ -113,7 +113,10 @@ let firebaseUserId=null, currentUser=null, currentUserAvatar="/static/icons/defa
 let chatsHistory=[], activeChatId=null, chatHistory=[];  
 let selectedGame="Burger Clicker"; const gamesWithDifficulty=["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
 let pendingImageBase64=null, pendingImageMime=null, pendingImageSrc=null, pendingDmImageBase64=null, pendingDmImageMime=null, pendingDmImageSrc=null, currentDmUser=null; 
+let pendingGlobalImageBase64=null, pendingGlobalImageMime=null, pendingGlobalImageSrc=null;
+let pendingGroupImageBase64=null, pendingGroupImageMime=null, pendingGroupImageSrc=null;
 let isDM=false, currentDmUnsubscribe=null;
+let globalChatUnsubscribe=null, groupChatUnsubscribe=null, activeGroupId=null, myGroups=[];
 let isGuest = false;
 
 // --- BURGER ECONOMY & SHOP INVENTORY ---
@@ -121,7 +124,7 @@ let userBurgers=100, clickerBurgers=0, rebirths=0, clickPower=1, autoChefs=0, bu
 let inventory = [];
 let userPresets = [];
 let claimedCodes = []; 
-let userNotes = ""; // PHASE 2: Notepad data
+let userNotes = ""; 
 let equipped = {
     persona: "default",
     bubble: "default",
@@ -180,6 +183,9 @@ window.addEventListener("DOMContentLoaded", () => {
         const ov = document.createElement("div"); ov.id = "sidebar-overlay"; ov.className = "sidebar-overlay"; ov.onclick = toggleMobileSidebar; document.body.appendChild(ov);
     }
     const dmInp = document.getElementById("dm-input"); if(dmInp) dmInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendDmMessage(); });
+    const glInp = document.getElementById("global-input"); if(glInp) glInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendGlobalMessage(); });
+    const grInp = document.getElementById("group-input"); if(grInp) grInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendGroupMessage(); });
+    
     const sBtn = document.getElementById("send-btn"); if(sBtn) sBtn.addEventListener("click", sendMessage);
     const uInp = document.getElementById("user-input"); if(uInp) uInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendMessage(); });
 });
@@ -217,7 +223,7 @@ function handleSignOut() {
     }
     auth.signOut().then(() => {
         currentUser=null; currentUserAvatar="/static/icons/default-avatar.png"; customApiKey="";
-        chatsHistory=[]; chatHistory=[]; activeChatId=null; myFriends=[]; myRequests=[]; mySentRequests=[]; currentDmUser=null;
+        chatsHistory=[]; chatHistory=[]; activeChatId=null; myFriends=[]; myRequests=[]; mySentRequests=[]; currentDmUser=null; myGroups=[];
         userBurgers=100; clickerBurgers=0; autoChefs=0; burgerStands=0; burgerFactories=0; clickPower=1; rebirths=0;
         inventory=[]; userPresets=[]; claimedCodes=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
         
@@ -227,18 +233,36 @@ function handleSignOut() {
         const floatingNotepad = document.getElementById("floating-notepad");
         if (floatingNotepad) floatingNotepad.classList.remove("active");
         
+        if (groupsUnsubscribe) { groupsUnsubscribe(); groupsUnsubscribe=null; }
+        if (globalChatUnsubscribe) { globalChatUnsubscribe(); globalChatUnsubscribe=null; }
+        if (groupChatUnsubscribe) { groupChatUnsubscribe(); groupChatUnsubscribe=null; }
+
         updateBurgerUI(); updateProfileUI(); applyEquippedCosmetics(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
     });
 }
 
 // --- CLOUD PERSISTENCE ---
 let myFriends=[], myRequests=[], mySentRequests=[];
+let groupsUnsubscribe = null;
+
+function listenToMyGroups() {
+    if (!firebaseUserId) return;
+    if (groupsUnsubscribe) groupsUnsubscribe();
+    groupsUnsubscribe = db.collection("groups").where("members", "array-contains", firebaseUserId).onSnapshot(snapshot => {
+        myGroups = [];
+        snapshot.forEach(doc => myGroups.push({ id: doc.id, ...doc.data() }));
+        if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
+    });
+}
+
 async function loadUserDataFromCloud() {
     if (!firebaseUserId) return;
+    listenToMyGroups(); // Phase 3
     db.collection("users").doc(firebaseUserId).onSnapshot(async (doc) => {
         if (doc.exists) {
             const data = doc.data(); customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
-            if (!isDM) activeChatId = data.activeChatId || null; applyTheme(data.theme || "dark");
+            if (!isDM && document.getElementById('view-chat').classList.contains('active')) activeChatId = data.activeChatId || null; 
+            applyTheme(data.theme || "dark");
             userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0; autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0; clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
             myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || []; 
             inventory = data.inventory || [];
@@ -268,7 +292,7 @@ function saveSessionData() {
         apiKey: customApiKey, chats: chatsHistory, activeChatId: cur, theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
         avatar: currentUserAvatar, username: currentUser, burgers: userBurgers, clickerBurgers: clickerBurgers, autoChefs: autoChefs, burgerStands: burgerStands, burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths,
         inventory: inventory, equipped: equipped, presets: userPresets, claimedCodes: claimedCodes,
-        notes: userNotes // NEW SAVED PROPERTY
+        notes: userNotes 
     }, { merge: true }).catch(e => console.error("Error saving:", e));
 }
 
@@ -350,7 +374,12 @@ function switchView(viewId) {
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); 
     const t=document.getElementById(viewId); if(t) t.classList.add('active');
     const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb&&sb.classList.contains('open')) sb.classList.remove('open'); if(ov&&ov.classList.contains('active')) ov.classList.remove('active');
+    
+    // Clear out subscriptions if leaving their views
     if(viewId!=='view-dm'){ isDM=false; if(currentDmUnsubscribe){ currentDmUnsubscribe(); currentDmUnsubscribe=null; } }
+    if(viewId!=='view-global-chat'){ if(globalChatUnsubscribe){ globalChatUnsubscribe(); globalChatUnsubscribe=null; } }
+    if(viewId!=='view-group-chat'){ if(groupChatUnsubscribe){ groupChatUnsubscribe(); groupChatUnsubscribe=null; } }
+    
     if(viewId==='view-games') updateDifficultyPickerVisibility(); 
     else if(viewId==='view-friends') fetchAllUsers(); 
     else if(viewId==='view-burgerclicker') updateUpgradesUI();
@@ -766,11 +795,12 @@ function updateUpgradesUI() {
 }
 
 // =========================================================================
-// --- FRIENDS & CONTACTS SYSTEM ---
+// --- FRIENDS, GROUPS & PHASE 3 MULTIPLAYER ---
 // =========================================================================
 const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
 
 function getAvatarColor(str) {
+    if (!str) return avatarColors[0];
     let hash = 0; for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
     return avatarColors[Math.abs(hash) % avatarColors.length];
 }
@@ -779,7 +809,7 @@ function getAvatarHTML(u) {
     const frameClass = (u.equipped && u.equipped.frame && u.equipped.frame !== 'default') ? `frame-${u.equipped.frame}` : '';
     let inner = '';
     if (!u.avatar || u.avatar.includes('default-avatar.png')) {
-        const c = getAvatarColor(u.username), i = u.username.charAt(0).toUpperCase();
+        const c = getAvatarColor(u.username), i = u.username ? u.username.charAt(0).toUpperCase() : '?';
         inner = `<div class="text-avatar" style="background-color: ${c};">${i}</div>`;
     } else {
         inner = `<img class="friend-avatar" src="${u.avatar}" draggable="false">`;
@@ -801,9 +831,26 @@ async function fetchAllUsers() {
 
 function renderFriendsView() {
     const query = document.getElementById("friend-search-input").value.toLowerCase().trim();
-    const findList = document.getElementById("find-people-list"), friendsList = document.getElementById("my-friends-list");
-    if (!findList || !friendsList) return;
-    findList.innerHTML = ""; friendsList.innerHTML = "";
+    const findList = document.getElementById("find-people-list"), friendsList = document.getElementById("my-friends-list"), groupsList = document.getElementById("my-groups-list");
+    if (!findList || !friendsList || !groupsList) return;
+    findList.innerHTML = ""; friendsList.innerHTML = ""; groupsList.innerHTML = "";
+
+    // Render Groups (Phase 3)
+    if (myGroups.length === 0) {
+        groupsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No groups yet.</p>";
+    } else {
+        myGroups.forEach(group => {
+            const item = document.createElement("div"); item.className = "friend-item";
+            item.innerHTML = `
+                <div class="friend-info">
+                    <div class="avatar-frame-wrapper"><div class="text-avatar" style="background-color: #3b82f6;">👥</div></div>
+                    <span class="friend-name">${group.name}</span>
+                </div>
+                <button class="friend-msg-btn" onclick="openGroupChat('${group.id}', '${group.name}')">Chat</button>
+            `;
+            groupsList.appendChild(item);
+        });
+    }
 
     const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
     if (activeFriends.length === 0) {
@@ -873,6 +920,121 @@ async function unfriendUser(targetId) {
     await db.collection("users").doc(targetId).update({ friends: firebase.firestore.FieldValue.arrayRemove(firebaseUserId) });
 }
 
+// --- PHASE 3: CREATE GROUP LOGIC ---
+function openCreateGroupModal() {
+    if (isGuest) return alert("Guests cannot create groups. Please sign up!");
+    const list = document.getElementById("create-group-friends-list");
+    list.innerHTML = "";
+    
+    const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
+    if(activeFriends.length === 0) {
+        alert("You need friends to create a group!");
+        return;
+    }
+    
+    activeFriends.forEach(f => {
+        list.innerHTML += `
+            <label style="display: flex; align-items: center; gap: 10px; color: white; margin-bottom: 10px; cursor: pointer;">
+                <input type="checkbox" value="${f.id}" class="group-friend-cb" style="width: 20px; height: 20px; accent-color: #9333ea;">
+                ${f.username}
+            </label>
+        `;
+    });
+    document.getElementById("group-name-input").value = "";
+    document.getElementById("create-group-modal").style.display = "flex";
+}
+
+async function confirmCreateGroup() {
+    const name = document.getElementById("group-name-input").value.trim();
+    if(!name) return alert("Please enter a group name.");
+    
+    const cbs = document.querySelectorAll(".group-friend-cb:checked");
+    const selectedIds = Array.from(cbs).map(cb => cb.value);
+    
+    if(selectedIds.length === 0) return alert("Please select at least one friend to add.");
+    
+    const members = [firebaseUserId, ...selectedIds];
+    try {
+        await db.collection("groups").add({
+            name: name,
+            members: members,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: firebaseUserId
+        });
+        document.getElementById("create-group-modal").style.display = "none";
+        alert("Group successfully created!");
+    } catch(e) { 
+        alert("Error creating group: " + e.message); 
+    }
+}
+
+// --- SHARED CHAT RENDERER (DMs, Groups, Global) ---
+function renderChatSnapshot(snapshot, logElementId, isGlobal = false) {
+    const log = document.getElementById(logElementId); 
+    log.innerHTML = "";
+    
+    // For limits, we sort descending then reverse them so newest is at the bottom
+    const msgs = [];
+    snapshot.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+    if (isGlobal) msgs.reverse(); 
+
+    msgs.forEach(data => {
+        const isMe = data.senderId === firebaseUserId;
+        const msgDiv = document.createElement("div"); msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`; msgDiv.dataset.id = data.id;
+        const contentDiv = document.createElement("div"); contentDiv.className = "dm-message-content";
+        
+        // Bubbles styling
+        if (isMe && equipped.bubble && equipped.bubble !== "default") contentDiv.classList.add(`bubble-${equipped.bubble}`);
+        else if (!isMe && data.senderEquipped?.bubble && data.senderEquipped.bubble !== "default") contentDiv.classList.add(`bubble-${data.senderEquipped.bubble}`);
+        
+        // Only show names for other people in multi-user rooms
+        let nameLabel = '';
+        if (!isMe && (isGlobal || logElementId === "group-chat-log")) {
+            nameLabel = `<div style="font-size: 11px; color: var(--text-sub); margin-bottom: 4px; margin-left: 4px;">${data.senderName || "User"}</div>`;
+        }
+        
+        let textHtml = data.text ? `<span class="dm-message-text">${data.text}</span>` : '';
+        let imgHtml = data.imageSrc ? `<img src="${data.imageSrc}" class="chat-image" draggable="false">` : '';
+        
+        contentDiv.innerHTML = nameLabel + textHtml + imgHtml;
+        
+        const msgWrapper = document.createElement("div");
+        msgWrapper.style.display = "flex"; msgWrapper.style.alignItems = "center"; msgWrapper.style.gap = "8px";
+
+        if (isMe && !isGlobal) { // Allow deletion in DMs/Groups
+            const delBtn = document.createElement("button");
+            delBtn.innerHTML = "✕"; delBtn.className = "dm-del-btn"; delBtn.title = "Delete Message";
+            delBtn.onclick = () => deleteSharedMessage(data.id, logElementId);
+            msgWrapper.appendChild(delBtn); msgWrapper.appendChild(contentDiv);
+        } else { 
+            msgWrapper.appendChild(contentDiv); 
+        }
+
+        // Setup Avatar
+        let avatarObj;
+        if (isMe) {
+            avatarObj = { username: currentUser, avatar: currentUserAvatar, equipped: equipped };
+        } else if (logElementId === "dm-chat-log" && currentDmUser) {
+            avatarObj = currentDmUser; // Saves rendering weirdness for direct DMs
+        } else {
+            avatarObj = { username: data.senderName, avatar: data.senderAvatar, equipped: data.senderEquipped };
+        }
+        
+        const avatarWrapper = document.createElement("div"); avatarWrapper.className = "dm-message-avatar"; 
+        avatarWrapper.innerHTML = getAvatarHTML(avatarObj);
+        
+        msgDiv.appendChild(avatarWrapper); msgDiv.appendChild(msgWrapper); log.appendChild(msgDiv);
+    });
+    log.scrollTop = log.scrollHeight;
+}
+
+async function deleteSharedMessage(msgId, logId) {
+    if(!confirm("Delete this message?")) return;
+    if (logId === "dm-chat-log") await db.collection("dms").doc(activeChatId).collection("messages").doc(msgId).delete();
+    else if (logId === "group-chat-log") await db.collection("groups").doc(activeGroupId).collection("messages").doc(msgId).delete();
+}
+
+// --- DIRECT MESSAGES ---
 function openDirectMessage(user) {
     isDM = true; currentDmUser = user; activeChatId = "dm_" + [firebaseUserId, user.id].sort().join('_');
     document.getElementById("dm-header-avatar").innerHTML = getAvatarHTML(user);
@@ -883,60 +1045,9 @@ function openDirectMessage(user) {
     
     if (currentDmUnsubscribe) currentDmUnsubscribe();
     currentDmUnsubscribe = db.collection("dms").doc(activeChatId).collection("messages").orderBy("timestamp", "asc").onSnapshot(snapshot => {
-        const log = document.getElementById("dm-chat-log"); log.innerHTML = "";
-        snapshot.forEach(doc => {
-            const data = doc.data(), isMe = data.senderId === firebaseUserId;
-            const msgDiv = document.createElement("div"); msgDiv.className = `dm-message ${isMe ? 'sent' : 'received'}`; msgDiv.dataset.id = doc.id;
-            const contentDiv = document.createElement("div"); contentDiv.className = "dm-message-content";
-            
-            if (isMe && equipped.bubble && equipped.bubble !== "default") contentDiv.classList.add(`bubble-${equipped.bubble}`);
-            else if (!isMe && currentDmUser.equipped?.bubble && currentDmUser.equipped.bubble !== "default") contentDiv.classList.add(`bubble-${currentDmUser.equipped.bubble}`);
-            
-            if (data.text) { const textSpan = document.createElement("span"); textSpan.className = "dm-message-text"; textSpan.innerText = data.text; contentDiv.appendChild(textSpan); }
-            if (data.imageSrc) { const img = document.createElement("img"); img.src = data.imageSrc; img.className = "chat-image"; img.draggable = false; contentDiv.appendChild(img); }
-            
-            const msgWrapper = document.createElement("div");
-            msgWrapper.style.display = "flex"; msgWrapper.style.alignItems = "center"; msgWrapper.style.gap = "8px";
-
-            if (isMe) {
-                const delBtn = document.createElement("button");
-                delBtn.innerHTML = "✕"; delBtn.className = "dm-del-btn"; delBtn.title = "Delete Message";
-                delBtn.onclick = () => deleteDmMessage(doc.id);
-                msgWrapper.appendChild(delBtn); msgWrapper.appendChild(contentDiv);
-            } else { msgWrapper.appendChild(contentDiv); }
-
-            const avatarObj = isMe ? { username: currentUser, avatar: currentUserAvatar, equipped: equipped } : currentDmUser;
-            const avatarWrapper = document.createElement("div"); avatarWrapper.className = "dm-message-avatar"; avatarWrapper.innerHTML = getAvatarHTML(avatarObj);
-            
-            msgDiv.appendChild(avatarWrapper); msgDiv.appendChild(msgWrapper); log.appendChild(msgDiv);
-        });
-        log.scrollTop = log.scrollHeight;
+        renderChatSnapshot(snapshot, "dm-chat-log", false);
     });
     switchView('view-dm');
-}
-
-async function deleteDmMessage(msgId) {
-    if(confirm("Delete this message?")) await db.collection("dms").doc(activeChatId).collection("messages").doc(msgId).delete();
-}
-
-function processDmFile(file) {
-    if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            pendingDmImageSrc = event.target.result; pendingDmImageMime = pendingDmImageSrc.split(';')[0].split(':')[1]; pendingDmImageBase64 = pendingDmImageSrc.split(',')[1];
-            const imgEl = document.getElementById('dm-image-preview-img'), boxEl = document.getElementById('dm-image-preview-box');
-            if (imgEl && boxEl) { imgEl.src = pendingDmImageSrc; boxEl.classList.add('active'); }
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-const dmFilePicker = document.getElementById('dm-native-file-picker');
-if (dmFilePicker) dmFilePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processDmFile(file); dmFilePicker.value = ""; });
-
-function clearDmPendingImage() {
-    pendingDmImageBase64 = null; pendingDmImageMime = null; pendingDmImageSrc = null;
-    const box = document.getElementById('dm-image-preview-box'); if (box) box.classList.remove('active');
 }
 
 async function sendDmMessage() {
@@ -946,8 +1057,112 @@ async function sendDmMessage() {
     if (!activeChatId || !isDM) return;
     
     input.value = ""; const imageSrc = pendingDmImageSrc; clearDmPendingImage();
-    await db.collection("dms").doc(activeChatId).collection("messages").add({ text: text, imageSrc: imageSrc || null, senderId: firebaseUserId, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    await db.collection("dms").doc(activeChatId).collection("messages").add({ 
+        text: text, 
+        imageSrc: imageSrc || null, 
+        senderId: firebaseUserId, 
+        senderName: currentUser,
+        senderAvatar: currentUserAvatar,
+        senderEquipped: equipped,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+    });
 }
+
+// --- PHASE 3: GLOBAL LOBBY ---
+function openGlobalChat() {
+    if (isGuest) return alert("Guests cannot join the public lobby. Please create an account!");
+    document.getElementById("global-chat-log").innerHTML = "";
+    
+    if (globalChatUnsubscribe) globalChatUnsubscribe();
+    // Use limits to prevent loading millions of old messages
+    globalChatUnsubscribe = db.collection("global_chat").orderBy("timestamp", "desc").limit(50).onSnapshot(snapshot => {
+        renderChatSnapshot(snapshot, "global-chat-log", true);
+    });
+    switchView('view-global-chat');
+}
+
+async function sendGlobalMessage() {
+    const input = document.getElementById("global-input"); if (!input) return;
+    const text = input.value.trim();
+    if (!text && !pendingGlobalImageBase64) return;
+    if (!firebaseUserId) return;
+    
+    input.value = ""; const imageSrc = pendingGlobalImageSrc; clearGlobalPendingImage();
+    await db.collection("global_chat").add({ 
+        text: text, 
+        imageSrc: imageSrc || null, 
+        senderId: firebaseUserId, 
+        senderName: currentUser,
+        senderAvatar: currentUserAvatar,
+        senderEquipped: equipped,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+    });
+}
+
+// --- PHASE 3: GROUP CHATS ---
+function openGroupChat(groupId, groupName) {
+    activeGroupId = groupId;
+    document.getElementById("group-header-name").innerText = groupName;
+    document.getElementById("group-input").placeholder = `Message ${groupName}...`;
+    document.getElementById("group-chat-log").innerHTML = "";
+    
+    if (groupChatUnsubscribe) groupChatUnsubscribe();
+    groupChatUnsubscribe = db.collection("groups").doc(activeGroupId).collection("messages").orderBy("timestamp", "asc").onSnapshot(snapshot => {
+        renderChatSnapshot(snapshot, "group-chat-log", false);
+    });
+    switchView('view-group-chat');
+}
+
+async function sendGroupMessage() {
+    const input = document.getElementById("group-input"); if (!input) return;
+    const text = input.value.trim();
+    if (!text && !pendingGroupImageBase64) return;
+    if (!activeGroupId || !firebaseUserId) return;
+    
+    input.value = ""; const imageSrc = pendingGroupImageSrc; clearGroupPendingImage();
+    await db.collection("groups").doc(activeGroupId).collection("messages").add({ 
+        text: text, 
+        imageSrc: imageSrc || null, 
+        senderId: firebaseUserId, 
+        senderName: currentUser,
+        senderAvatar: currentUserAvatar,
+        senderEquipped: equipped,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+    });
+}
+
+// --- SHARED IMAGE FILE PROCESSING ---
+function processImageInput(file, type) {
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const src = event.target.result;
+            if (type === 'dm') {
+                pendingDmImageSrc = src; pendingDmImageMime = src.split(';')[0].split(':')[1]; pendingDmImageBase64 = src.split(',')[1];
+                document.getElementById('dm-image-preview-img').src = src; document.getElementById('dm-image-preview-box').classList.add('active');
+            } else if (type === 'global') {
+                pendingGlobalImageSrc = src; pendingGlobalImageMime = src.split(';')[0].split(':')[1]; pendingGlobalImageBase64 = src.split(',')[1];
+                document.getElementById('global-image-preview-img').src = src; document.getElementById('global-image-preview-box').classList.add('active');
+            } else if (type === 'group') {
+                pendingGroupImageSrc = src; pendingGroupImageMime = src.split(';')[0].split(':')[1]; pendingGroupImageBase64 = src.split(',')[1];
+                document.getElementById('group-image-preview-img').src = src; document.getElementById('group-image-preview-box').classList.add('active');
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+const dmFilePicker = document.getElementById('dm-native-file-picker');
+if (dmFilePicker) dmFilePicker.addEventListener('change', function(e) { if(e.target.files[0]) processImageInput(e.target.files[0], 'dm'); dmFilePicker.value = ""; });
+function clearDmPendingImage() { pendingDmImageBase64 = null; pendingDmImageMime = null; pendingDmImageSrc = null; document.getElementById('dm-image-preview-box')?.classList.remove('active'); }
+
+const globalFilePicker = document.getElementById('global-native-file-picker');
+if (globalFilePicker) globalFilePicker.addEventListener('change', function(e) { if(e.target.files[0]) processImageInput(e.target.files[0], 'global'); globalFilePicker.value = ""; });
+function clearGlobalPendingImage() { pendingGlobalImageBase64 = null; pendingGlobalImageMime = null; pendingGlobalImageSrc = null; document.getElementById('global-image-preview-box')?.classList.remove('active'); }
+
+const groupFilePicker = document.getElementById('group-native-file-picker');
+if (groupFilePicker) groupFilePicker.addEventListener('change', function(e) { if(e.target.files[0]) processImageInput(e.target.files[0], 'group'); groupFilePicker.value = ""; });
+function clearGroupPendingImage() { pendingGroupImageBase64 = null; pendingGroupImageMime = null; pendingGroupImageSrc = null; document.getElementById('group-image-preview-box')?.classList.remove('active'); }
 
 // =========================================================================
 // --- GENERAL APP LOGIC & CHAT ---
