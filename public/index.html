@@ -71,6 +71,7 @@
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
                     <img src="/static/icons/Shop .png" class="pc-nav-btn req-login" onclick="switchView('view-shop')" alt="Shop" draggable="false">
                     <img src="/static/icons/Inventory.png" class="pc-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" draggable="false">
+                    <img src="/static/icons/Clipboard.png" class="pc-nav-btn req-login" onclick="toggleNotepad()" alt="Notepad" draggable="false">
                 </div>
                 
                 <!-- Collapsed PC Buttons -->
@@ -81,6 +82,7 @@
                     <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games" draggable="false">
                     <img src="/static/icons/ShopIcon.png" class="mini-nav-btn req-login" onclick="switchView('view-shop')" alt="Shop" title="Shop" draggable="false">
                     <img src="/static/icons/InventoryIcon.png" class="mini-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" title="Inventory" draggable="false">
+                    <img src="/static/icons/Clipboard.png" class="mini-nav-btn req-login" onclick="toggleNotepad()" alt="Notepad" title="Notepad" draggable="false">
                 </div>
             </div>
 
@@ -528,10 +530,23 @@
         </div>
     </div>
 
+    <!-- PHASE 2: THE PANTRY FLOATING NOTEPAD -->
+    <div id="floating-notepad" class="floating-notepad" style="display: none;">
+        <div class="notepad-header" id="notepad-header">
+            <span style="display: flex; align-items: center; gap: 8px;">
+                <img src="/static/icons/Clipboard.png" style="width: 20px; height: 20px;" draggable="false"> The Pantry
+            </span>
+            <button class="notepad-close-btn" onclick="toggleNotepad()">✕</button>
+        </div>
+        <!-- contenteditable allows rich text, including pasted images! -->
+        <div id="notepad-editor" class="notepad-editor" contenteditable="true" spellcheck="false" data-placeholder="Jot down notes, paste images, or drop code here... auto-saved to cloud!"></div>
+    </div>
+
     <!-- Hidden element to route friend audio safely -->
     <audio id="remote-audio" autoplay playsinline style="position: absolute; width: 0; height: 0; visibility: hidden; pointer-events: none;"></audio>
 
     <script src="/static/script.js"></script>
     <script src="/static/games.js"></script>
+    <script src="/static/call.js"></script>
 </body>
 </html>
