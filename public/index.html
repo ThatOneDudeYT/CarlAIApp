@@ -71,6 +71,7 @@
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
                     <img src="/static/icons/Shop .png" class="pc-nav-btn req-login" onclick="switchView('view-shop')" alt="Shop" draggable="false">
                     <img src="/static/icons/Inventory.png" class="pc-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" draggable="false">
+                    <img src="/static/icons/Clipboard.png" class="pc-nav-btn req-login" onclick="toggleNotepad()" alt="Notepad" draggable="false">
                 </div>
                 
                 <!-- Collapsed PC Buttons -->
@@ -81,6 +82,7 @@
                     <img src="/static/icons/GamesIcon.png" class="mini-nav-btn" onclick="switchView('view-games')" alt="Games" title="Games" draggable="false">
                     <img src="/static/icons/ShopIcon.png" class="mini-nav-btn req-login" onclick="switchView('view-shop')" alt="Shop" title="Shop" draggable="false">
                     <img src="/static/icons/InventoryIcon.png" class="mini-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" title="Inventory" draggable="false">
+                    <img src="/static/icons/Clipboard.png" class="mini-nav-btn req-login" onclick="toggleNotepad()" alt="Notepad" title="Notepad" draggable="false">
                 </div>
             </div>
 
@@ -144,7 +146,6 @@
                     <div id="dm-header-avatar" class="dm-header-avatar-container"></div>
                     <h1 id="dm-header-name">Friend</h1>
                     <button class="dm-call-btn" onclick="openGiftModal()" title="Gift Burgers">🎁</button>
-                    <button class="dm-call-btn" onclick="startFriendCall()" title="Start Voice Call">📞</button>
                 </div>
                 <div id="dm-chat-log" class="dm-chat-log"></div>
                 <div class="dm-input-wrapper">
@@ -218,6 +219,7 @@
             <div id="view-friends" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
+                    <!-- PHASE 3: NEW GLOBAL & GROUP BUTTONS -->
                     <div style="display: flex; gap: 10px; margin-right: 20px;">
                         <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px;" onclick="openGlobalChat()">🌐 Public Lobby</button>
                         <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px; background-color: #3b82f6;" onclick="openCreateGroupModal()">👥 New Group</button>
@@ -233,6 +235,7 @@
                     </div>
                     <div class="friends-divider"></div>
                     <div class="friends-col">
+                        <!-- PHASE 3: MY GROUPS LIST -->
                         <h2 class="friends-col-title">My Groups</h2>
                         <div class="friends-list-container" id="my-groups-list" style="margin-bottom: 20px;"></div>
                         <h2 class="friends-col-title">Friends</h2>
@@ -308,6 +311,12 @@
                             4. Generate a new API key, copy it, and paste it above to permanently unlock unlimited chats!
                         </p>
                     </div>
+
+                    <div class="settings-row req-login">
+                        <label class="settings-label">The Pantry (Notepad)</label>
+                        <button class="settings-upload-btn" onclick="toggleNotepad()">Open Notepad</button>
+                    </div>
+
                     <div class="settings-row vertical-on-mobile req-login">
                         <label class="settings-label" for="settings-username-input">Username</label>
                         <input type="text" id="settings-username-input" placeholder="Your Username (3–20 Characters)" maxlength="20" onchange="updateUsernameFromSettings()">
@@ -347,30 +356,24 @@
                 </div>
             </div>
 
-            <!-- FRIEND CALL VIEW (WebRTC) -->
-            <div id="view-friend-call" class="view">
-                <video id="fc-remote-video" autoplay playsinline></video>
-                <video id="fc-local-video" autoplay playsinline muted></video>
-                
+            <!-- CARL AI CALL VIEW -->
+            <div id="view-call" class="view">
                 <div class="call-top-section">
-                    <h1 id="fc-title">Friend Name</h1>
-                    <div id="fc-timer">00:00</div>
-                    <div id="fc-status" style="display: none;">Calling...</div>
+                    <h1>Carl AI</h1>
+                    <div id="call-timer">00:00</div>
+                    <div id="call-status" style="display: none;">Calling Carl...</div>
                 </div>
-
+                
                 <div class="call-bottom-section">
                     <div class="call-option-row">
-                        <button class="call-icon-btn" onclick="toggleFcSpeaker()">
-                            <img src="/static/icons/SpeakerButton.png" id="fc-speaker-btn" alt="Speaker" draggable="false" />
+                        <button class="call-icon-btn" onclick="toggleSpeaker()">
+                            <img src="/static/icons/SpeakerButton.png" id="speaker-btn" alt="Speaker" draggable="false" />
                         </button>
-                        <button class="call-icon-btn" onclick="toggleFcVideo()">
-                            <img src="/static/icons/Facetime.png" id="fc-facetime-btn" alt="Facetime" style="opacity: 0.4;" draggable="false" />
-                        </button>
-                        <button class="call-icon-btn" onclick="toggleFcMute()">
-                            <img src="/static/icons/MuteButtonIcon.png" id="fc-mute-btn" alt="Mute" draggable="false" />
+                        <button class="call-icon-btn" onclick="toggleMute()">
+                            <img src="/static/icons/MuteButtonIcon.png" id="mute-btn" alt="Mute" draggable="false" />
                         </button>
                     </div>
-                    <button class="call-end-btn" onclick="endFriendCall()">
+                    <button class="call-end-btn" onclick="endCall()">
                         <img src="/static/icons/EndCallButton.png" alt="End Call" draggable="false" />
                     </button>
                 </div>
@@ -549,19 +552,6 @@
 
         </main>
     </div>
-
-    <!-- FRIEND INCOMING CALL MODAL -->
-    <div id="friend-call-modal" class="friend-call-modal hidden">
-        <div class="call-box">
-            <div id="friend-call-avatar" class="call-avatar"></div>
-            <h2 id="friend-call-name">Calling...</h2>
-            <p id="friend-call-status">Connecting...</p>
-            <div class="friend-call-actions">
-                <button id="accept-call-btn" class="call-btn accept" onclick="answerFriendCall()">Answer</button>
-                <button id="decline-call-btn" class="call-btn decline" onclick="declineFriendCall()">Decline</button>
-            </div>
-        </div>
-    </div>
     
     <!-- GIFT BURGERS MODAL -->
     <div id="gift-modal" class="auth-overlay" style="display: none;">
@@ -598,13 +588,8 @@
         </div>
     </div>
 
-    <!-- PHASE 2: THE PANTRY FLOATING NOTEPAD TRIGGER -->
-    <div id="notepad-trigger" class="notepad-trigger req-login" onclick="toggleNotepad()">
-        <img src="/static/icons/Clipboard.png" alt="Notepad" draggable="false">
-    </div>
-
     <!-- PHASE 2: THE PANTRY FLOATING NOTEPAD -->
-    <div id="floating-notepad" class="floating-notepad">
+    <div id="floating-notepad" class="floating-notepad" style="display: none;">
         <div class="notepad-header" id="notepad-header">
             <span style="display: flex; align-items: center; gap: 8px;">
                 <img src="/static/icons/Clipboard.png" style="width: 20px; height: 20px;" draggable="false"> The Pantry
@@ -614,11 +599,7 @@
         <div id="notepad-editor" class="notepad-editor" contenteditable="true" spellcheck="false" data-placeholder="Jot down notes, paste images, or drop code here... auto-saved to cloud!"></div>
     </div>
 
-    <!-- Hidden element to route friend audio safely -->
-    <audio id="remote-audio" autoplay playsinline style="position: absolute; width: 0; height: 0; visibility: hidden; pointer-events: none;"></audio>
-
     <script src="/static/script.js"></script>
     <script src="/static/games.js"></script>
-    <script src="/static/call.js"></script>
 </body>
 </html>
