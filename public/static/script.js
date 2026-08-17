@@ -121,6 +121,7 @@ let userBurgers=100, clickerBurgers=0, rebirths=0, clickPower=1, autoChefs=0, bu
 let inventory = [];
 let userPresets = [];
 let claimedCodes = []; 
+let userNotes = ""; // PHASE 2: Notepad data
 let equipped = {
     persona: "default",
     bubble: "default",
@@ -219,6 +220,13 @@ function handleSignOut() {
         chatsHistory=[]; chatHistory=[]; activeChatId=null; myFriends=[]; myRequests=[]; mySentRequests=[]; currentDmUser=null;
         userBurgers=100; clickerBurgers=0; autoChefs=0; burgerStands=0; burgerFactories=0; clickPower=1; rebirths=0;
         inventory=[]; userPresets=[]; claimedCodes=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
+        
+        userNotes = "";
+        const editor = document.getElementById("notepad-editor");
+        if (editor) editor.innerHTML = "";
+        const floatingNotepad = document.getElementById("floating-notepad");
+        if (floatingNotepad) floatingNotepad.style.display = "none";
+        
         updateBurgerUI(); updateProfileUI(); applyEquippedCosmetics(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
     });
 }
@@ -239,6 +247,12 @@ async function loadUserDataFromCloud() {
             if (data.equipped) equipped = { ...equipped, ...data.equipped };
             updateBurgerUI();
             if (data.avatar) currentUserAvatar = data.avatar; if (data.username) currentUser = data.username;
+            
+            // LOAD NOTES
+            userNotes = data.notes || "";
+            const editor = document.getElementById("notepad-editor");
+            if (editor) editor.innerHTML = userNotes;
+
             updateProfileUI(); applyEquippedCosmetics();
             const keyInp = document.getElementById('user-api-key'); if (keyInp) keyInp.value = customApiKey; const usrInp = document.getElementById('settings-username-input'); if (usrInp) usrInp.value = currentUser;
             renderChatHistorySidebar(); updateUsageUI(); 
@@ -253,7 +267,8 @@ function saveSessionData() {
     db.collection("users").doc(firebaseUserId).set({
         apiKey: customApiKey, chats: chatsHistory, activeChatId: cur, theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
         avatar: currentUserAvatar, username: currentUser, burgers: userBurgers, clickerBurgers: clickerBurgers, autoChefs: autoChefs, burgerStands: burgerStands, burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths,
-        inventory: inventory, equipped: equipped, presets: userPresets, claimedCodes: claimedCodes
+        inventory: inventory, equipped: equipped, presets: userPresets, claimedCodes: claimedCodes,
+        notes: userNotes // NEW SAVED PROPERTY
     }, { merge: true }).catch(e => console.error("Error saving:", e));
 }
 
@@ -1246,4 +1261,70 @@ function stopAllMedia() {
     const btn = document.getElementById("fc-facetime-btn"); if(btn) btn.style.opacity = "0.4";
     const ftVid = document.getElementById("facetime-video"); if(ftVid) ftVid.style.display = "none";
     const ftBtn = document.getElementById("facetime-btn"); if(ftBtn) ftBtn.style.opacity = "0.4";
+}
+
+// =========================================================================
+// --- PHASE 2: FLOATING NOTEPAD LOGIC ---
+// =========================================================================
+let noteSaveTimeout = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+    const editor = document.getElementById("notepad-editor");
+    if (editor) {
+        // Automatically trigger saves as the user types or pastes images
+        editor.addEventListener("input", () => {
+            userNotes = editor.innerHTML;
+            if (noteSaveTimeout) clearTimeout(noteSaveTimeout);
+            
+            // Wait 1.5 seconds after the user stops typing to ping Firebase
+            noteSaveTimeout = setTimeout(() => {
+                saveSessionData();
+            }, 1500); 
+        });
+    }
+
+    // Initialize dragging
+    const notepad = document.getElementById("floating-notepad");
+    const header = document.getElementById("notepad-header");
+    if (notepad && header) makeDraggable(notepad, header);
+});
+
+function toggleNotepad() {
+    const np = document.getElementById("floating-notepad");
+    if (!np) return;
+    if (np.style.display === "none") {
+        np.style.display = "flex";
+    } else {
+        np.style.display = "none";
+    }
+}
+
+function makeDraggable(element, dragHandle) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    dragHandle.onmousedown = function(e) {
+        // Prevent dragging if they clicked the close button
+        if (e.target.tagName.toLowerCase() === "button") return;
+        
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    };
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
 }
