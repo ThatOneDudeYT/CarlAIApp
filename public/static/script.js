@@ -12,9 +12,13 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
 
     try {
+        // 1. Try to log them in normally first
         await auth.signInWithEmailAndPassword(email, pass);
+        // If successful, Firebase automatically lets them right into the app without an OTP!
+        
     } catch (err) {
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
+        // 2. If the user DOES NOT exist, send the OTP to sign them up
+        if (err.code === 'auth/user-not-found') {
             submitBtn.innerText = "Sending 5-Digit Code...";
             
             try {
@@ -41,15 +45,20 @@ async function handleLogin(e) {
             } catch (networkErr) {
                 console.warn("Backend missing, falling back to standard Firebase Auth...");
                 try {
-                    const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
-                    await userCredential.user.sendEmailVerification();
-                    alert("Account created! A verification link has been sent to your email.");
+                    await auth.createUserWithEmailAndPassword(email, pass);
+                    alert("Account created! Welcome to Carl AI.");
                     document.getElementById('auth-password').value = "";
                 } catch (fbErr) {
                     alert("Sign Up Error: " + fbErr.message);
                 }
             }
-        } else {
+        } 
+        // 3. If they typed the WRONG password for an existing account (Fixes the soft lock!)
+        else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
+            alert("Incorrect password. Please try again.");
+        } 
+        // 4. Any other errors
+        else {
             alert(err.message);
         }
     } finally {
