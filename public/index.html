@@ -193,7 +193,7 @@
             <div id="view-group-chat" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
-                    <div class="dm-header-avatar-container"><div class="text-avatar" style="background-color: #3b82f6;">👥</div></div>
+                    <div id="group-header-avatar" class="dm-header-avatar-container"><div class="text-avatar" style="background-color: #3b82f6;">👥</div></div>
                     <h1 id="group-header-name">Group</h1>
                 </div>
                 <div id="group-chat-log" class="dm-chat-log"></div>
@@ -218,7 +218,6 @@
             <div id="view-friends" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
-                    <!-- PHASE 3: NEW GLOBAL & GROUP BUTTONS -->
                     <div style="display: flex; gap: 10px; margin-right: 20px;">
                         <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px;" onclick="openGlobalChat()">🌐 Public Lobby</button>
                         <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px; background-color: #3b82f6;" onclick="openCreateGroupModal()">👥 New Group</button>
@@ -234,7 +233,6 @@
                     </div>
                     <div class="friends-divider"></div>
                     <div class="friends-col">
-                        <!-- PHASE 3: MY GROUPS LIST -->
                         <h2 class="friends-col-title">My Groups</h2>
                         <div class="friends-list-container" id="my-groups-list" style="margin-bottom: 20px;"></div>
                         <h2 class="friends-col-title">Friends</h2>
