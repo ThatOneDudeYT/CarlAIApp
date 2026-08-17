@@ -12,47 +12,65 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
 
     try {
-        // 1. Try to log them in normally first
+        // 1. ALWAYS try to log in first.
+        // If the email and password are correct, you get in instantly! No OTP needed.
         await auth.signInWithEmailAndPassword(email, pass);
-        // If successful, Firebase automatically lets them right into the app without an OTP!
         
     } catch (err) {
-        // 2. If the user DOES NOT exist, send the OTP to sign them up
-        if (err.code === 'auth/user-not-found') {
-            submitBtn.innerText = "Sending 5-Digit Code...";
+        // 2. If it fails (Wrong Password OR New User), Firebase throws an error.
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
             
-            try {
-                const res = await fetch("/api/send-otp", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: email })
-                });
-                const data = await res.json();
-
-                if (!res.ok || data.error) {
-                    alert(data.error || "Failed to send verification code.");
-                    submitBtn.innerText = "Sign In / Register";
-                    submitBtn.disabled = false;
-                    return;
-                }
-
-                pendingAuthCredentials = { email, pass };
-                document.getElementById("auth-step-credentials").style.display = "none";
-                document.getElementById("auth-step-otp").style.display = "block";
-                document.getElementById("otp-sent-email-display").innerText = email;
-                document.getElementById("auth-otp-code").value = "";
-                document.getElementById("auth-otp-code").focus();
-            } catch (networkErr) {
-                console.warn("Backend missing, falling back to standard Firebase Auth...");
+            // Ask the user what they meant to do!
+            const wantsToRegister = confirm("Login failed. (Incorrect password OR account does not exist)\n\nWould you like to register a NEW account with this email?");
+            
+            if (wantsToRegister) {
+                submitBtn.innerText = "Sending 5-Digit Code...";
                 try {
-                    await auth.createUserWithEmailAndPassword(email, pass);
-                    alert("Account created! Welcome to Carl AI.");
-                    document.getElementById('auth-password').value = "";
-                } catch (fbErr) {
-                    alert("Sign Up Error: " + fbErr.message);
+                    const res = await fetch("/api/send-otp", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: email })
+                    });
+                    const data = await res.json();
+
+                    if (!res.ok || data.error) {
+                        alert(data.error || "Failed to send verification code.");
+                        submitBtn.innerText = "Sign In / Register";
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
+                    pendingAuthCredentials = { email, pass };
+                    document.getElementById("auth-step-credentials").style.display = "none";
+                    document.getElementById("auth-step-otp").style.display = "block";
+                    document.getElementById("otp-sent-email-display").innerText = email;
+                    document.getElementById("auth-otp-code").value = "";
+                    document.getElementById("auth-otp-code").focus();
+                } catch (networkErr) {
+                    console.warn("Backend missing, falling back to standard Firebase Auth...");
+                    try {
+                        await auth.createUserWithEmailAndPassword(email, pass);
+                        alert("Account created! Welcome to Carl AI.");
+                        document.getElementById('auth-password').value = "";
+                    } catch (fbErr) {
+                        if (fbErr.code === 'auth/email-already-in-use') {
+                            alert("This email is already registered! Please type the correct password.");
+                        } else {
+                            alert("Sign Up Error: " + fbErr.message);
+                        }
+                    }
                 }
             }
-        } 
+        } else {
+            alert(err.message);
+        }
+    } finally {
+        if(submitBtn) {
+            submitBtn.innerText = "Sign In / Register";
+            submitBtn.disabled = false;
+        }
+    }
+} 
         // 3. If they typed the WRONG password for an existing account (Fixes the soft lock!)
         else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
             alert("Incorrect password. Please try again.");
