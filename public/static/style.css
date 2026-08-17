@@ -16,13 +16,27 @@ body { background-color: var(--bg-main); color: var(--text-main); display: flex;
 body.guest-mode .req-login { display: none !important; }
 body.guest-mode .burger-wallet { display: none !important; }
 
-/* TOP PROFILE BAR & BADGES */
-.top-profile-bar { position: absolute; top: 16px; right: 20px; display: flex; align-items: center; gap: 10px; z-index: 50; background-color: var(--bg-input); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-.burger-wallet { background-color: #3f3f46; color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 16px; display: flex; align-items: center; gap: 6px; font-weight: bold; border: 1px solid #52525b; transition: transform 0.1s; }
+/* FIX: UNIFIED TOP PROFILE BAR (MATCHING IMAGE) */
+.top-profile-bar { 
+    position: absolute; top: 16px; right: 20px; 
+    display: flex; align-items: center; gap: 12px; z-index: 50; 
+    background-color: #1f1f1f; 
+    border: 1px solid #333; 
+    padding: 6px 16px 6px 6px; 
+    border-radius: 40px; 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); 
+}
+.burger-wallet { 
+    background-color: #333333; 
+    color: #fff; padding: 6px 12px; 
+    border-radius: 20px; font-size: 16px; 
+    display: flex; align-items: center; gap: 6px; font-weight: bold; 
+    transition: transform 0.1s; 
+}
 .burger-wallet:active { transform: scale(0.95); }
 .top-profile-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
-.top-profile-name { font-size: 15px; color: var(--text-main); letter-spacing: 0.5px; }
-.user-title-badge { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: #9333ea; color: #fff; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; display: none; }
+.top-profile-name { font-size: 16px; color: #fff; font-weight: bold; letter-spacing: 0.5px; }
+.user-title-badge { font-size: 11px; padding: 4px 10px; border-radius: 12px; background: #9333ea; color: #fff; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; display: none; }
 
 /* PROFILE FRAMES */
 .avatar-frame-wrapper { position: relative; display: flex; align-items: center; justify-content: center; border-radius: 50%; padding: 2px; }
@@ -420,6 +434,17 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .friend-msg-btn, .friend-req-btn { background-color: transparent; color: var(--text-main); border: 2px solid var(--border-color); border-radius: 20px; padding: 6px 20px; font-size: 16px; cursor: pointer; transition: border-color 0.2s, background-color 0.2s; flex-shrink: 0; }
 .friend-msg-btn:hover { border-color: #a855f7; }
 .friend-req-btn:hover { border-color: #84cc16; }
+
+/* FIX: GROUP AVATAR COLLAGE */
+.group-avatar-collage { display: flex; flex-wrap: wrap; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background-color: var(--bg-input); border: 2px solid var(--border-color); }
+.collage-img { object-fit: cover; }
+.group-avatar-2 .collage-img { width: 50%; height: 100%; }
+.group-avatar-3 .collage-img, .group-avatar-4 .collage-img { width: 50%; height: 50%; }
+.group-avatar-3 .collage-img:last-child { width: 100%; height: 50%; }
+.collage-text { display: flex; justify-content: center; align-items: center; font-weight: bold; color: white; font-family: 'Lilita One', cursive, sans-serif; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+.group-avatar-2 .collage-text { width: 50%; height: 100%; font-size: 20px; }
+.group-avatar-3 .collage-text, .group-avatar-4 .collage-text { width: 50%; height: 50%; font-size: 14px; }
+.group-avatar-3 .collage-text:last-child { width: 100%; height: 50%; font-size: 18px; }
 
 /* FRIEND INCOMING CALL MODAL */
 .friend-call-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 10000; display: flex; justify-content: center; align-items: center; }
