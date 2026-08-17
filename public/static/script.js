@@ -228,10 +228,10 @@ function handleSignOut() {
         inventory=[]; userPresets=[]; claimedCodes=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
         
         userNotes = "";
-        const editor = document.getElementById("notepad-editor");
+        const editor = document.getElementById("pantry-editor");
         if (editor) editor.innerHTML = "";
-        const floatingNotepad = document.getElementById("floating-notepad");
-        if (floatingNotepad) floatingNotepad.classList.remove("active");
+        const floatingPantry = document.getElementById("floating-pantry");
+        if (floatingPantry) floatingPantry.classList.remove("active");
         
         if (groupsUnsubscribe) { groupsUnsubscribe(); groupsUnsubscribe=null; }
         if (globalChatUnsubscribe) { globalChatUnsubscribe(); globalChatUnsubscribe=null; }
@@ -274,7 +274,7 @@ async function loadUserDataFromCloud() {
             
             // LOAD NOTES
             userNotes = data.notes || "";
-            const editor = document.getElementById("notepad-editor");
+            const editor = document.getElementById("pantry-editor");
             if (editor) editor.innerHTML = userNotes;
 
             updateProfileUI(); applyEquippedCosmetics();
@@ -330,6 +330,12 @@ function applyEquippedCosmetics() {
         } else if (equipped.background === "matrix") {
             glow.style.background = "radial-gradient(circle, rgba(34, 197, 94, 0.25) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#86efac"; startupText.style.textShadow = "0 0 40px rgba(34, 197, 94, 0.6)"; }
+        } else if (equipped.background === "void") {
+            glow.style.background = "radial-gradient(circle, rgba(88, 28, 135, 0.1) 0%, transparent 70%)";
+            if(startupText) { startupText.style.color = "#a855f7"; startupText.style.textShadow = "0 0 20px rgba(88, 28, 135, 0.3)"; }
+        } else if (equipped.background === "inferno") {
+            glow.style.background = "radial-gradient(circle, rgba(220, 38, 38, 0.25) 0%, transparent 60%)";
+            if(startupText) { startupText.style.color = "#f87171"; startupText.style.textShadow = "0 0 40px rgba(220, 38, 38, 0.6)"; }
         } else {
             glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#d8b4fe"; startupText.style.textShadow = "0 0 40px rgba(168, 85, 247, 0.6)"; }
@@ -403,34 +409,47 @@ const shopCatalog = [
     { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", icon: "😏", cost: 1800, desc: "Carl answers your questions with maximum sarcasm and wit." },
     { id: "persona_yoda", type: "persona", val: "yoda", name: "Master Yoda", icon: "🐸", cost: 2500, desc: "Carl speaks like Yoda. May the force be with you!" },
     { id: "persona_surfer", type: "persona", val: "surfer", name: "Surfer Dude", icon: "🏄", cost: 1200, desc: "Carl is a chill surfer dude. Gnarly!" },
+    { id: "persona_dog", type: "persona", val: "dog", name: "Good Boy Carl", icon: "🐶", cost: 1200, desc: "Carl only speaks in enthusiastic barks and tail wags." },
+    { id: "persona_alien", type: "persona", val: "alien", name: "Zorp from Mars", icon: "👽", cost: 3500, desc: "Carl transmits extraterrestrial cosmic knowledge." },
     
     { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
     { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
     { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", icon: "🔮", cost: 2500, desc: "Deep purple-pink retro synthwave gradient." },
     { id: "bubble_lava", type: "bubble", val: "lava", name: "Magma Lava Bubble", icon: "🌋", cost: 2200, desc: "Fiery orange and red molten lava chat bubble." },
+    { id: "bubble_forest", type: "bubble", val: "forest", name: "Enchanted Forest", icon: "🌲", cost: 2400, desc: "Mystical green and emerald chat bubble." },
+    { id: "bubble_ocean", type: "bubble", val: "ocean", name: "Deep Ocean Bubble", icon: "🌊", cost: 2200, desc: "Cool and calming deep sea blue gradient." },
     { id: "bubble_matrix", type: "bubble", val: "matrix", name: "Hacker Terminal Bubble", icon: "💻", cost: 2500, desc: "Green and black matrix coding chat bubble." },
 
     { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
     { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
     { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", icon: "🔥", cost: 3500, desc: "Fiery red & orange border around your avatar." },
     { id: "frame_ice", type: "frame", val: "ice", name: "Frozen Frost Frame", icon: "❄️", cost: 2500, desc: "Chilly bright blue frosted border." },
+    { id: "frame_lightning", type: "frame", val: "lightning", name: "Static Shock Frame", icon: "🌩️", cost: 3200, desc: "Crackling yellow and blue electrical border." },
     { id: "frame_amethyst", type: "frame", val: "amethyst", name: "Amethyst Crystal Frame", icon: "💎", cost: 3000, desc: "Radiant purple and magenta gem frame." },
+    { id: "frame_blood", type: "frame", val: "blood", name: "Blood Moon Frame", icon: "🩸", cost: 4000, desc: "Dark crimson and black vampiric frame." },
 
     { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
     { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
     { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", icon: "🐐", cost: 3000, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
     { id: "title_flipper", type: "title", val: "Fry Cook", name: "Title: Fry Cook", icon: "🍟", cost: 800, desc: "Displays the [FRY COOK] badge next to your name." },
+    { id: "title_chef", type: "title", val: "Executive Chef", name: "Title: Exec Chef", icon: "🔪", cost: 4500, desc: "Displays the [EXECUTIVE CHEF] badge." },
+    { id: "title_tycoon", type: "title", val: "Tycoon", name: "Title: Tycoon", icon: "💰", cost: 8000, desc: "Displays the [TYCOON] badge. Flex your wealth." },
     { id: "title_whale", type: "title", val: "The Whale", name: "Title: The Whale", icon: "🐋", cost: 5000, desc: "Displays [THE WHALE] to show off how rich you are." },
 
     { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
     { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
     { id: "bg_ocean", type: "background", val: "ocean", name: "Deep Ocean Glow", icon: "🌊", cost: 2000, desc: "Changes the ambient background to calming water blue." },
     { id: "bg_matrix", type: "background", val: "matrix", name: "Matrix Green Glow", icon: "🟩", cost: 2000, desc: "Changes the ambient background to hacker green." },
+    { id: "bg_void", type: "background", val: "void", name: "The Void Glow", icon: "🕳️", cost: 2500, desc: "Changes the ambient background to pitch black and deep violet." },
+    { id: "bg_inferno", type: "background", val: "inferno", name: "Inferno Glow", icon: "🌋", cost: 2500, desc: "Changes the ambient background to blistering heat." },
 
     { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", icon: "🍟", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
+    { id: "skin_pizza_c4", type: "c4Skin", val: "pizza_hotdog", name: "Pizza vs Hotdog C4", icon: "🍕", cost: 2500, desc: "Play Connect Four using Pizzas and Hotdogs!" },
     { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", icon: "🃏", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
     { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", icon: "🎲", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
     { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", icon: "🔮", cost: 1500, desc: "Deep cosmic purple Blackjack felt." },
+    { id: "felt_sapphire", type: "bjFelt", val: "sapphire", name: "Sapphire Blue Felt", icon: "💎", cost: 1800, desc: "Rich and elegant Sapphire Blue Blackjack felt." },
+    { id: "felt_obsidian", type: "bjFelt", val: "obsidian", name: "Obsidian Black Felt", icon: "⚫", cost: 2000, desc: "Sleek and stealthy Obsidian Black Blackjack felt." },
     { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", icon: "🍳", cost: 5000, desc: "Permanent +50% production boost across all Burger Clicker businesses!" },
     { id: "title_admin", type: "title", val: "Admin", name: "Title: Admin", icon: "🛠️", cost: 0, desc: "Exclusive developer badge.", hidden: true }
 ];
@@ -904,7 +923,7 @@ async function fetchAllUsers() {
     try {
         if (firebaseUserId && db) {
             const snapshot = await db.collection("users").get(); allUsersCache = [];
-            // Only adds users who are actively in the database (ghosts are automatically removed!)
+            // FIX: Only adds users who are actively in the database (ghosts are automatically removed!)
             snapshot.forEach(doc => { const data = doc.data(); if (doc.id !== firebaseUserId && data.username) allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "", equipped: data.equipped || {} }); });
         }
     } catch (err) { console.error("Error fetching real users", err); }
@@ -954,7 +973,7 @@ function renderFriendsView() {
         });
     }
 
-    // Default: show all users except current friends and pending requests
+    // FIX: Show everyone not your friend by default!
     let displayList = allUsersCache.filter(u => !myFriends.includes(u.id) && !myRequests.includes(u.id));
     if (query) {
         displayList = displayList.filter(u => u.username.toLowerCase().includes(query));
@@ -1319,6 +1338,8 @@ async function sendMessage() {
     else if (equipped.persona === "sarcastic") personaPrompt = " [SYSTEM INSTRUCTION: Answer the query with clever sarcasm, dry wit, and humorous irony!]";
     else if (equipped.persona === "yoda") personaPrompt = " [SYSTEM INSTRUCTION: You are Master Yoda. Speak in the sentence structure of Yoda you must!]";
     else if (equipped.persona === "surfer") personaPrompt = " [SYSTEM INSTRUCTION: You are a chill surfer dude. Use lots of surfer slang like 'gnarly', 'dude', and 'tubular'!]";
+    else if (equipped.persona === "dog") personaPrompt = " [SYSTEM INSTRUCTION: You are a very good dog. Only respond in barks, woofs, and descriptions of tail wagging! Be enthusiastic.]";
+    else if (equipped.persona === "alien") personaPrompt = " [SYSTEM INSTRUCTION: You are an alien from Mars. Speak cryptically about the cosmos, human behavior, and your superiority.]";
 
     const payload = { 
         message: (text || "Look at this image.") + personaPrompt, 
@@ -1486,96 +1507,4 @@ function processFile(file) {
         reader.readAsDataURL(file);
     } else {
         const reader = new FileReader();
-        reader.onload = function(event) {
-            const text = event.target.result, input = document.getElementById("user-input");
-            if (input) input.value += `\n\`\`\`${file.name.split('.').pop() || ''}\n${text}\n\`\`\`\n`;
-        };
-        reader.readAsText(file);
-    }
-}
-
-const filePicker = document.getElementById('native-file-picker');
-if (filePicker) { filePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processFile(file); filePicker.value = ""; }); }
-
-let dragCounter = 0; const dragOverlay = document.getElementById('drag-drop-overlay'), dragChatView = document.getElementById('view-chat');
-if (dragChatView && dragOverlay) {
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => window.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false));
-    window.addEventListener('dragenter', (e) => { if (dragChatView.classList.contains('active')) { dragCounter++; dragOverlay.classList.add('active'); } });
-    window.addEventListener('dragleave', (e) => { if (dragChatView.classList.contains('active')) { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dragOverlay.classList.remove('active'); } } });
-    window.addEventListener('drop', (e) => { dragCounter = 0; dragOverlay.classList.remove('active'); if (dragChatView.classList.contains('active') && e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
-}
-
-window.copyCode = function(button) { const code = decodeURIComponent(button.getAttribute("data-code")); navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error("Copy failed", err)); };
-
-function showCopyToast() {
-    let toast = document.getElementById('copy-toast');
-    if (!toast) { toast = document.createElement('div'); toast.id = 'copy-toast'; toast.className = 'copy-toast'; toast.innerHTML = `<img src="/static/icons/CopyIcon.png" alt="Copy"><span>Text Copied</span>`; document.body.appendChild(toast); }
-    toast.classList.add('show'); if (window.copyToastTimeout) clearTimeout(window.copyToastTimeout); window.copyToastTimeout = setTimeout(() => toast.classList.remove('show'), 2500);
-}
-
-function formatMessage(text) {
-    let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
-    safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
-        const displayLang = (lang || "CODE").toUpperCase(), encodedCode = encodeURIComponent(code);
-        let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
-        return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-language">${displayLang}</span><button class="copy-code-btn" data-code="${encodedCode}" onclick="copyCode(this)"><img src="/static/icons/CopyIcon.png" alt="Copy"></button></div><div class="code-block-body">${styledCode.trim()}</div></div>`;
-    });
-    safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
-    return safeText;
-}
-
-function appendMessage(msg, sender, imgSrc = null) {
-    const log = document.getElementById("chat-log"); if (!log) return;
-    const bubble = document.createElement("div"); 
-    bubble.className = `chat-bubble ${sender}`;
-    
-    if (sender === "user" && equipped.bubble && equipped.bubble !== "default") {
-        bubble.classList.add(`bubble-${equipped.bubble}`);
-    }
-
-    if (msg) { const textNode = document.createElement("div"); textNode.innerText = msg; bubble.appendChild(textNode); }
-    if (imgSrc) { const img = document.createElement("img"); img.src = imgSrc; img.className = "chat-image"; img.draggable = false; bubble.appendChild(img); }
-    log.appendChild(bubble); log.scrollTop = log.scrollHeight;
-}
-
-// =========================================================================
-// --- PHASE 2: FLOATING NOTEPAD LOGIC ---
-// =========================================================================
-let noteSaveTimeout = null;
-
-document.addEventListener("DOMContentLoaded", () => {
-    const editor = document.getElementById("notepad-editor");
-    if (editor) {
-        editor.addEventListener("input", () => {
-            userNotes = editor.innerHTML;
-            if (noteSaveTimeout) clearTimeout(noteSaveTimeout);
-            noteSaveTimeout = setTimeout(() => { saveSessionData(); }, 1500); 
-        });
-    }
-
-    const notepad = document.getElementById("floating-notepad");
-    const header = document.getElementById("notepad-header");
-    if (notepad && header) makeDraggable(notepad, header);
-});
-
-function toggleNotepad() {
-    const np = document.getElementById("floating-notepad");
-    if (!np) return;
-    np.classList.toggle("active");
-}
-
-function makeDraggable(element, dragHandle) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    dragHandle.onmousedown = function(e) {
-        if (e.target.tagName.toLowerCase() === "button") return;
-        e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY;
-        document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
-    };
-    function elementDrag(e) {
-        e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY;
-        element.style.top = (element.offsetTop - pos2) + "px"; element.style.left = (element.offsetLeft - pos1) + "px";
-    }
-    function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
-}
+        reader.onload = function(event)I encountered an error doing what you asked. Could you try again?
