@@ -1,7 +1,7 @@
 let pendingAuthCredentials = { email: "", pass: "" };
 
+// FIX 1: Cleaned up handleLogin without the duplicate chunk
 async function handleLogin(e) {
-    // Forcefully stop any remaining page reloads
     if (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -20,12 +20,8 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
 
     try {
-        // 1. ALWAYS try to log in first.
         await auth.signInWithEmailAndPassword(email, pass);
-        // If successful, Firebase instantly logs you in. No OTP required!
-        
     } catch (err) {
-        // 2. If it fails (Wrong Password OR New User)
         if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
             
             const wantsToRegister = confirm("Login failed. (Incorrect password OR account does not exist)\n\nWould you like to register a NEW account with this email?");
@@ -79,46 +75,16 @@ async function handleLogin(e) {
     }
 }
 
-                    pendingAuthCredentials = { email, pass };
-                    document.getElementById("auth-step-credentials").style.display = "none";
-                    document.getElementById("auth-step-otp").style.display = "block";
-                    document.getElementById("otp-sent-email-display").innerText = email;
-                    document.getElementById("auth-otp-code").value = "";
-                    document.getElementById("auth-otp-code").focus();
-                } catch (networkErr) {
-                    console.warn("Backend missing, falling back to standard Firebase Auth...");
-                    try {
-                        await auth.createUserWithEmailAndPassword(email, pass);
-                        alert("Account created! Welcome to Carl AI.");
-                        document.getElementById('auth-password').value = "";
-                    } catch (fbErr) {
-                        if (fbErr.code === 'auth/email-already-in-use') {
-                            alert("This email is already registered! Please type the correct password.");
-                        } else {
-                            alert("Sign Up Error: " + fbErr.message);
-                        }
-                    }
-                }
-            }
-        } 
-        // 4. Catch any other errors
-        else {
-            alert(err.message);
-        }
-    } finally {
-        if(submitBtn) {
-            submitBtn.innerText = "Sign In / Register";
-            submitBtn.disabled = false;
-        }
-    }
-}
+// FIX 2: Added the proper function wrapper for the OTP verification
+async function handleVerifyOtp(e) {
     if (e) e.preventDefault();
     const code = document.getElementById('auth-otp-code').value.trim();
     const verifyBtn = document.getElementById('otp-verify-btn');
 
     if (code.length !== 5) { alert("Please enter the full 5-digit code."); return; }
 
-    verifyBtn.innerText = "Verifying..."; verifyBtn.disabled = true;
+    verifyBtn.innerText = "Verifying..."; 
+    verifyBtn.disabled = true;
 
     try {
         const res = await fetch("/api/verify-otp", {
@@ -147,6 +113,37 @@ async function handleLogin(e) {
         if(verifyBtn) {
             verifyBtn.innerText = "Verify Code"; verifyBtn.disabled = false;
         }
+    }
+}
+
+function cancelOtpStep() {
+    document.getElementById("auth-step-otp").style.display = "none";
+    document.getElementById("auth-step-credentials").style.display = "block";
+    pendingAuthCredentials = { email: "", pass: "" };
+}
+
+// ... [Keep all of your Firebase initialization, Burger Clicker logic, and Chat functions exactly as they are] ...
+
+// FIX 3: Cleaned up the truncated processFile function at the very bottom
+function processFile(file) {
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            pendingImageSrc = event.target.result; 
+            pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1]; 
+            pendingImageBase64 = pendingImageSrc.split(',')[1];
+            
+            const imgEl = document.getElementById('image-preview-img');
+            const boxEl = document.getElementById('image-preview-box');
+            
+            if (imgEl && boxEl) { 
+                imgEl.src = pendingImageSrc; 
+                boxEl.classList.add('active'); 
+            }
+        };
+        reader.readAsDataURL(file);
+    } else {
+        alert("Please select a valid image file.");
     }
 }
 
