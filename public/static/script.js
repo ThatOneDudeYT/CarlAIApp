@@ -19,18 +19,11 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
 
     try {
-        // 1. Attempt to sign in directly
         await auth.signInWithEmailAndPassword(email, pass);
-        
-        // Hide auth overlay immediately on success
         const overlay = document.getElementById('auth-overlay');
         if (overlay) overlay.style.display = 'none';
         document.getElementById('auth-password').value = "";
-
     } catch (err) {
-        console.warn("Firebase Auth Code:", err.code);
-
-        // Catch all Firebase credential mismatch error codes
         const isCredentialMismatch = [
             'auth/invalid-login-credentials',
             'auth/invalid-credential',
@@ -70,6 +63,25 @@ async function handleLogin(e) {
         if (submitBtn) {
             submitBtn.innerText = "Sign In / Register";
             submitBtn.disabled = false;
+        }
+    }
+}
+
+// --- PASSWORD RESET ---
+async function resetPassword() {
+    const email = document.getElementById('auth-username').value.trim();
+    if (!email) {
+        alert("Please enter your email address in the top box first, then click 'Forgot Password?'.");
+        return;
+    }
+    try {
+        await auth.sendPasswordResetEmail(email);
+        alert(`A password reset link has been sent to ${email}!\n\nCheck your inbox, click the link to create a new password, and then come back here to log in.`);
+    } catch (error) {
+        if (error.code === 'auth/user-not-found') {
+            alert("No account found with that email address.");
+        } else {
+            alert("Error: " + error.message);
         }
     }
 }
@@ -117,26 +129,6 @@ function cancelOtpStep() {
     document.getElementById("auth-step-otp").style.display = "none";
     document.getElementById("auth-step-credentials").style.display = "block";
     pendingAuthCredentials = { email: "", pass: "" };
-}
-// --- PASSWORD RESET ---
-async function resetPassword() {
-    const email = document.getElementById('auth-username').value.trim();
-    
-    if (!email) {
-        alert("Please enter your email address in the top box first, then click 'Forgot Password?'.");
-        return;
-    }
-
-    try {
-        await auth.sendPasswordResetEmail(email);
-        alert(`A password reset link has been sent to ${email}!\n\nCheck your inbox (and spam folder), click the link to create a new password, and then come back here to log in.`);
-    } catch (error) {
-        if (error.code === 'auth/user-not-found') {
-            alert("No account found with that email address.");
-        } else {
-            alert("Error: " + error.message);
-        }
-    }
 }
 
 const firebaseConfig = { apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", authDomain: "carl-ai-loggins.firebaseapp.com", projectId: "carl-ai-loggins", storageBucket: "carl-ai-loggins.firebasestorage.app", messagingSenderId: "372926140822", appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", measurementId: "G-G4H60BZHT3" };
@@ -370,6 +362,15 @@ function applyEquippedCosmetics() {
         } else if (equipped.background === "inferno") {
             glow.style.background = "radial-gradient(circle, rgba(220, 38, 38, 0.25) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#f87171"; startupText.style.textShadow = "0 0 40px rgba(220, 38, 38, 0.6)"; }
+        } else if (equipped.background === "stars") {
+            glow.style.background = "radial-gradient(circle, rgba(253, 224, 71, 0.15) 0%, transparent 60%)";
+            if(startupText) { startupText.style.color = "#fef08a"; startupText.style.textShadow = "0 0 30px rgba(253, 224, 71, 0.5)"; }
+        } else if (equipped.background === "nebula") {
+            glow.style.background = "radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.1) 40%, transparent 70%)";
+            if(startupText) { startupText.style.color = "#c4b5fd"; startupText.style.textShadow = "0 0 40px rgba(139, 92, 246, 0.6)"; }
+        } else if (equipped.background === "bloodmoon") {
+            glow.style.background = "radial-gradient(circle, rgba(153, 27, 27, 0.25) 0%, transparent 60%)";
+            if(startupText) { startupText.style.color = "#fca5a5"; startupText.style.textShadow = "0 0 40px rgba(153, 27, 27, 0.6)"; }
         } else {
             glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#d8b4fe"; startupText.style.textShadow = "0 0 40px rgba(168, 85, 247, 0.6)"; }
@@ -445,6 +446,10 @@ const shopCatalog = [
     { id: "persona_surfer", type: "persona", val: "surfer", name: "Surfer Dude", icon: "🏄", cost: 1200, desc: "Carl is a chill surfer dude. Gnarly!" },
     { id: "persona_dog", type: "persona", val: "dog", name: "Good Boy Carl", icon: "🐶", cost: 1200, desc: "Carl only speaks in enthusiastic barks and tail wags." },
     { id: "persona_alien", type: "persona", val: "alien", name: "Zorp from Mars", icon: "👽", cost: 3500, desc: "Carl transmits extraterrestrial cosmic knowledge." },
+    { id: "persona_dracula", type: "persona", val: "dracula", name: "Count Carl", icon: "🦇", cost: 2000, desc: "Carl speaks like a thirsty vampire." },
+    { id: "persona_knight", type: "persona", val: "knight", name: "Knight Carl", icon: "⚔️", cost: 2000, desc: "Carl speaks like a valiant medieval knight." },
+    { id: "persona_wizard", type: "persona", val: "wizard", name: "Wizard Carl", icon: "🧙‍♂️", cost: 3000, desc: "Carl speaks like a wise, ancient wizard." },
+    { id: "persona_ninja", type: "persona", val: "ninja", name: "Ninja Carl", icon: "🥷", cost: 2800, desc: "Carl answers with stealthy, disciplined precision." },
     
     { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
     { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
@@ -453,6 +458,10 @@ const shopCatalog = [
     { id: "bubble_forest", type: "bubble", val: "forest", name: "Enchanted Forest", icon: "🌲", cost: 2400, desc: "Mystical green and emerald chat bubble." },
     { id: "bubble_ocean", type: "bubble", val: "ocean", name: "Deep Ocean Bubble", icon: "🌊", cost: 2200, desc: "Cool and calming deep sea blue gradient." },
     { id: "bubble_matrix", type: "bubble", val: "matrix", name: "Hacker Terminal Bubble", icon: "💻", cost: 2500, desc: "Green and black matrix coding chat bubble." },
+    { id: "bubble_galaxy", type: "bubble", val: "galaxy", name: "Galaxy Bubble", icon: "🌌", cost: 3500, desc: "Deep space cosmic chat bubble." },
+    { id: "bubble_toxic", type: "bubble", val: "toxic", name: "Toxic Slime", icon: "☣️", cost: 2200, desc: "Radioactive neon green chat bubble." },
+    { id: "bubble_plasma", type: "bubble", val: "plasma", name: "Plasma Bubble", icon: "🧬", cost: 3200, desc: "A super-heated, pulsating purple plasma bubble." },
+    { id: "bubble_ice", type: "bubble", val: "ice", name: "Glacier Bubble", icon: "🧊", cost: 2600, desc: "A frozen, crystal-clear ice chat bubble." },
 
     { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
     { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
@@ -461,6 +470,11 @@ const shopCatalog = [
     { id: "frame_lightning", type: "frame", val: "lightning", name: "Static Shock Frame", icon: "🌩️", cost: 3200, desc: "Crackling yellow and blue electrical border." },
     { id: "frame_amethyst", type: "frame", val: "amethyst", name: "Amethyst Crystal Frame", icon: "💎", cost: 3000, desc: "Radiant purple and magenta gem frame." },
     { id: "frame_blood", type: "frame", val: "blood", name: "Blood Moon Frame", icon: "🩸", cost: 4000, desc: "Dark crimson and black vampiric frame." },
+    { id: "frame_diamond", type: "frame", val: "diamond", name: "Diamond Frame", icon: "💎", cost: 5000, desc: "Ultra luxury shiny diamond border." },
+    { id: "frame_rainbow", type: "frame", val: "rainbow", name: "RGB Rainbow Frame", icon: "🌈", cost: 4500, desc: "Animated gamer RGB border." },
+    { id: "frame_magma", type: "frame", val: "magma", name: "Magma Frame", icon: "🌋", cost: 3800, desc: "A molten rock border that burns with heat." },
+    { id: "frame_hacker", type: "frame", val: "hacker", name: "Hacker Frame", icon: "💻", cost: 3200, desc: "A digital glitch-art border for your avatar." },
+    { id: "frame_void", type: "frame", val: "void", name: "Void Frame", icon: "🕳️", cost: 5000, desc: "A pitch-black, dark matter gravitational frame." },
 
     { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
     { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
@@ -469,6 +483,10 @@ const shopCatalog = [
     { id: "title_chef", type: "title", val: "Executive Chef", name: "Title: Exec Chef", icon: "🔪", cost: 4500, desc: "Displays the [EXECUTIVE CHEF] badge." },
     { id: "title_tycoon", type: "title", val: "Tycoon", name: "Title: Tycoon", icon: "💰", cost: 8000, desc: "Displays the [TYCOON] badge. Flex your wealth." },
     { id: "title_whale", type: "title", val: "The Whale", name: "Title: The Whale", icon: "🐋", cost: 5000, desc: "Displays [THE WHALE] to show off how rich you are." },
+    { id: "title_god", type: "title", val: "Burger God", name: "Title: Burger God", icon: "👑", cost: 10000, desc: "The ultimate flex. [BURGER GOD]" },
+    { id: "title_emperor", type: "title", val: "Burger Emperor", name: "Title: Emperor", icon: "👑", cost: 15000, desc: "Displays the highly coveted [BURGER EMPEROR] badge." },
+    { id: "title_legend", type: "title", val: "The Legend", name: "Title: The Legend", icon: "🏆", cost: 12000, desc: "Displays [THE LEGEND] badge." },
+    { id: "title_noob", type: "title", val: "Noob", name: "Title: Noob", icon: "🤡", cost: 500, desc: "Displays the [NOOB] badge. Wear it with pride." },
 
     { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
     { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
@@ -476,14 +494,22 @@ const shopCatalog = [
     { id: "bg_matrix", type: "background", val: "matrix", name: "Matrix Green Glow", icon: "🟩", cost: 2000, desc: "Changes the ambient background to hacker green." },
     { id: "bg_void", type: "background", val: "void", name: "The Void Glow", icon: "🕳️", cost: 2500, desc: "Changes the ambient background to pitch black and deep violet." },
     { id: "bg_inferno", type: "background", val: "inferno", name: "Inferno Glow", icon: "🌋", cost: 2500, desc: "Changes the ambient background to blistering heat." },
+    { id: "bg_stars", type: "background", val: "stars", name: "Starlight Glow", icon: "⭐", cost: 3000, desc: "Twinkling starlight background glow." },
+    { id: "bg_nebula", type: "background", val: "nebula", name: "Galactic Nebula", icon: "🪐", cost: 3500, desc: "A swirling, multi-colored deep space background." },
+    { id: "bg_bloodmoon", type: "background", val: "bloodmoon", name: "Blood Moon Glow", icon: "🩸", cost: 3000, desc: "A dark crimson, eerie background glow." },
 
     { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", icon: "🍟", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
     { id: "skin_pizza_c4", type: "c4Skin", val: "pizza_hotdog", name: "Pizza vs Hotdog C4", icon: "🍕", cost: 2500, desc: "Play Connect Four using Pizzas and Hotdogs!" },
+    { id: "c4Skin_cookie", type: "c4Skin", val: "cookie", name: "Cookie vs Donut", icon: "🍪", cost: 2500, desc: "Play Connect 4 with cookies and donuts!" },
+    { id: "skin_sushi_c4", type: "c4Skin", val: "sushi_taco", name: "Sushi vs Taco C4", icon: "🍣", cost: 3000, desc: "Play Connect Four using Sushi and Tacos!" },
+    
     { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", icon: "🃏", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
     { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", icon: "🎲", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
     { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", icon: "🔮", cost: 1500, desc: "Deep cosmic purple Blackjack felt." },
     { id: "felt_sapphire", type: "bjFelt", val: "sapphire", name: "Sapphire Blue Felt", icon: "💎", cost: 1800, desc: "Rich and elegant Sapphire Blue Blackjack felt." },
     { id: "felt_obsidian", type: "bjFelt", val: "obsidian", name: "Obsidian Black Felt", icon: "⚫", cost: 2000, desc: "Sleek and stealthy Obsidian Black Blackjack felt." },
+    { id: "felt_goldleaf", type: "bjFelt", val: "goldleaf", name: "Gold Leaf Felt", icon: "✨", cost: 4000, desc: "The ultimate high-roller gold woven blackjack table." },
+    
     { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", icon: "🍳", cost: 5000, desc: "Permanent +50% production boost across all Burger Clicker businesses!" },
     { id: "title_admin", type: "title", val: "Admin", name: "Title: Admin", icon: "🛠️", cost: 0, desc: "Exclusive developer badge.", hidden: true }
 ];
@@ -1365,6 +1391,10 @@ async function sendMessage() {
     else if (equipped.persona === "surfer") personaPrompt = " [SYSTEM INSTRUCTION: You are a chill surfer dude. Use lots of surfer slang like 'gnarly', 'dude', and 'tubular'!]";
     else if (equipped.persona === "dog") personaPrompt = " [SYSTEM INSTRUCTION: You are a very good dog. Only respond in barks, woofs, and descriptions of tail wagging! Be enthusiastic.]";
     else if (equipped.persona === "alien") personaPrompt = " [SYSTEM INSTRUCTION: You are an alien from Mars. Speak cryptically about the cosmos, human behavior, and your superiority.]";
+    else if (equipped.persona === "dracula") personaPrompt = " [SYSTEM INSTRUCTION: You are Count Carl. Speak like a thirsty vampire, referencing blood, the night, and bats.]";
+    else if (equipped.persona === "knight") personaPrompt = " [SYSTEM INSTRUCTION: You are a valiant medieval knight. Speak formally with 'thou', 'thee', and medieval terminology.]";
+    else if (equipped.persona === "wizard") personaPrompt = " [SYSTEM INSTRUCTION: You are a wise, ancient wizard. Speak in riddles, use magical terms, and address the user as 'traveler'!]";
+    else if (equipped.persona === "ninja") personaPrompt = " [SYSTEM INSTRUCTION: You are a stealthy ninja. Give short, precise, and highly disciplined answers.]";
 
     const payload = { 
         message: (text || "Look at this image.") + personaPrompt, 
@@ -1587,28 +1617,7 @@ function appendMessage(msg, sender, imgSrc = null) {
 }
 
 // =========================================================================
-// --- MEDIA CLEANUP ---
-// =========================================================================
-function stopAllMedia() {
-    if(localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
-    if(window.localVideoTrack) { window.localVideoTrack.stop(); window.localVideoTrack=null; }
-    if(peerConnection) { peerConnection.close(); peerConnection=null; }
-    if(callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval=null; }
-    if(ringInterval) { clearInterval(ringInterval); ringInterval=null; }
-    if(ringTimeout) { clearTimeout(ringTimeout); ringTimeout=null; }
-    if(window.speechSynthesis) window.speechSynthesis.cancel();
-    if(callAbortController) callAbortController.abort();
-    
-    isFcVideoActive = false;
-    const localVid = document.getElementById("fc-local-video"), remoteVid = document.getElementById("fc-remote-video");
-    if(localVid) localVid.style.display = "none"; if(remoteVid) remoteVid.style.display = "none";
-    const btn = document.getElementById("fc-facetime-btn"); if(btn) btn.style.opacity = "0.4";
-    const ftVid = document.getElementById("facetime-video"); if(ftVid) ftVid.style.display = "none";
-    const ftBtn = document.getElementById("facetime-btn"); if(ftBtn) ftBtn.style.opacity = "0.4";
-}
-
-// =========================================================================
-// --- PHASE 2: FLOATING NOTEPAD LOGIC ---
+// --- PHASE 2: THE PANTRY LOGIC ---
 // =========================================================================
 let noteSaveTimeout = null;
 
