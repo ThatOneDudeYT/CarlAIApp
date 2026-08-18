@@ -1,34 +1,37 @@
 let pendingAuthCredentials = { email: "", pass: "" };
 
 async function handleLogin(e) {
-    if (e) e.preventDefault();
+    // Forcefully stop any remaining page reloads
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
     const email = document.getElementById('auth-username').value.trim();
     const pass = document.getElementById('auth-password').value;
     const submitBtn = document.getElementById('auth-submit-btn');
 
-    if (!email || !pass) return;
+    if (!email || !pass) {
+        alert("Please enter both an email and a password.");
+        return;
+    }
 
     submitBtn.innerText = "Checking Account...";
     submitBtn.disabled = true;
 
     try {
         // 1. ALWAYS try to log in first.
-        // If the email and password are correct, you get in instantly! No OTP needed.
         await auth.signInWithEmailAndPassword(email, pass);
-
+        // If successful, Firebase instantly logs you in. No OTP required!
+        
     } catch (err) {
-        // 2. Fixes the soft lock! Check if it's a wrong password specifically.
-        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
-            alert("Incorrect password or credentials. Please try again.");
-        } 
-        // 3. If the user doesn't exist, ask if they want to register.
-        else if (err.code === 'auth/user-not-found') {
+        // 2. If it fails (Wrong Password OR New User)
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
             
-            // Ask the user what they meant to do!
-            const wantsToRegister = confirm("Login failed. (Account does not exist)\n\nWould you like to register a NEW account with this email?");
+            const wantsToRegister = confirm("Login failed. (Incorrect password OR account does not exist)\n\nWould you like to register a NEW account with this email?");
             
             if (wantsToRegister) {
-                submitBtn.innerText = "Sending 5-Digit Code...";
+                submitBtn.innerText = "Sending Code...";
                 try {
                     const res = await fetch("/api/send-otp", {
                         method: "POST",
@@ -43,6 +46,38 @@ async function handleLogin(e) {
                         submitBtn.disabled = false;
                         return;
                     }
+
+                    pendingAuthCredentials = { email, pass };
+                    document.getElementById("auth-step-credentials").style.display = "none";
+                    document.getElementById("auth-step-otp").style.display = "block";
+                    document.getElementById("otp-sent-email-display").innerText = email;
+                    document.getElementById("auth-otp-code").value = "";
+                    document.getElementById("auth-otp-code").focus();
+                } catch (networkErr) {
+                    console.warn("Backend missing, falling back to standard Firebase Auth...");
+                    try {
+                        await auth.createUserWithEmailAndPassword(email, pass);
+                        alert("Account created! Welcome to Carl AI.");
+                        document.getElementById('auth-password').value = "";
+                    } catch (fbErr) {
+                        if (fbErr.code === 'auth/email-already-in-use') {
+                            alert("This email is already registered! Please type the correct password.");
+                        } else {
+                            alert("Sign Up Error: " + fbErr.message);
+                        }
+                    }
+                }
+            }
+        } else {
+            alert("Error: " + err.message);
+        }
+    } finally {
+        if(submitBtn) {
+            submitBtn.innerText = "Sign In / Register";
+            submitBtn.disabled = false;
+        }
+    }
+}
 
                     pendingAuthCredentials = { email, pass };
                     document.getElementById("auth-step-credentials").style.display = "none";
