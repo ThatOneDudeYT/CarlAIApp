@@ -1,27 +1,19 @@
 let pendingAuthCredentials = { email: "", pass: "" };
 
-// Initialize Firebase
-const firebaseConfig = { 
-    apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", 
-    authDomain: "carl-ai-loggins.firebaseapp.com", 
-    projectId: "carl-ai-loggins", 
-    storageBucket: "carl-ai-loggins.firebasestorage.app", 
-    messagingSenderId: "372926140822", 
-    appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", 
-    measurementId: "G-G4H60BZHT3" 
-};
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const auth = firebase.auth(), db = firebase.firestore();
-
 async function handleLogin(e) {
-    if (e) e.preventDefault();
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
     const email = document.getElementById('auth-username').value.trim();
     const pass = document.getElementById('auth-password').value;
     const submitBtn = document.getElementById('auth-submit-btn');
 
-    if (!email || !pass) return;
+    if (!email || !pass) {
+        alert("Please enter both an email and a password.");
+        return;
+    }
 
     submitBtn.innerText = "Checking Account...";
     submitBtn.disabled = true;
@@ -29,12 +21,12 @@ async function handleLogin(e) {
     try {
         await auth.signInWithEmailAndPassword(email, pass);
     } catch (err) {
-        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
-            alert("Incorrect password. Please try again.");
-        } else if (err.code === 'auth/user-not-found') {
-            const wantsToRegister = confirm("No account found with this email.\n\nWould you like to register a NEW account?");
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+            
+            const wantsToRegister = confirm("Login failed. (Incorrect password OR account does not exist)\n\nWould you like to register a NEW account with this email?");
+            
             if (wantsToRegister) {
-                submitBtn.innerText = "Sending 5-Digit Code...";
+                submitBtn.innerText = "Sending Code...";
                 try {
                     const res = await fetch("/api/send-otp", {
                         method: "POST",
@@ -70,11 +62,26 @@ async function handleLogin(e) {
                         }
                     }
                 }
-           }
+            }
+        } else {
+            alert("Error: " + err.message);
+        }
+    } finally {
+        if(submitBtn) {
+            submitBtn.innerText = "Sign In / Register";
+            submitBtn.disabled = false;
+        }
+    }
+}
+
+async function handleVerifyOtp(e) {
+    if (e) e.preventDefault();
+    const code = document.getElementById('auth-otp-code').value.trim();
+    const verifyBtn = document.getElementById('otp-verify-btn');
+
     if (code.length !== 5) { alert("Please enter the full 5-digit code."); return; }
 
-    verifyBtn.innerText = "Verifying..."; 
-    verifyBtn.disabled = true;
+    verifyBtn.innerText = "Verifying..."; verifyBtn.disabled = true;
 
     try {
         const res = await fetch("/api/verify-otp", {
@@ -112,37 +119,7 @@ function cancelOtpStep() {
     pendingAuthCredentials = { email: "", pass: "" };
 }
 
-// ... [Keep all of your Firebase initialization, Burger Clicker logic, and Chat functions exactly as they are] ...
-
-// FIX 3: Cleaned up the truncated processFile function at the very bottom
-function processFile(file) {
-    if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            pendingImageSrc = event.target.result; 
-            pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1]; 
-            pendingImageBase64 = pendingImageSrc.split(',')[1];
-            
-            const imgEl = document.getElementById('image-preview-img');
-            const boxEl = document.getElementById('image-preview-box');
-            
-            if (imgEl && boxEl) { 
-                imgEl.src = pendingImageSrc; 
-                boxEl.classList.add('active'); 
-            }
-        };
-        reader.readAsDataURL(file);
-    } else {
-        alert("Please select a valid image file.");
-    }
-}
-
-function cancelOtpStep() {
-    document.getElementById("auth-step-otp").style.display = "none";
-    document.getElementById("auth-step-credentials").style.display = "block";
-    pendingAuthCredentials = { email: "", pass: "" };
-}
-
+// --- Firebase Init ---
 const firebaseConfig = { apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", authDomain: "carl-ai-loggins.firebaseapp.com", projectId: "carl-ai-loggins", storageBucket: "carl-ai-loggins.firebasestorage.app", messagingSenderId: "372926140822", appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", measurementId: "G-G4H60BZHT3" };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
@@ -233,7 +210,7 @@ function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sideb
 // --- AUTHENTICATION ---
 function continueAsGuest() {
     isGuest = true;
-    document.getElementById('auth-overlay').classList.add('hidden');
+    document.getElementById('auth-overlay').style.display = 'none';
     document.body.classList.add('guest-mode');
     currentUser = "Guest";
     currentUserAvatar = "/static/icons/default-avatar.png";
@@ -247,9 +224,9 @@ auth.onAuthStateChanged(async (user) => {
         isGuest = false;
         document.body.classList.remove('guest-mode');
         firebaseUserId = user.uid; currentUser = user.displayName || user.email.split('@')[0]; currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
-        if (ov) ov.classList.add('hidden'); await loadUserDataFromCloud();
+        if (ov) ov.style.display = 'none'; await loadUserDataFromCloud();
     } else if (!isGuest) { 
-        firebaseUserId = null; if (ov) ov.classList.remove('hidden'); 
+        firebaseUserId = null; if (ov) ov.style.display = 'flex'; 
     }
 });
 
@@ -266,10 +243,10 @@ function handleSignOut() {
         inventory=[]; userPresets=[]; claimedCodes=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
         
         userNotes = "";
-        const editor = document.getElementById("pantry-editor");
+        const editor = document.getElementById("notepad-editor");
         if (editor) editor.innerHTML = "";
-        const floatingPantry = document.getElementById("floating-pantry");
-        if (floatingPantry) floatingPantry.classList.remove("active");
+        const floatingNotepad = document.getElementById("floating-notepad");
+        if (floatingNotepad) floatingNotepad.style.display = "none";
         
         if (groupsUnsubscribe) { groupsUnsubscribe(); groupsUnsubscribe=null; }
         if (globalChatUnsubscribe) { globalChatUnsubscribe(); globalChatUnsubscribe=null; }
@@ -312,7 +289,7 @@ async function loadUserDataFromCloud() {
             
             // LOAD NOTES
             userNotes = data.notes || "";
-            const editor = document.getElementById("pantry-editor");
+            const editor = document.getElementById("notepad-editor");
             if (editor) editor.innerHTML = userNotes;
 
             updateProfileUI(); applyEquippedCosmetics();
@@ -440,6 +417,7 @@ function switchView(viewId) {
 // =========================================================================
 // --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
 // =========================================================================
+// FIX: Added more items to the shop!
 const shopCatalog = [
     { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
     { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 2000, desc: "Carl reviews your questions like a furious five-star culinary chef." },
@@ -1545,9 +1523,117 @@ function processFile(file) {
         reader.readAsDataURL(file);
     } else {
         const reader = new FileReader();
-               reader.onload = function(event) {
-            console.log("File loaded:", file.name);
+        reader.onload = function(event) {
+            const text = event.target.result, input = document.getElementById("user-input");
+            if (input) input.value += `\n\`\`\`${file.name.split('.').pop() || ''}\n${text}\n\`\`\`\n`;
         };
         reader.readAsText(file);
     }
+}
+
+const filePicker = document.getElementById('native-file-picker');
+if (filePicker) { filePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processFile(file); filePicker.value = ""; }); }
+
+let dragCounter = 0; const dragOverlay = document.getElementById('drag-drop-overlay'), dragChatView = document.getElementById('view-chat');
+if (dragChatView && dragOverlay) {
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => window.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false));
+    window.addEventListener('dragenter', (e) => { if (dragChatView.classList.contains('active')) { dragCounter++; dragOverlay.classList.add('active'); } });
+    window.addEventListener('dragleave', (e) => { if (dragChatView.classList.contains('active')) { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dragOverlay.classList.remove('active'); } } });
+    window.addEventListener('drop', (e) => { dragCounter = 0; dragOverlay.classList.remove('active'); if (dragChatView.classList.contains('active') && e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+}
+
+window.copyCode = function(button) { const code = decodeURIComponent(button.getAttribute("data-code")); navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error("Copy failed", err)); };
+
+function showCopyToast() {
+    let toast = document.getElementById('copy-toast');
+    if (!toast) { toast = document.createElement('div'); toast.id = 'copy-toast'; toast.className = 'copy-toast'; toast.innerHTML = `<img src="/static/icons/CopyIcon.png" alt="Copy"><span>Text Copied</span>`; document.body.appendChild(toast); }
+    toast.classList.add('show'); if (window.copyToastTimeout) clearTimeout(window.copyToastTimeout); window.copyToastTimeout = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function formatMessage(text) {
+    let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
+    safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
+        const displayLang = (lang || "CODE").toUpperCase(), encodedCode = encodeURIComponent(code);
+        let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
+        return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-language">${displayLang}</span><button class="copy-code-btn" data-code="${encodedCode}" onclick="copyCode(this)"><img src="/static/icons/CopyIcon.png" alt="Copy"></button></div><div class="code-block-body">${styledCode.trim()}</div></div>`;
+    });
+    safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
+    return safeText;
+}
+
+function appendMessage(msg, sender, imgSrc = null) {
+    const log = document.getElementById("chat-log"); if (!log) return;
+    const bubble = document.createElement("div"); 
+    bubble.className = `chat-bubble ${sender}`;
+    
+    if (sender === "user" && equipped.bubble && equipped.bubble !== "default") {
+        bubble.classList.add(`bubble-${equipped.bubble}`);
+    }
+
+    if (msg) { const textNode = document.createElement("div"); textNode.innerText = msg; bubble.appendChild(textNode); }
+    if (imgSrc) { const img = document.createElement("img"); img.src = imgSrc; img.className = "chat-image"; img.draggable = false; bubble.appendChild(img); }
+    log.appendChild(bubble); log.scrollTop = log.scrollHeight;
+}
+
+// =========================================================================
+// --- MEDIA CLEANUP ---
+// =========================================================================
+function stopAllMedia() {
+    if(localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+    if(window.localVideoTrack) { window.localVideoTrack.stop(); window.localVideoTrack=null; }
+    if(peerConnection) { peerConnection.close(); peerConnection=null; }
+    if(callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval=null; }
+    if(ringInterval) { clearInterval(ringInterval); ringInterval=null; }
+    if(ringTimeout) { clearTimeout(ringTimeout); ringTimeout=null; }
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+    if(callAbortController) callAbortController.abort();
+    
+    isFcVideoActive = false;
+    const localVid = document.getElementById("fc-local-video"), remoteVid = document.getElementById("fc-remote-video");
+    if(localVid) localVid.style.display = "none"; if(remoteVid) remoteVid.style.display = "none";
+    const btn = document.getElementById("fc-facetime-btn"); if(btn) btn.style.opacity = "0.4";
+    const ftVid = document.getElementById("facetime-video"); if(ftVid) ftVid.style.display = "none";
+    const ftBtn = document.getElementById("facetime-btn"); if(ftBtn) ftBtn.style.opacity = "0.4";
+}
+
+// =========================================================================
+// --- PHASE 2: FLOATING NOTEPAD LOGIC ---
+// =========================================================================
+let noteSaveTimeout = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+    const editor = document.getElementById("notepad-editor");
+    if (editor) {
+        editor.addEventListener("input", () => {
+            userNotes = editor.innerHTML;
+            if (noteSaveTimeout) clearTimeout(noteSaveTimeout);
+            noteSaveTimeout = setTimeout(() => { saveSessionData(); }, 1500); 
+        });
+    }
+
+    const notepad = document.getElementById("floating-notepad");
+    const header = document.getElementById("notepad-header");
+    if (notepad && header) makeDraggable(notepad, header);
+});
+
+function toggleNotepad() {
+    const np = document.getElementById("floating-notepad");
+    if (!np) return;
+    np.classList.toggle("active");
+}
+
+function makeDraggable(element, dragHandle) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    dragHandle.onmousedown = function(e) {
+        if (e.target.tagName.toLowerCase() === "button") return;
+        e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY;
+        document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
+    };
+    function elementDrag(e) {
+        e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px"; element.style.left = (element.offsetLeft - pos1) + "px";
+    }
+    function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
 }
