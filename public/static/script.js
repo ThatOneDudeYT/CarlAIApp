@@ -15,13 +15,17 @@ async function handleLogin(e) {
         // 1. ALWAYS try to log in first.
         // If the email and password are correct, you get in instantly! No OTP needed.
         await auth.signInWithEmailAndPassword(email, pass);
-        
+
     } catch (err) {
-        // 2. If it fails (Wrong Password OR New User), Firebase throws an error.
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+        // 2. Fixes the soft lock! Check if it's a wrong password specifically.
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
+            alert("Incorrect password or credentials. Please try again.");
+        } 
+        // 3. If the user doesn't exist, ask if they want to register.
+        else if (err.code === 'auth/user-not-found') {
             
             // Ask the user what they meant to do!
-            const wantsToRegister = confirm("Login failed. (Incorrect password OR account does not exist)\n\nWould you like to register a NEW account with this email?");
+            const wantsToRegister = confirm("Login failed. (Account does not exist)\n\nWould you like to register a NEW account with this email?");
             
             if (wantsToRegister) {
                 submitBtn.innerText = "Sending 5-Digit Code...";
@@ -61,21 +65,8 @@ async function handleLogin(e) {
                     }
                 }
             }
-        } else {
-            alert(err.message);
-        }
-    } finally {
-        if(submitBtn) {
-            submitBtn.innerText = "Sign In / Register";
-            submitBtn.disabled = false;
-        }
-    }
-} 
-        // 3. If they typed the WRONG password for an existing account (Fixes the soft lock!)
-        else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
-            alert("Incorrect password. Please try again.");
         } 
-        // 4. Any other errors
+        // 4. Catch any other errors
         else {
             alert(err.message);
         }
@@ -86,8 +77,6 @@ async function handleLogin(e) {
         }
     }
 }
-
-async function handleVerifyOtp(e) {
     if (e) e.preventDefault();
     const code = document.getElementById('auth-otp-code').value.trim();
     const verifyBtn = document.getElementById('otp-verify-btn');
