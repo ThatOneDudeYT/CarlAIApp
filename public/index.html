@@ -21,10 +21,11 @@
             <!-- STEP 1: EMAIL & PASSWORD -->
             <div id="auth-step-credentials">
                 <h2>Log In / Sign Up</h2>
-                <form id="login-form" onsubmit="handleLogin(event)">
+                <form id="login-form" onsubmit="event.preventDefault(); handleLogin(event);">
                     <input type="email" id="auth-username" placeholder="Email" required autocomplete="off">
                     <input type="password" id="auth-password" placeholder="Password" required>
-                    <button type="submit" id="auth-submit-btn" class="auth-btn">Sign In / Register</button>
+                    <!-- Changed to type="button" so it NEVER forces a page reload -->
+                    <button type="button" id="auth-submit-btn" class="auth-btn" onclick="handleLogin(event)">Sign In / Register</button>
                 </form>
                 <div class="auth-divider"><span>OR</span></div>
                 <button type="button" class="google-auth-btn" onclick="signInWithGoogle()">
