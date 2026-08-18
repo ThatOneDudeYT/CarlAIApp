@@ -70,22 +70,7 @@ async function handleLogin(e) {
                         }
                     }
                 }
-            }
-        } else {
-            alert(err.message);
-        }
-    } finally {
-        if (submitBtn) {
-            submitBtn.innerText = "Sign In / Register";
-            submitBtn.disabled = false;
-        }
-    }
-}
-async function handleVerifyOtp(e) {
-    if (e) e.preventDefault();
-    const code = document.getElementById('auth-otp-code').value.trim();
-    const verifyBtn = document.getElementById('otp-verify-btn');
-
+           }
     if (code.length !== 5) { alert("Please enter the full 5-digit code."); return; }
 
     verifyBtn.innerText = "Verifying..."; 
@@ -1560,4 +1545,9 @@ function processFile(file) {
         reader.readAsDataURL(file);
     } else {
         const reader = new FileReader();
-        reader.onload = function(event)I encountered an error doing what you asked. Could you try again?
+               reader.onload = function(event) {
+            console.log("File loaded:", file.name);
+        };
+        reader.readAsText(file);
+    }
+}
