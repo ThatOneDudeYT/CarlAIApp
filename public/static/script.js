@@ -1,6 +1,7 @@
 let pendingAuthCredentials = { email: "", pass: "" };
 
 async function handleLogin(e) {
+    // Forcefully stop any remaining page reloads
     if (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -19,8 +20,17 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
 
     try {
+        // 1. ALWAYS try to log in first.
+        // If the account exists and the password is correct, this succeeds instantly!
+        // No email verification OTP is required for existing accounts.
         await auth.signInWithEmailAndPassword(email, pass);
+        
+        // Instantly hide the login screen so you can get right into the app
+        document.getElementById('auth-overlay').style.display = 'none';
+        document.getElementById('auth-password').value = "";
+        
     } catch (err) {
+        // 2. If it fails (Wrong Password OR New User)
         if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
             
             const wantsToRegister = confirm("Login failed. (Incorrect password OR account does not exist)\n\nWould you like to register a NEW account with this email?");
@@ -36,10 +46,7 @@ async function handleLogin(e) {
                     const data = await res.json();
 
                     if (!res.ok || data.error) {
-                        alert(data.error || "Failed to send verification code.");
-                        submitBtn.innerText = "Sign In / Register";
-                        submitBtn.disabled = false;
-                        return;
+                        throw new Error("Backend missing"); // Force fallback if Render server isn't handling OTPs
                     }
 
                     pendingAuthCredentials = { email, pass };
@@ -49,14 +56,15 @@ async function handleLogin(e) {
                     document.getElementById("auth-otp-code").value = "";
                     document.getElementById("auth-otp-code").focus();
                 } catch (networkErr) {
-                    console.warn("Backend missing, falling back to standard Firebase Auth...");
+                    console.warn("Backend missing, falling back to standard Firebase Auth without OTP...");
                     try {
                         await auth.createUserWithEmailAndPassword(email, pass);
+                        document.getElementById('auth-overlay').style.display = 'none';
                         alert("Account created! Welcome to Carl AI.");
                         document.getElementById('auth-password').value = "";
                     } catch (fbErr) {
                         if (fbErr.code === 'auth/email-already-in-use') {
-                            alert("This email is already registered! Please type the correct password.");
+                            alert("This email is already registered! You typed the wrong password. Please try again.");
                         } else {
                             alert("Sign Up Error: " + fbErr.message);
                         }
@@ -119,7 +127,6 @@ function cancelOtpStep() {
     pendingAuthCredentials = { email: "", pass: "" };
 }
 
-// --- Firebase Init ---
 const firebaseConfig = { apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", authDomain: "carl-ai-loggins.firebaseapp.com", projectId: "carl-ai-loggins", storageBucket: "carl-ai-loggins.firebasestorage.app", messagingSenderId: "372926140822", appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", measurementId: "G-G4H60BZHT3" };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
@@ -246,7 +253,7 @@ function handleSignOut() {
         const editor = document.getElementById("notepad-editor");
         if (editor) editor.innerHTML = "";
         const floatingNotepad = document.getElementById("floating-notepad");
-        if (floatingNotepad) floatingNotepad.style.display = "none";
+        if (floatingNotepad) floatingNotepad.classList.remove("active");
         
         if (groupsUnsubscribe) { groupsUnsubscribe(); groupsUnsubscribe=null; }
         if (globalChatUnsubscribe) { globalChatUnsubscribe(); globalChatUnsubscribe=null; }
@@ -417,7 +424,6 @@ function switchView(viewId) {
 // =========================================================================
 // --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
 // =========================================================================
-// FIX: Added more items to the shop!
 const shopCatalog = [
     { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
     { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 2000, desc: "Carl reviews your questions like a furious five-star culinary chef." },
@@ -882,7 +888,7 @@ function updateUpgradesUI() {
 }
 
 // =========================================================================
-// --- FRIENDS, GROUPS & PHASE 3 MULTIPLAYER ---
+// --- FRIENDS, GROUPS & MULTIPLAYER ---
 // =========================================================================
 const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
 
@@ -939,7 +945,6 @@ async function fetchAllUsers() {
     try {
         if (firebaseUserId && db) {
             const snapshot = await db.collection("users").get(); allUsersCache = [];
-            // FIX: Only adds users who are actively in the database (ghosts are automatically removed!)
             snapshot.forEach(doc => { const data = doc.data(); if (doc.id !== firebaseUserId && data.username) allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "", equipped: data.equipped || {} }); });
         }
     } catch (err) { console.error("Error fetching real users", err); }
@@ -952,7 +957,6 @@ function renderFriendsView() {
     if (!findList || !friendsList || !groupsList) return;
     findList.innerHTML = ""; friendsList.innerHTML = ""; groupsList.innerHTML = "";
 
-    // Render Groups (Phase 3)
     if (myGroups.length === 0) {
         groupsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No groups yet.</p>";
     } else {
@@ -989,7 +993,6 @@ function renderFriendsView() {
         });
     }
 
-    // FIX: Show everyone not your friend by default!
     let displayList = allUsersCache.filter(u => !myFriends.includes(u.id) && !myRequests.includes(u.id));
     if (query) {
         displayList = displayList.filter(u => u.username.toLowerCase().includes(query));
@@ -1038,7 +1041,6 @@ async function unfriendUser(targetId) {
     await db.collection("users").doc(targetId).update({ friends: firebase.firestore.FieldValue.arrayRemove(firebaseUserId) });
 }
 
-// --- PHASE 3: CREATE GROUP LOGIC ---
 function openCreateGroupModal() {
     if (isGuest) return alert("Guests cannot create groups. Please sign up!");
     const list = document.getElementById("create-group-friends-list");
@@ -1086,7 +1088,6 @@ async function confirmCreateGroup() {
     }
 }
 
-// --- SHARED CHAT RENDERER (DMs, Groups, Global) ---
 function renderChatSnapshot(snapshot, logElementId, isGlobal = false) {
     const log = document.getElementById(logElementId); 
     log.innerHTML = "";
@@ -1148,7 +1149,6 @@ async function deleteSharedMessage(msgId, logId) {
     else if (logId === "group-chat-log") await db.collection("groups").doc(activeGroupId).collection("messages").doc(msgId).delete();
 }
 
-// --- DIRECT MESSAGES ---
 function openDirectMessage(user) {
     isDM = true; currentDmUser = user; activeChatId = "dm_" + [firebaseUserId, user.id].sort().join('_');
     document.getElementById("dm-header-avatar").innerHTML = getAvatarHTML(user);
@@ -1182,7 +1182,6 @@ async function sendDmMessage() {
     });
 }
 
-// --- PHASE 3: GLOBAL LOBBY ---
 function openGlobalChat() {
     if (isGuest) return alert("Guests cannot join the public lobby. Please create an account!");
     document.getElementById("global-chat-log").innerHTML = "";
@@ -1212,7 +1211,6 @@ async function sendGlobalMessage() {
     });
 }
 
-// --- PHASE 3: GROUP CHATS ---
 function openGroupChat(groupId, groupName, membersStr) {
     activeGroupId = groupId;
     document.getElementById("group-header-name").innerText = groupName;
@@ -1247,7 +1245,6 @@ async function sendGroupMessage() {
     });
 }
 
-// --- SHARED IMAGE FILE PROCESSING ---
 function processImageInput(file, type) {
     if (file.type.startsWith('image/')) {
         const reader = new FileReader();
