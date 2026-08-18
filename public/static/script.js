@@ -1,20 +1,27 @@
 let pendingAuthCredentials = { email: "", pass: "" };
 
-// FIX 1: Cleaned up handleLogin without the duplicate chunk
+// Initialize Firebase
+const firebaseConfig = { 
+    apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", 
+    authDomain: "carl-ai-loggins.firebaseapp.com", 
+    projectId: "carl-ai-loggins", 
+    storageBucket: "carl-ai-loggins.firebasestorage.app", 
+    messagingSenderId: "372926140822", 
+    appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", 
+    measurementId: "G-G4H60BZHT3" 
+};
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth(), db = firebase.firestore();
+
 async function handleLogin(e) {
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    
+    if (e) e.preventDefault();
     const email = document.getElementById('auth-username').value.trim();
     const pass = document.getElementById('auth-password').value;
     const submitBtn = document.getElementById('auth-submit-btn');
 
-    if (!email || !pass) {
-        alert("Please enter both an email and a password.");
-        return;
-    }
+    if (!email || !pass) return;
 
     submitBtn.innerText = "Checking Account...";
     submitBtn.disabled = true;
@@ -22,12 +29,12 @@ async function handleLogin(e) {
     try {
         await auth.signInWithEmailAndPassword(email, pass);
     } catch (err) {
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-            
-            const wantsToRegister = confirm("Login failed. (Incorrect password OR account does not exist)\n\nWould you like to register a NEW account with this email?");
-            
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
+            alert("Incorrect password. Please try again.");
+        } else if (err.code === 'auth/user-not-found') {
+            const wantsToRegister = confirm("No account found with this email.\n\nWould you like to register a NEW account?");
             if (wantsToRegister) {
-                submitBtn.innerText = "Sending Code...";
+                submitBtn.innerText = "Sending 5-Digit Code...";
                 try {
                     const res = await fetch("/api/send-otp", {
                         method: "POST",
@@ -65,17 +72,15 @@ async function handleLogin(e) {
                 }
             }
         } else {
-            alert("Error: " + err.message);
+            alert(err.message);
         }
     } finally {
-        if(submitBtn) {
+        if (submitBtn) {
             submitBtn.innerText = "Sign In / Register";
             submitBtn.disabled = false;
         }
     }
 }
-
-// FIX 2: Added the proper function wrapper for the OTP verification
 async function handleVerifyOtp(e) {
     if (e) e.preventDefault();
     const code = document.getElementById('auth-otp-code').value.trim();
