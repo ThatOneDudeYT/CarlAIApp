@@ -24,7 +24,7 @@
                 <form id="login-form" onsubmit="event.preventDefault(); handleLogin(event);">
                     <input type="email" id="auth-username" placeholder="Email" required autocomplete="off">
                     <input type="password" id="auth-password" placeholder="Password" required>
-                    <!-- Changed to type="button" so it NEVER forces a page reload -->
+                    <!-- Type set to button to prevent page reloads! -->
                     <button type="button" id="auth-submit-btn" class="auth-btn" onclick="handleLogin(event)">Sign In / Register</button>
                 </form>
                 <div class="auth-divider"><span>OR</span></div>
@@ -41,9 +41,9 @@
                 <p style="color: var(--text-sub); font-size: 14px; margin-bottom: 16px;">
                     We sent a 5-digit code to <br><b id="otp-sent-email-display" style="color: #fff;"></b>
                 </p>
-                <form id="otp-form" onsubmit="handleVerifyOtp(event)">
+                <form id="otp-form" onsubmit="event.preventDefault(); handleVerifyOtp(event);">
                     <input type="text" id="auth-otp-code" placeholder="12345" maxlength="5" pattern="[0-9]{5}" required autocomplete="one-time-code" style="letter-spacing: 8px; font-size: 26px; text-align: center; width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); outline: none;">
-                    <button type="submit" id="otp-verify-btn" class="auth-btn" style="margin-top: 12px; width: 100%;">Verify Code</button>
+                    <button type="button" id="otp-verify-btn" class="auth-btn" style="margin-top: 12px; width: 100%;" onclick="handleVerifyOtp(event)">Verify Code</button>
                 </form>
                 <button type="button" class="guest-auth-btn" style="margin-top: 12px;" onclick="cancelOtpStep()">Back</button>
             </div>
@@ -64,7 +64,7 @@
             </div>
             
             <div class="sidebar-nav">
-                <!-- Expanded PC Buttons (Removed Clipboard) -->
+                <!-- Expanded PC Buttons -->
                 <div class="full-nav-items">
                     <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat" draggable="false">
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
@@ -74,7 +74,7 @@
                     <img src="/static/icons/Inventory.png" class="pc-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" draggable="false">
                 </div>
                 
-                <!-- Collapsed PC Buttons (Removed Clipboard) -->
+                <!-- Collapsed PC Buttons -->
                 <div class="mini-nav-items">
                     <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat" draggable="false">
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search" draggable="false">
@@ -312,8 +312,8 @@
                     </div>
 
                     <div class="settings-row req-login">
-                        <label class="settings-label">The Pantry</label>
-                        <button class="settings-upload-btn" onclick="togglePantry()">Open Pantry</button>
+                        <label class="settings-label">The Pantry (Notepad)</label>
+                        <button class="settings-upload-btn" onclick="toggleNotepad()">Open Notepad</button>
                     </div>
 
                     <div class="settings-row vertical-on-mobile req-login">
@@ -527,17 +527,6 @@
 
         </main>
     </div>
-    
-    <!-- GIFT BURGERS MODAL -->
-    <div id="gift-modal" class="auth-overlay" style="display: none;">
-        <div class="auth-card" style="text-align: center;">
-            <h2>Send Burgers 🎁</h2>
-            <p style="color: var(--text-sub); margin-bottom: 15px;">Send some 🍔 to <span id="gift-friend-name" style="color: #fff; font-weight: bold;">your friend</span>!</p>
-            <input type="number" id="gift-amount" placeholder="Amount (e.g. 100)" min="1" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); margin-bottom: 15px; text-align: center; font-size: 20px; outline: none;">
-            <button class="auth-btn" style="width: 100%; margin-bottom: 10px;" onclick="confirmSendBurgers()">Send Burgers</button>
-            <button type="button" class="guest-auth-btn" style="width: 100%;" onclick="closeGiftModal()">Cancel</button>
-        </div>
-    </div>
 
     <!-- PHASE 3: CREATE GROUP MODAL -->
     <div id="create-group-modal" class="auth-overlay" style="display: none;">
@@ -563,19 +552,16 @@
         </div>
     </div>
 
-    <!-- PHASE 2: THE PANTRY WINDOW -->
-    <div id="floating-pantry" class="floating-pantry">
-        <div class="pantry-header" id="pantry-header">
+    <!-- PHASE 2: THE PANTRY FLOATING NOTEPAD -->
+    <div id="floating-notepad" class="floating-notepad" style="display: none;">
+        <div class="notepad-header" id="notepad-header">
             <span style="display: flex; align-items: center; gap: 8px;">
                 <img src="/static/icons/Clipboard.png" style="width: 20px; height: 20px;" draggable="false"> The Pantry
             </span>
-            <button class="pantry-close-btn" onclick="togglePantry()">✕</button>
+            <button class="notepad-close-btn" onclick="toggleNotepad()">✕</button>
         </div>
-        <div id="pantry-editor" class="pantry-editor" contenteditable="true" spellcheck="false" data-placeholder="Jot down notes, paste images, or drop code here... auto-saved to cloud!"></div>
+        <div id="notepad-editor" class="notepad-editor" contenteditable="true" spellcheck="false" data-placeholder="Jot down notes, paste images, or drop code here... auto-saved to cloud!"></div>
     </div>
-
-    <!-- Hidden element to route friend audio safely -->
-    <audio id="remote-audio" autoplay playsinline style="position: absolute; width: 0; height: 0; visibility: hidden; pointer-events: none;"></audio>
 
     <script src="/static/script.js"></script>
     <script src="/static/games.js"></script>
