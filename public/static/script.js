@@ -118,6 +118,26 @@ function cancelOtpStep() {
     document.getElementById("auth-step-credentials").style.display = "block";
     pendingAuthCredentials = { email: "", pass: "" };
 }
+// --- PASSWORD RESET ---
+async function resetPassword() {
+    const email = document.getElementById('auth-username').value.trim();
+    
+    if (!email) {
+        alert("Please enter your email address in the top box first, then click 'Forgot Password?'.");
+        return;
+    }
+
+    try {
+        await auth.sendPasswordResetEmail(email);
+        alert(`A password reset link has been sent to ${email}!\n\nCheck your inbox (and spam folder), click the link to create a new password, and then come back here to log in.`);
+    } catch (error) {
+        if (error.code === 'auth/user-not-found') {
+            alert("No account found with that email address.");
+        } else {
+            alert("Error: " + error.message);
+        }
+    }
+}
 
 const firebaseConfig = { apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", authDomain: "carl-ai-loggins.firebaseapp.com", projectId: "carl-ai-loggins", storageBucket: "carl-ai-loggins.firebasestorage.app", messagingSenderId: "372926140822", appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", measurementId: "G-G4H60BZHT3" };
 firebase.initializeApp(firebaseConfig);
