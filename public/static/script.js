@@ -237,14 +237,6 @@ document.addEventListener('mousemove', (e) => {
     });
 });
 
-document.addEventListener('mouseleave', () => {
-    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
-    glowElements.forEach(el => {
-        el.style.setProperty('--mouse-x', `-999px`);
-        el.style.setProperty('--mouse-y', `-999px`);
-    });
-});
-
 function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
 
 // --- AUTHENTICATION ---
@@ -524,7 +516,7 @@ function switchView(viewId) {
 }
 
 // =========================================================================
-// --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
+// --- BURGER SHOP & INVENTORY SYSTEM ---
 // =========================================================================
 const shopCatalog = [
     { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
@@ -613,6 +605,74 @@ const shopCatalog = [
     { id: "title_admin", type: "title", val: "Admin", name: "Title: Admin", cost: 0, desc: "Exclusive developer badge.", hidden: true }
 ];
 
+// --- SHOP PREVIEW GENERATOR ---
+function getBgPreviewStyle(val) {
+    if (val === "gold") return "radial-gradient(circle, rgba(245, 158, 11, 0.5) 0%, #1a1a1a 80%)";
+    if (val === "cyber") return "radial-gradient(circle, rgba(236, 72, 153, 0.5) 0%, #1a1a1a 80%)";
+    if (val === "ocean") return "radial-gradient(circle, rgba(14, 165, 233, 0.5) 0%, #1a1a1a 80%)";
+    if (val === "matrix") return "radial-gradient(circle, rgba(34, 197, 94, 0.5) 0%, #1a1a1a 80%)";
+    if (val === "void") return "radial-gradient(circle, rgba(88, 28, 135, 0.4) 0%, #000 80%)";
+    if (val === "inferno") return "radial-gradient(circle, rgba(220, 38, 38, 0.5) 0%, #1a1a1a 80%)";
+    if (val === "stars") return "radial-gradient(circle, rgba(253, 224, 71, 0.4) 0%, #1a1a1a 80%)";
+    if (val === "nebula") return "radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, rgba(236, 72, 153, 0.2) 50%, #1a1a1a 90%)";
+    if (val === "bloodmoon") return "radial-gradient(circle, rgba(153, 27, 27, 0.5) 0%, #1a1a1a 80%)";
+    if (val === "northernlights") return "radial-gradient(circle, rgba(52, 211, 153, 0.4) 0%, rgba(14, 165, 233, 0.2) 50%, #1a1a1a 90%)";
+    if (val === "sunset") return "radial-gradient(circle, rgba(249, 115, 22, 0.4) 0%, rgba(236, 72, 153, 0.2) 50%, #1a1a1a 90%)";
+    return "radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, #1a1a1a 80%)";
+}
+
+function getPersonaPreviewText(val) {
+    const lines = {
+        pirate: "Ahoy there, matey!",
+        chef: "This code is raw!!",
+        cyber: "Accessing mainframe...",
+        sarcastic: "Oh, brilliant idea.",
+        yoda: "Help you, I will.",
+        surfer: "That's totally gnarly, dude.",
+        dog: "Woof! *wags tail*",
+        alien: "Greetings, earthling.",
+        dracula: "I vant to answer your prompt...",
+        knight: "I shall defend this code!",
+        wizard: "A wizard is never late.",
+        ninja: "...",
+        cowboy: "Howdy, partner!",
+        detective: "Let's investigate this..."
+    };
+    return lines[val] || "Hello!";
+}
+
+function getPreviewHTML(item) {
+    if (item.type === "frame") {
+        return `<div class="avatar-frame-wrapper frame-${item.val}"><img src="${currentUserAvatar}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;"></div>`;
+    }
+    if (item.type === "bubble") {
+        return `<div class="dm-message-content bubble-${item.val}" style="padding: 10px 16px; border-radius: 12px; font-size: 14px;">Preview Text</div>`;
+    }
+    if (item.type === "title") {
+        return `<span class="user-title-badge" style="display:inline-block; font-size: 13px; padding: 6px 12px;">${item.val}</span>`;
+    }
+    if (item.type === "background") {
+        return `<div style="width: 100%; max-width: 140px; height: 70px; border-radius: 12px; background: ${getBgPreviewStyle(item.val)}; border: 1px solid #333;"></div>`;
+    }
+    if (item.type === "bjFelt") {
+        return `<div class="bj-arena felt-${item.val}" style="width: 100%; max-width: 140px; height: 70px; min-height: 70px; padding: 0; display:flex; justify-content:center; align-items:center; border-radius:12px;"><div class="bj-card" style="width:30px;height:45px;font-size:14px;box-shadow:none;">♠A</div></div>`;
+    }
+    if (item.type === "c4Skin") {
+        let p1 = "🍔", p2 = "🍟";
+        if (item.val === "pizza_hotdog") { p1 = "🍕"; p2 = "🌭"; }
+        else if (item.val === "cookie") { p1 = "🍪"; p2 = "🍩"; }
+        else if (item.val === "sushi_taco") { p1 = "🍣"; p2 = "🌮"; }
+        return `<div style="font-size: 32px; display:flex; gap:10px; background:#111; padding:10px 20px; border-radius:12px;"><span>${p1}</span><span>${p2}</span></div>`;
+    }
+    if (item.type === "persona") {
+        return `<div style="display:flex; flex-direction:column; align-items:center; gap:8px;"><span style="font-size:32px;">💬</span><span style="font-size:13px; font-style:italic; color:#aaa; text-align:center;">"${getPersonaPreviewText(item.val)}"</span></div>`;
+    }
+    if (item.type === "goldenSpatula") {
+        return `<div style="font-size: 42px; text-shadow: 0 0 15px #fbbf24;">🍳</div><div style="color:#84cc16; font-weight:bold; margin-top:5px;">+50% Boost</div>`;
+    }
+    return `<div>Preview</div>`;
+}
+
 function renderShopView() {
     const container = document.getElementById("shop-items-container");
     if (!container) return;
@@ -649,7 +709,14 @@ function renderShopView() {
         card.innerHTML = `
             <div class="shop-card-content">
                 <span class="shop-item-title">${item.name}</span>
-                <div class="shop-item-desc">${item.desc}</div>
+                <div class="shop-item-body">
+                    <div class="shop-item-default">
+                        <div class="shop-item-desc">${item.desc}</div>
+                    </div>
+                    <div class="shop-item-preview">
+                        ${getPreviewHTML(item)}
+                    </div>
+                </div>
             </div>
             ${btnHTML}
         `;
@@ -666,7 +733,7 @@ async function openLootBox() {
         
         if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
         else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
-        else if (roll < 0.45) { // 30% Chance to win a random shop item
+        else if (roll < 0.45) { 
             const availableItems = shopCatalog.filter(i => !i.hidden);
             const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
             if (inventory.includes(randomItem.id)) {
@@ -702,7 +769,7 @@ async function openLootBox() {
             
             if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
             else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
-            else if (roll < 0.45) { // 30% Chance for Shop Item
+            else if (roll < 0.45) { 
                 const availableItems = shopCatalog.filter(i => !i.hidden);
                 const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
                 if (inventory.includes(randomItem.id)) {
@@ -721,7 +788,7 @@ async function openLootBox() {
                     burgers: currentBurgers - cost + payout,
                     inventory: firebase.firestore.FieldValue.arrayUnion(itemWon)
                 });
-                inventory.push(itemWon); // Update locally for instant UI changes
+                inventory.push(itemWon); 
             } else {
                 transaction.update(userRef, { burgers: currentBurgers - cost + payout });
             }
@@ -877,7 +944,14 @@ function renderInventoryView() {
             card.innerHTML = `
                 <div class="shop-card-content">
                     <span class="shop-item-title">${item.name}</span>
-                    <div class="shop-item-desc">${item.desc}</div>
+                    <div class="shop-item-body">
+                        <div class="shop-item-default">
+                            <div class="shop-item-desc">${item.desc}</div>
+                        </div>
+                        <div class="shop-item-preview">
+                            ${getPreviewHTML(item)}
+                        </div>
+                    </div>
                 </div>
                 <button class="inv-action-btn ${btnClass}" onclick="toggleInventoryItem('${item.id}')">${btnText}</button>
             `;
