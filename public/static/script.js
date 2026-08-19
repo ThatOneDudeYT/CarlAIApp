@@ -231,6 +231,7 @@ document.addEventListener('mousemove', (e) => {
             el.style.setProperty('--mouse-x', `${x}px`);
             el.style.setProperty('--mouse-y', `${y}px`);
         } else {
+            // Instantly banish the glow if cursor leaves the box limits
             el.style.setProperty('--mouse-x', `-999px`);
             el.style.setProperty('--mouse-y', `-999px`);
         }
@@ -516,7 +517,7 @@ function switchView(viewId) {
 }
 
 // =========================================================================
-// --- BURGER SHOP & INVENTORY SYSTEM ---
+// --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
 // =========================================================================
 const shopCatalog = [
     { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
@@ -1150,7 +1151,12 @@ async function fetchAllUsers() {
     try {
         if (firebaseUserId && db) {
             const snapshot = await db.collection("users").get(); allUsersCache = [];
-            snapshot.forEach(doc => { const data = doc.data(); if (doc.id !== firebaseUserId && data.username) allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "", equipped: data.equipped || {} }); });
+            snapshot.forEach(doc => { 
+                const data = doc.data(); 
+                if (doc.id !== firebaseUserId && data.username && data.username !== "Guest" && data.equipped) { 
+                    allUsersCache.push({ id: doc.id, username: data.username, avatar: data.avatar || "", equipped: data.equipped || {} }); 
+                } 
+            });
         }
     } catch (err) { console.error("Error fetching real users", err); }
     renderFriendsView();
