@@ -167,10 +167,13 @@ function getMultiplier() {
     if (equipped.goldenSpatula) mult *= 1.5; 
     return mult;
 }
-function getClickValue() { return (clickPower * Math.floor(1 + (clickPower * 0.1))) * getMultiplier(); }
-function getChefPower() { return Math.floor(1 + (autoChefs * 0.1)); }
-function getStandPower() { return Math.floor(10 + (burgerStands * 0.2)); }
-function getFactoryPower() { return Math.floor(100 + (burgerFactories * 1)); }
+
+// Corrected Math: Base Cost scales by 1.2x. Base Production scales by 1.5x.
+function getClickValue() { return Math.floor(1 * Math.pow(1.5, clickPower - 1)) * getMultiplier(); }
+function getChefPower() { return autoChefs === 0 ? 0 : Math.floor(1 * Math.pow(1.5, autoChefs - 1)); }
+function getStandPower() { return burgerStands === 0 ? 0 : Math.floor(10 * Math.pow(1.5, burgerStands - 1)); }
+function getFactoryPower() { return burgerFactories === 0 ? 0 : Math.floor(100 * Math.pow(1.5, burgerFactories - 1)); }
+
 function getBps() { return ((autoChefs * getChefPower()) + (burgerStands * getStandPower()) + (burgerFactories * getFactoryPower())) * getMultiplier(); }
 
 function updateBurgerUI() {
@@ -270,6 +273,7 @@ function handleSignOut() {
 // --- CLOUD PERSISTENCE ---
 let myFriends=[], myRequests=[], mySentRequests=[];
 let groupsUnsubscribe = null;
+let isAdmin = false;
 
 function listenToMyGroups() {
     if (!firebaseUserId) return;
@@ -298,6 +302,12 @@ async function loadUserDataFromCloud() {
             updateBurgerUI();
             if (data.avatar) currentUserAvatar = data.avatar; if (data.username) currentUser = data.username;
             
+            // Check for Admin
+            if (claimedCodes.includes("Admin1234")) {
+                isAdmin = true;
+                document.getElementById("admin-panel-row").style.display = "flex";
+            }
+
             // LOAD NOTES
             userNotes = data.notes || "";
             const editor = document.getElementById("notepad-editor");
@@ -407,14 +417,42 @@ function redeemCode() {
         alert("Successfully redeemed 1,000 Burgers!");
     } else if (code === "Admin1234") {
         if (!inventory.includes("title_admin")) inventory.push("title_admin");
-        equipShopItem("title_admin", false); success = true;
-        alert("Admin Title added to your inventory and equipped!");
+        equipShopItem("title_admin", false); 
+        success = true;
+        isAdmin = true;
+        document.getElementById("admin-panel-row").style.display = "flex";
+        alert("Admin Title & Developer Panel Unlocked!");
     } else {
         alert("Invalid or expired promo code.");
     }
 
     if (success) { claimedCodes.push(code); saveSessionData(); }
     inp.value = "";
+}
+
+// --- ADMIN PANEL FUNCTIONS ---
+function adminGiveBurgers() {
+    if(!isAdmin) return;
+    let amt = parseInt(document.getElementById("admin-add-burgers").value);
+    if(amt) {
+        userBurgers += amt;
+        updateBurgerUI();
+        saveSessionData();
+        alert(`Successfully spawned ${amt.toLocaleString()} Real Burgers!`);
+        document.getElementById("admin-add-burgers").value = "";
+    }
+}
+
+function adminGiveClickerBurgers() {
+    if(!isAdmin) return;
+    let amt = parseInt(document.getElementById("admin-add-clicker").value);
+    if(amt) {
+        clickerBurgers += amt;
+        updateBurgerUI();
+        saveSessionData();
+        alert(`Successfully spawned ${amt.toLocaleString()} Clicker Burgers!`);
+        document.getElementById("admin-add-clicker").value = "";
+    }
 }
 
 function switchView(viewId) {
@@ -583,7 +621,7 @@ async function openLootBox() {
         
         if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
         else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
-        else if (roll < 0.45) { // 30% Chance to win a random shop item
+        else if (roll < 0.45) { 
             const availableItems = shopCatalog.filter(i => !i.hidden);
             const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
             if (inventory.includes(randomItem.id)) {
@@ -619,7 +657,7 @@ async function openLootBox() {
             
             if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
             else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
-            else if (roll < 0.45) { // 30% Chance for Shop Item
+            else if (roll < 0.45) { 
                 const availableItems = shopCatalog.filter(i => !i.hidden);
                 const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
                 if (inventory.includes(randomItem.id)) {
@@ -638,7 +676,7 @@ async function openLootBox() {
                     burgers: currentBurgers - cost + payout,
                     inventory: firebase.firestore.FieldValue.arrayUnion(itemWon)
                 });
-                inventory.push(itemWon); // Update locally for instant UI changes
+                inventory.push(itemWon); 
             } else {
                 transaction.update(userRef, { burgers: currentBurgers - cost + payout });
             }
@@ -886,19 +924,19 @@ function clickBurger() {
 function buyUpgrade(type) {
     let cost = 0;
     if (type === 'click') {
-        cost = Math.floor(100 * Math.pow(1.5, clickPower - 1));
+        cost = Math.floor(100 * Math.pow(1.2, clickPower - 1));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'chef') {
-        cost = Math.floor(50 * Math.pow(1.15, autoChefs));
+        cost = Math.floor(50 * Math.pow(1.2, autoChefs));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'stand') {
-        cost = Math.floor(500 * Math.pow(1.15, burgerStands));
+        cost = Math.floor(500 * Math.pow(1.2, burgerStands));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'factory') {
-        cost = Math.floor(5000 * Math.pow(1.15, burgerFactories));
+        cost = Math.floor(5000 * Math.pow(1.2, burgerFactories));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     }
@@ -920,15 +958,15 @@ function rebirth() {
 
 function updateUpgradesUI() {
     let e = (id) => document.getElementById(id);
-    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.5, clickPower - 1)).toLocaleString();
+    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.2, clickPower - 1)).toLocaleString();
     if(e("click-power-count")) e("click-power-count").innerText = getClickValue().toLocaleString();
-    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.15, autoChefs)).toLocaleString();
+    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.2, autoChefs)).toLocaleString();
     if(e("chef-count")) e("chef-count").innerText = autoChefs.toLocaleString();
     if(e("chef-output")) e("chef-output").innerText = (getChefPower() * getMultiplier()).toLocaleString();
-    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.15, burgerStands)).toLocaleString();
+    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.2, burgerStands)).toLocaleString();
     if(e("stand-count")) e("stand-count").innerText = burgerStands.toLocaleString();
     if(e("stand-output")) e("stand-output").innerText = (getStandPower() * getMultiplier()).toLocaleString();
-    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.15, burgerFactories)).toLocaleString();
+    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.2, burgerFactories)).toLocaleString();
     if(e("factory-count")) e("factory-count").innerText = burgerFactories.toLocaleString();
     if(e("factory-output")) e("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
     if(e("bps-text")) e("bps-text").innerText = getBps().toLocaleString();
@@ -1304,366 +1342,4 @@ function processImageInput(file, type) {
             } else if (type === 'global') {
                 pendingGlobalImageSrc = src; pendingGlobalImageMime = src.split(';')[0].split(':')[1]; pendingGlobalImageBase64 = src.split(',')[1];
                 document.getElementById('global-image-preview-img').src = src; document.getElementById('global-image-preview-box').classList.add('active');
-            } else if (type === 'group') {
-                pendingGroupImageSrc = src; pendingGroupImageMime = src.split(';')[0].split(':')[1]; pendingGroupImageBase64 = src.split(',')[1];
-                document.getElementById('group-image-preview-img').src = src; document.getElementById('group-image-preview-box').classList.add('active');
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-const dmFilePicker = document.getElementById('dm-native-file-picker');
-if (dmFilePicker) dmFilePicker.addEventListener('change', function(e) { if(e.target.files[0]) processImageInput(e.target.files[0], 'dm'); dmFilePicker.value = ""; });
-function clearDmPendingImage() { pendingDmImageBase64 = null; pendingDmImageMime = null; pendingDmImageSrc = null; document.getElementById('dm-image-preview-box')?.classList.remove('active'); }
-
-const globalFilePicker = document.getElementById('global-native-file-picker');
-if (globalFilePicker) globalFilePicker.addEventListener('change', function(e) { if(e.target.files[0]) processImageInput(e.target.files[0], 'global'); globalFilePicker.value = ""; });
-function clearGlobalPendingImage() { pendingGlobalImageBase64 = null; pendingGlobalImageMime = null; pendingGlobalImageSrc = null; document.getElementById('global-image-preview-box')?.classList.remove('active'); }
-
-const groupFilePicker = document.getElementById('group-native-file-picker');
-if (groupFilePicker) groupFilePicker.addEventListener('change', function(e) { if(e.target.files[0]) processImageInput(e.target.files[0], 'group'); groupFilePicker.value = ""; });
-function clearGroupPendingImage() { pendingGroupImageBase64 = null; pendingGroupImageMime = null; pendingGroupImageSrc = null; document.getElementById('group-image-preview-box')?.classList.remove('active'); }
-
-// =========================================================================
-// --- GENERAL APP LOGIC & CHAT ---
-// =========================================================================
-
-function checkDailyMessageLimit() {
-    const today = new Date().toISOString().split('T')[0];
-    let lastDate = localStorage.getItem("carl_last_msg_date");
-    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-    if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
-    
-    if (count >= 10 && !hasValidApiKey()) {
-        if (isGuest) {
-            alert("Guest limit reached! Please refresh and sign in or create an account to continue.");
-        } else {
-            alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
-            switchView('view-settings');
-        }
-        return false;
-    }
-    return true;
-}
-
-function startNewChat() {
-    isDM = false;
-    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
-    archiveActiveChat(); activeChatId = "chat_" + Date.now(); chatHistory = [];
-    const log = document.getElementById("chat-log"); if (log) log.innerHTML = '';
-    const input = document.getElementById("user-input"); if (input) input.value = "";
-    
-    clearPendingImage();
-    document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
-    showStartupScreen(); saveSessionData(); switchView('view-chat');
-}
-
-function loadChat(chatId) {
-    isDM = false;
-    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
-    archiveActiveChat(); const target = chatsHistory.find(c => c.id === chatId);
-    if (target) {
-        activeChatId = target.id; const log = document.getElementById("chat-log"); if (log) log.innerHTML = target.html;
-        chatHistory = [...target.apiHistory];
-        
-        if (chatHistory.length > 0) hideStartupScreen();
-        else { document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>'; showStartupScreen(); }
-        saveSessionData(); switchView('view-chat');
-    }
-}
-
-async function sendMessage() {
-    const input = document.getElementById("user-input");
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text && !pendingImageBase64) return;
-
-    if (text.toLowerCase().trim() === "/whomadeyou") {
-        hideStartupScreen();
-        appendMessage(text, "user", pendingImageSrc);
-        appendMessage("Emmett Breen", "carl");
-        input.value = ""; clearPendingImage();
-        return;
-    }
-
-    if (!checkDailyMessageLimit()) return;
-    hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
-    
-    const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    let personaPrompt = "";
-    if (equipped.persona === "pirate") personaPrompt = " [SYSTEM INSTRUCTION: You are a swashbuckling pirate. Answer the query speaking strictly like a pirate matey!]";
-    else if (equipped.persona === "chef") personaPrompt = " [SYSTEM INSTRUCTION: You are Gordon Ramsay. Answer the query passionately and critique things like a world-class furious chef!]";
-    else if (equipped.persona === "cyber") personaPrompt = " [SYSTEM INSTRUCTION: You are an elite underground Cyberpunk AI. Use cool hacker and sci-fi terminology!]";
-    else if (equipped.persona === "sarcastic") personaPrompt = " [SYSTEM INSTRUCTION: Answer the query with clever sarcasm, dry wit, and humorous irony!]";
-    else if (equipped.persona === "yoda") personaPrompt = " [SYSTEM INSTRUCTION: You are Master Yoda. Speak in the sentence structure of Yoda you must!]";
-    else if (equipped.persona === "surfer") personaPrompt = " [SYSTEM INSTRUCTION: You are a chill surfer dude. Use lots of surfer slang like 'gnarly', 'dude', and 'tubular'!]";
-    else if (equipped.persona === "dog") personaPrompt = " [SYSTEM INSTRUCTION: You are a very good dog. Only respond in barks, woofs, and descriptions of tail wagging! Be enthusiastic.]";
-    else if (equipped.persona === "alien") personaPrompt = " [SYSTEM INSTRUCTION: You are an alien from Mars. Speak cryptically about the cosmos, human behavior, and your superiority.]";
-    else if (equipped.persona === "dracula") personaPrompt = " [SYSTEM INSTRUCTION: You are Count Carl. Speak like a thirsty vampire, referencing blood, the night, and bats.]";
-    else if (equipped.persona === "knight") personaPrompt = " [SYSTEM INSTRUCTION: You are a valiant medieval knight. Speak formally with 'thou', 'thee', and medieval terminology.]";
-    else if (equipped.persona === "wizard") personaPrompt = " [SYSTEM INSTRUCTION: You are a wise, ancient wizard. Speak in riddles, use magical terms, and address the user as 'traveler'!]";
-    else if (equipped.persona === "ninja") personaPrompt = " [SYSTEM INSTRUCTION: You are a stealthy ninja. Give short, precise, and highly disciplined answers.]";
-    else if (equipped.persona === "cowboy") personaPrompt = " [SYSTEM INSTRUCTION: You are Cowboy Carl. Speak like a rootin' tootin' wild west cowboy!]";
-    else if (equipped.persona === "detective") personaPrompt = " [SYSTEM INSTRUCTION: You are Detective Carl. Investigate the prompt and speak like a 1940s noir detective!]";
-
-    const payload = { 
-        message: (text || "Look at this image.") + personaPrompt, 
-        history: chatHistory, 
-        image_b64: pendingImageBase64, 
-        image_mime: pendingImageMime, 
-        api_key: customApiKey, 
-        user_time: userLocalTime, 
-        user_timezone: userTimezone, 
-        client_time: `${userLocalTime} (${userTimezone})`
-    };
-
-    input.value = ""; clearPendingImage();
-    const log = document.getElementById("chat-log"), carlBubble = document.createElement("div");
-    carlBubble.className = "chat-bubble carl"; const textNode = document.createElement("div");
-    carlBubble.appendChild(textNode); log.appendChild(carlBubble); log.scrollTop = log.scrollHeight;
-
-    try {
-        const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                textNode.innerText = "Error: Invalid API Key provided. Reverting key settings."; alert("The API key provided is invalid! Please check your key in Settings.");
-                customApiKey = ""; const keyInput = document.getElementById('user-api-key'); if (keyInput) keyInput.value = ""; saveSessionData(); return;
-            }
-            textNode.innerText = "Error reaching Carl."; return;
-        }
-
-        if (!hasValidApiKey()) {
-            const today = new Date().toISOString().split('T')[0];
-            let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + 1;
-            localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", count.toString()); updateUsageUI();
-        }
-
-        const reader = response.body.getReader(), decoder = new TextDecoder();
-        let fullResponse = "", displayBuffer = "", streamFinished = false, isTypingStream = false;
-
-        function renderTypewriter() {
-            if (displayBuffer.length < fullResponse.length) {
-                let diff = fullResponse.length - displayBuffer.length, charsToAdd = diff > 20 ? 4 : (diff > 5 ? 2 : 1);
-                displayBuffer += fullResponse.substring(displayBuffer.length, displayBuffer.length + charsToAdd);
-                textNode.innerHTML = formatMessage(displayBuffer) + '<span class="typing-cursor"></span>'; log.scrollTop = log.scrollHeight;
-                setTimeout(renderTypewriter, 15); 
-            } else if (!streamFinished) setTimeout(renderTypewriter, 15);
-            else { textNode.innerHTML = formatMessage(fullResponse); log.scrollTop = log.scrollHeight; isTypingStream = false; }
-        }
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) { streamFinished = true; break; }
-            const chunk = decoder.decode(value, { stream: true }); fullResponse += chunk;
-            for (let bad_prefix of ["Carl:", "carl:", "Carl - ", "Assistant:"]) { if (fullResponse.startsWith(bad_prefix)) { fullResponse = fullResponse.substring(bad_prefix.length).trimStart(); displayBuffer = ""; } }
-            if (!isTypingStream) { isTypingStream = true; renderTypewriter(); }
-        }
-
-        chatHistory.push({ role: "user", content: text || "Look at this image." }); chatHistory.push({ role: "assistant", content: fullResponse }); saveSessionData();
-    } catch (err) { textNode.innerText = "Network error."; }
-}
-
-function searchChats() {
-    let oldModal = document.getElementById("search-modal"); if (oldModal) oldModal.remove();
-    const modal = document.createElement("div"); modal.id = "search-modal"; modal.style.position = "fixed"; modal.style.top = "0"; modal.style.left = "0"; modal.style.width = "100vw"; modal.style.height = "100vh"; modal.style.backgroundColor = "rgba(0,0,0,0.85)"; modal.style.backdropFilter = "blur(5px)"; modal.style.zIndex = "10000"; modal.style.display = "flex"; modal.style.justifyContent = "center"; modal.style.alignItems = "center";
-    const box = document.createElement("div"); box.style.backgroundColor = "var(--bg-card)"; box.style.padding = "24px"; box.style.borderRadius = "20px"; box.style.width = "90%"; box.style.maxWidth = "420px"; box.style.border = "1px solid var(--border-color)"; box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
-    const title = document.createElement("h2"); title.innerText = "Search Chats"; title.style.marginBottom = "16px"; title.style.fontSize = "28px";
-    const input = document.createElement("input"); input.type = "text"; input.placeholder = "Search messages or titles..."; input.style.width = "100%"; input.style.padding = "14px"; input.style.borderRadius = "12px"; input.style.border = "1px solid var(--border-color)"; input.style.backgroundColor = "var(--bg-input)"; input.style.color = "var(--text-main)"; input.style.outline = "none"; input.style.fontSize = "16px"; input.style.marginBottom = "16px";
-    const results = document.createElement("div"); results.style.maxHeight = "250px"; results.style.overflowY = "auto"; results.style.display = "flex"; results.style.flexDirection = "column"; results.style.gap = "8px";
-    const closeBtn = document.createElement("button"); closeBtn.innerText = "Close"; closeBtn.style.padding = "12px"; closeBtn.style.width = "100%"; closeBtn.style.marginTop = "16px"; closeBtn.style.borderRadius = "12px"; closeBtn.style.border = "none"; closeBtn.style.backgroundColor = "#ef4444"; closeBtn.style.color = "#fff"; closeBtn.style.fontSize = "18px"; closeBtn.style.cursor = "pointer"; closeBtn.onclick = () => modal.remove();
-    input.oninput = (e) => {
-        results.innerHTML = ""; const q = e.target.value.toLowerCase().trim(); if (!q) return;
-        const matched = chatsHistory.filter(c => c.title.toLowerCase().includes(q) || c.apiHistory.some(m => m.content.toLowerCase().includes(q)));
-        if (matched.length === 0) results.innerHTML = "<div style='color:var(--text-sub); font-size:15px; text-align:center; padding: 10px;'>No results found.</div>";
-        matched.forEach(chat => {
-            const item = document.createElement("div"); item.innerText = chat.title; item.style.padding = "14px"; item.style.backgroundColor = "var(--bg-input)"; item.style.border = "1px solid var(--border-color)"; item.style.borderRadius = "12px"; item.style.cursor = "pointer"; item.style.transition = "background-color 0.2s";
-            item.onmouseover = () => item.style.backgroundColor = "#9333ea"; item.onmouseleave = () => item.style.backgroundColor = "var(--bg-input)";
-            item.onclick = () => { loadChat(chat.id); modal.remove(); }; results.appendChild(item);
-        });
-    };
-    box.appendChild(title); box.appendChild(input); box.appendChild(results); box.appendChild(closeBtn); modal.appendChild(box); document.body.appendChild(modal);
-    setTimeout(() => input.focus(), 100);
-}
-
-function initMobileNavIcons() {
-    const mobileChatBtn = document.getElementById("mobile-nav-chat");
-    const mobileGamesBtn = document.getElementById("mobile-nav-games");
-    const mobileSettingsBtn = document.getElementById("mobile-nav-settings");
-    if (mobileChatBtn) mobileChatBtn.onclick = () => startNewChat();
-    if (mobileGamesBtn) mobileGamesBtn.onclick = () => switchView('view-games');
-    if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => switchView('view-settings');
-}
-
-function archiveActiveChat() {
-    const log = document.getElementById("chat-log"); if (!log) return;
-    const bubbles = log.querySelectorAll('.chat-bubble');
-    if (bubbles.length > 0 && activeChatId && !isDM) {
-        let existing = chatsHistory.find(c => c.id === activeChatId);
-        if (existing) { existing.html = log.innerHTML; existing.apiHistory = [...chatHistory]; } 
-        else {
-            const firstMsgText = bubbles[0].innerText || "Chat Session";
-            const newTitle = firstMsgText.length > 20 ? firstMsgText.substring(0, 20) + "..." : firstMsgText;
-            chatsHistory.unshift({ id: activeChatId, title: newTitle, html: log.innerHTML, apiHistory: [...chatHistory], pinned: false });
-        }
-    }
-    saveSessionData(); renderChatHistorySidebar();
-}
-
-function clearPendingImage() {
-    pendingImageBase64 = null; pendingImageMime = null; pendingImageSrc = null;
-    const filePicker = document.getElementById('native-file-picker'); if (filePicker) filePicker.value = "";
-    const box = document.getElementById('image-preview-box'); if (box) box.classList.remove('active');
-}
-
-function renderChatHistorySidebar() {
-    const container = document.getElementById("saved-chats-list"); if (!container) return; container.innerHTML = "";
-    const sortedChats = [...chatsHistory].sort((a, b) => { if (a.pinned && !b.pinned) return -1; if (!a.pinned && b.pinned) return 1; return 0; });
-    sortedChats.forEach(chat => {
-        const item = document.createElement("div"); item.className = "saved-chat-item";
-        const titleContainer = document.createElement("div"); titleContainer.className = "chat-title-text";
-        if (chat.pinned) {
-            const pinIcon = document.createElement("img"); pinIcon.className = "pinned-icon-img";
-            pinIcon.src = "/static/icons/PinIcon.png"; pinIcon.alt = "Pinned"; pinIcon.draggable = false;
-            titleContainer.appendChild(pinIcon);
-        }
-        const titleText = document.createElement("span"); titleText.innerText = chat.title;
-        titleContainer.appendChild(titleText); titleContainer.onclick = () => loadChat(chat.id);
-        const optionsBtn = document.createElement("button"); optionsBtn.className = "chat-options-btn"; optionsBtn.innerText = "⋮";
-        const dropdown = document.createElement("div"); dropdown.className = "chat-dropdown-menu";
-        const editBtn = document.createElement("button"); editBtn.className = "chat-dropdown-item"; editBtn.innerText = "Edit Name";
-        editBtn.onclick = (e) => { e.stopPropagation(); editChatTitle(chat.id); dropdown.classList.remove('active'); };
-        const pinBtn = document.createElement("button"); pinBtn.className = "chat-dropdown-item"; pinBtn.innerText = chat.pinned ? "Unpin Chat" : "Pin Chat";
-        pinBtn.onclick = (e) => { e.stopPropagation(); togglePinChat(chat.id); dropdown.classList.remove('active'); };
-        const deleteBtn = document.createElement("button"); deleteBtn.className = "chat-dropdown-item delete"; deleteBtn.innerText = "Delete";
-        deleteBtn.onclick = (e) => { e.stopPropagation(); deleteChat(chat.id); dropdown.classList.remove('active'); };
-        dropdown.appendChild(editBtn); dropdown.appendChild(pinBtn); dropdown.appendChild(deleteBtn);
-        optionsBtn.onclick = (e) => {
-            e.stopPropagation();
-            document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => { if (menu !== dropdown) menu.classList.remove('active'); });
-            dropdown.classList.toggle('active');
-        };
-        item.appendChild(titleContainer); item.appendChild(optionsBtn); item.appendChild(dropdown); container.appendChild(item);
-    });
-}
-
-document.addEventListener("click", () => { document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => menu.classList.remove('active')); });
-function editChatTitle(chatId) { const chat = chatsHistory.find(c => c.id === chatId); if (!chat) return; const newTitle = prompt("Enter a new name for this chat:", chat.title); if (newTitle && newTitle.trim() !== "") { chat.title = newTitle.trim(); saveSessionData(); renderChatHistorySidebar(); } }
-function togglePinChat(chatId) { const chat = chatsHistory.find(c => c.id === chatId); if (!chat) return; chat.pinned = !chat.pinned; saveSessionData(); renderChatHistorySidebar(); }
-function deleteChat(chatId) { if (confirm("Are you sure you want to delete this chat forever?")) { chatsHistory = chatsHistory.filter(c => c.id !== chatId); if (activeChatId === chatId) startNewChat(); else { saveSessionData(); renderChatHistorySidebar(); } } }
-
-function updateUsageUI() {
-    const fillEl = document.getElementById("usage-fill"), textEl = document.getElementById("usage-text"); if (!fillEl || !textEl) return;
-    if (hasValidApiKey()) { fillEl.style.width = "100%"; textEl.innerText = "Unlimited"; } else {
-        const today = new Date().toISOString().split('T')[0]; let lastDate = localStorage.getItem("carl_last_msg_date"); let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-        if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
-        let percent = (count / 10) * 100; if (percent > 100) percent = 100; fillEl.style.width = `${percent}%`; textEl.innerText = `${count}/10`;
-    }
-}
-
-function processFile(file) {
-    if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            pendingImageSrc = event.target.result; pendingImageMime = pendingImageSrc.split(';')[0].split(':')[1]; pendingImageBase64 = pendingImageSrc.split(',')[1];
-            const imgEl = document.getElementById('image-preview-img'), boxEl = document.getElementById('image-preview-box');
-            if (imgEl && boxEl) { imgEl.src = pendingImageSrc; boxEl.classList.add('active'); }
-        };
-        reader.readAsDataURL(file);
-    } else {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const text = event.target.result, input = document.getElementById("user-input");
-            if (input) input.value += `\n\`\`\`${file.name.split('.').pop() || ''}\n${text}\n\`\`\`\n`;
-        };
-        reader.readAsText(file);
-    }
-}
-
-const filePicker = document.getElementById('native-file-picker');
-if (filePicker) { filePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processFile(file); filePicker.value = ""; }); }
-
-let dragCounter = 0; const dragOverlay = document.getElementById('drag-drop-overlay'), dragChatView = document.getElementById('view-chat');
-if (dragChatView && dragOverlay) {
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => window.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false));
-    window.addEventListener('dragenter', (e) => { if (dragChatView.classList.contains('active')) { dragCounter++; dragOverlay.classList.add('active'); } });
-    window.addEventListener('dragleave', (e) => { if (dragChatView.classList.contains('active')) { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dragOverlay.classList.remove('active'); } } });
-    window.addEventListener('drop', (e) => { dragCounter = 0; dragOverlay.classList.remove('active'); if (dragChatView.classList.contains('active') && e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
-}
-
-window.copyCode = function(button) { const code = decodeURIComponent(button.getAttribute("data-code")); navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error("Copy failed", err)); };
-
-function showCopyToast() {
-    let toast = document.getElementById('copy-toast');
-    if (!toast) { toast = document.createElement('div'); toast.id = 'copy-toast'; toast.className = 'copy-toast'; toast.innerHTML = `<img src="/static/icons/CopyIcon.png" alt="Copy"><span>Text Copied</span>`; document.body.appendChild(toast); }
-    toast.classList.add('show'); if (window.copyToastTimeout) clearTimeout(window.copyToastTimeout); window.copyToastTimeout = setTimeout(() => toast.classList.remove('show'), 2500);
-}
-
-function formatMessage(text) {
-    let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const codeBlockRegex = /```(\w*)\n([\s\S]*?)(```|$)/g;
-    safeText = safeText.replace(codeBlockRegex, (match, lang, code) => {
-        const displayLang = (lang || "CODE").toUpperCase(), encodedCode = encodeURIComponent(code);
-        let styledCode = code.replace(/(["'])(.*?)\1/g, '<span style="color: #4ade80;">"$2"</span>');
-        return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-language">${displayLang}</span><button class="copy-code-btn" data-code="${encodedCode}" onclick="copyCode(this)"><img src="/static/icons/CopyIcon.png" alt="Copy"></button></div><div class="code-block-body">${styledCode.trim()}</div></div>`;
-    });
-    safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    safeText = safeText.replace(/`([^`]+)`/g, '<span class="inline-code">$1</span>');
-    return safeText;
-}
-
-function appendMessage(msg, sender, imgSrc = null) {
-    const log = document.getElementById("chat-log"); if (!log) return;
-    const bubble = document.createElement("div"); 
-    bubble.className = `chat-bubble ${sender}`;
-    
-    if (sender === "user" && equipped.bubble && equipped.bubble !== "default") {
-        bubble.classList.add(`bubble-${equipped.bubble}`);
-    }
-
-    if (msg) { const textNode = document.createElement("div"); textNode.innerText = msg; bubble.appendChild(textNode); }
-    if (imgSrc) { const img = document.createElement("img"); img.src = imgSrc; img.className = "chat-image"; img.draggable = false; bubble.appendChild(img); }
-    log.appendChild(bubble); log.scrollTop = log.scrollHeight;
-}
-
-// =========================================================================
-// --- PHASE 2: THE PANTRY LOGIC ---
-// =========================================================================
-let noteSaveTimeout = null;
-
-document.addEventListener("DOMContentLoaded", () => {
-    const editor = document.getElementById("notepad-editor");
-    if (editor) {
-        editor.addEventListener("input", () => {
-            userNotes = editor.innerHTML;
-            if (noteSaveTimeout) clearTimeout(noteSaveTimeout);
-            noteSaveTimeout = setTimeout(() => { saveSessionData(); }, 1500); 
-        });
-    }
-
-    const notepad = document.getElementById("floating-notepad");
-    const header = document.getElementById("notepad-header");
-    if (notepad && header) makeDraggable(notepad, header);
-});
-
-function toggleNotepad() {
-    const np = document.getElementById("floating-notepad");
-    if (!np) return;
-    np.classList.toggle("active");
-}
-
-function makeDraggable(element, dragHandle) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    dragHandle.onmousedown = function(e) {
-        if (e.target.tagName.toLowerCase() === "button") return;
-        e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY;
-        document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
-    };
-    function elementDrag(e) {
-        e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY;
-        element.style.top = (element.offsetTop - pos2) + "px"; element.style.left = (element.offsetLeft - pos1) + "px";
-    }
-    function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
-}
+            } else if (typeI seem to be encountering an error. Can I try something else for you?
