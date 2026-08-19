@@ -169,7 +169,6 @@ function getMultiplier() {
     return mult;
 }
 
-// PRODUCTION MATH: Scales amount by 1.2x
 function getClickValue() { return Math.floor(1 * Math.pow(1.2, clickPower - 1)) * getMultiplier(); }
 function getChefPower() { return autoChefs === 0 ? 0 : Math.floor(1 * Math.pow(1.2, autoChefs - 1)); }
 function getStandPower() { return burgerStands === 0 ? 0 : Math.floor(10 * Math.pow(1.2, burgerStands - 1)); }
@@ -221,14 +220,29 @@ window.addEventListener("DOMContentLoaded", () => {
 
 // --- MOUSE TRACKING FOR DYNAMIC HOVER GLOW ---
 document.addEventListener('mousemove', (e) => {
-    const target = e.target;
-    if (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.classList.contains('notepad-editor')) {
-        const rect = target.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        target.style.setProperty('--mouse-x', `${x}px`);
-        target.style.setProperty('--mouse-y', `${y}px`);
-    }
+    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
+    
+    glowElements.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right &&
+            e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            el.style.setProperty('--mouse-x', `${x}px`);
+            el.style.setProperty('--mouse-y', `${y}px`);
+        } else {
+            el.style.setProperty('--mouse-x', `-999px`);
+            el.style.setProperty('--mouse-y', `-999px`);
+        }
+    });
+});
+
+document.addEventListener('mouseleave', () => {
+    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
+    glowElements.forEach(el => {
+        el.style.setProperty('--mouse-x', `-999px`);
+        el.style.setProperty('--mouse-y', `-999px`);
+    });
 });
 
 function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
@@ -353,6 +367,7 @@ function updateProfileUI() {
     if(a) a.src=currentUserAvatar; 
     if(n) n.innerText=currentUser||"Guest"; 
 }
+
 function applyEquippedCosmetics() {
     const fWrap = document.getElementById("header-avatar-wrapper");
     if (fWrap) {
@@ -367,7 +382,6 @@ function applyEquippedCosmetics() {
     const glow = document.getElementById("glow-bg");
     const startupText = document.getElementById("startup-title");
     
-    // Default purple color for the mouse hover effect
     let cursorGlowColor = "rgba(168, 85, 247, 0.2)";
 
     if (glow) {
@@ -421,7 +435,6 @@ function applyEquippedCosmetics() {
         }
     }
     
-    // Updates the global css variable for the dynamic mouse hover glow
     document.documentElement.style.setProperty('--cursor-glow-color', cursorGlowColor);
 
     const bjArena = document.getElementById("bj-felt-arena");
@@ -1655,6 +1668,14 @@ function processFile(file) {
 const filePicker = document.getElementById('native-file-picker');
 if (filePicker) { filePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processFile(file); filePicker.value = ""; }); }
 
+let dragCounter = 0; const dragOverlay = document.getElementById('drag-drop-overlay'), dragChatView = document.getElementById('view-chat');
+if (dragChatView && dragOverlay) {
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => window.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false));
+    window.addEventListener('dragenter', (e) => { if (dragChatView.classList.contains('active')) { dragCounter++; dragOverlay.classList.add('active'); } });
+    window.addEventListener('dragleave', (e) => { if (dragChatView.classList.contains('active')) { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dragOverlay.classList.remove('active'); } } });
+    window.addEventListener('drop', (e) => { dragCounter = 0; dragOverlay.classList.remove('active'); if (dragChatView.classList.contains('active') && e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+}
+
 window.copyCode = function(button) { const code = decodeURIComponent(button.getAttribute("data-code")); navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error("Copy failed", err)); };
 
 function showCopyToast() {
@@ -1729,3 +1750,34 @@ function makeDraggable(element, dragHandle) {
     }
     function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
 }
+
+// =========================================================================
+// --- 3D TILT EFFECT (GAMES & SHOP) ---
+// =========================================================================
+document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('.game-card-img, .shop-card, .preset-item');
+    if (target && !target.dataset.tiltInitialized) {
+        target.dataset.tiltInitialized = "true";
+        
+        target.addEventListener('mousemove', function(e) {
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = ((y - centerY) / centerY) * -10;
+            const rotateY = ((x - centerX) / centerX) * 10;
+            
+            this.style.transition = "transform 0.1s ease-out";
+            this.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            this.style.zIndex = "10";
+        });
+        
+        target.addEventListener('mouseleave', function() {
+            this.style.transition = "transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)";
+            this.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+            this.style.zIndex = "1";
+        });
+    }
+});
