@@ -201,6 +201,44 @@ function hideStartupScreen() { const s=document.getElementById("startup-screen")
 function showStartupScreen() { const s=document.getElementById("startup-screen"), c=document.getElementById("view-chat"); if(s) { s.classList.remove("hidden"); initTypingAnimation(); } if(c) c.classList.add("startup-active"); }
 function hasValidApiKey() { return customApiKey && customApiKey.trim().length > 20; }
 
+// --- FLAVORS MENU TOGGLE ---
+function toggleFlavors(e) {
+    if(e) e.stopPropagation();
+    const menu = document.getElementById("flavors-menu");
+    const arrow = document.getElementById("flavors-arrow");
+    if (menu.classList.contains("collapsed")) {
+        menu.classList.remove("collapsed");
+        arrow.style.transform = "rotate(180deg)";
+    } else {
+        menu.classList.add("collapsed");
+        arrow.style.transform = "rotate(0deg)";
+    }
+}
+
+function selectFlavor(flavor) {
+    currentFlavor = flavor;
+    document.getElementById("flavor-quick").classList.remove("active");
+    document.getElementById("flavor-endless").classList.remove("active");
+    
+    if (flavor === "quick") {
+        document.getElementById("flavor-quick").classList.add("active");
+    } else {
+        document.getElementById("flavor-endless").classList.add("active");
+    }
+    
+    document.getElementById("flavors-menu").classList.add("collapsed");
+    document.getElementById("flavors-arrow").style.transform = "rotate(0deg)";
+}
+
+document.addEventListener("click", () => { 
+    const menu = document.getElementById("flavors-menu");
+    const arrow = document.getElementById("flavors-arrow");
+    if(menu && !menu.classList.contains("collapsed")) {
+        menu.classList.add("collapsed");
+        if(arrow) arrow.style.transform = "rotate(0deg)";
+    }
+});
+
 window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons(); initTypingAnimation(); updateUsageUI(); updateBurgerUI();
     const oldNav = document.querySelector('.bottom-nav'); if (oldNav) oldNav.style.display = 'none';
@@ -222,7 +260,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 // --- MOUSE TRACKING FOR DYNAMIC HOVER GLOW ---
 document.addEventListener('mousemove', (e) => {
-    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
+    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container');
     
     glowElements.forEach(el => {
         const rect = el.getBoundingClientRect();
@@ -241,7 +279,7 @@ document.addEventListener('mousemove', (e) => {
 });
 
 document.addEventListener('mouseleave', () => {
-    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
+    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container');
     glowElements.forEach(el => {
         el.style.setProperty('--mouse-x', `-999px`);
         el.style.setProperty('--mouse-y', `-999px`);
@@ -528,7 +566,7 @@ function switchView(viewId) {
 }
 
 // =========================================================================
-// --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
+// --- BURGER SHOP & INVENTORY SYSTEM ---
 // =========================================================================
 const shopCatalog = [
     { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
