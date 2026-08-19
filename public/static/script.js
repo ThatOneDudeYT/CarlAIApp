@@ -169,7 +169,6 @@ function getMultiplier() {
     return mult;
 }
 
-// PRODUCTION MATH: Stays at 1.5x
 function getClickValue() { return Math.floor(1 * Math.pow(1.5, clickPower - 1)) * getMultiplier(); }
 function getChefPower() { return autoChefs === 0 ? 0 : Math.floor(1 * Math.pow(1.5, autoChefs - 1)); }
 function getStandPower() { return burgerStands === 0 ? 0 : Math.floor(10 * Math.pow(1.5, burgerStands - 1)); }
@@ -474,7 +473,7 @@ function switchView(viewId) {
 }
 
 // =========================================================================
-// --- BURGER SHOP & INVENTORY SYSTEM ---
+// --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
 // =========================================================================
 const shopCatalog = [
     { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
@@ -622,7 +621,7 @@ async function openLootBox() {
         
         if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
         else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
-        else if (roll < 0.45) { // 30% Chance to win a random shop item
+        else if (roll < 0.45) { 
             const availableItems = shopCatalog.filter(i => !i.hidden);
             const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
             if (inventory.includes(randomItem.id)) {
@@ -658,7 +657,7 @@ async function openLootBox() {
             
             if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
             else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
-            else if (roll < 0.45) { // 30% Chance for Shop Item
+            else if (roll < 0.45) { 
                 const availableItems = shopCatalog.filter(i => !i.hidden);
                 const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
                 if (inventory.includes(randomItem.id)) {
@@ -677,7 +676,7 @@ async function openLootBox() {
                     burgers: currentBurgers - cost + payout,
                     inventory: firebase.firestore.FieldValue.arrayUnion(itemWon)
                 });
-                inventory.push(itemWon); // Update locally for instant UI changes
+                inventory.push(itemWon); 
             } else {
                 transaction.update(userRef, { burgers: currentBurgers - cost + payout });
             }
@@ -1624,14 +1623,6 @@ function processFile(file) {
 const filePicker = document.getElementById('native-file-picker');
 if (filePicker) { filePicker.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; processFile(file); filePicker.value = ""; }); }
 
-let dragCounter = 0; const dragOverlay = document.getElementById('drag-drop-overlay'), dragChatView = document.getElementById('view-chat');
-if (dragChatView && dragOverlay) {
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => window.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false));
-    window.addEventListener('dragenter', (e) => { if (dragChatView.classList.contains('active')) { dragCounter++; dragOverlay.classList.add('active'); } });
-    window.addEventListener('dragleave', (e) => { if (dragChatView.classList.contains('active')) { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dragOverlay.classList.remove('active'); } } });
-    window.addEventListener('drop', (e) => { dragCounter = 0; dragOverlay.classList.remove('active'); if (dragChatView.classList.contains('active') && e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
-}
-
 window.copyCode = function(button) { const code = decodeURIComponent(button.getAttribute("data-code")); navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error("Copy failed", err)); };
 
 function showCopyToast() {
@@ -1706,3 +1697,35 @@ function makeDraggable(element, dragHandle) {
     }
     function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
 }
+
+// =========================================================================
+// --- 3D TILT EFFECT (GAMES, SHOP, INVENTORY) ---
+// =========================================================================
+document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('.game-card-img, .shop-card');
+    if (target && !target.dataset.tiltInitialized) {
+        target.dataset.tiltInitialized = "true";
+        
+        target.addEventListener('mousemove', function(e) {
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            // Calculate rotation (max 12 degrees)
+            const rotateX = ((y - centerY) / centerY) * -12;
+            const rotateY = ((x - centerX) / centerX) * 12;
+            
+            this.style.transition = "transform 0.1s ease-out";
+            this.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
+            this.style.zIndex = "10";
+        });
+        
+        target.addEventListener('mouseleave', function() {
+            this.style.transition = "transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)";
+            this.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+            this.style.zIndex = "1";
+        });
+    }
+});
