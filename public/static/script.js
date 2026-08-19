@@ -169,10 +169,11 @@ function getMultiplier() {
     return mult;
 }
 
-function getClickValue() { return Math.floor(1 * Math.pow(1.5, clickPower - 1)) * getMultiplier(); }
-function getChefPower() { return autoChefs === 0 ? 0 : Math.floor(1 * Math.pow(1.5, autoChefs - 1)); }
-function getStandPower() { return burgerStands === 0 ? 0 : Math.floor(10 * Math.pow(1.5, burgerStands - 1)); }
-function getFactoryPower() { return burgerFactories === 0 ? 0 : Math.floor(100 * Math.pow(1.5, burgerFactories - 1)); }
+// PRODUCTION MATH: Scales amount by 1.2x
+function getClickValue() { return Math.floor(1 * Math.pow(1.2, clickPower - 1)) * getMultiplier(); }
+function getChefPower() { return autoChefs === 0 ? 0 : Math.floor(1 * Math.pow(1.2, autoChefs - 1)); }
+function getStandPower() { return burgerStands === 0 ? 0 : Math.floor(10 * Math.pow(1.2, burgerStands - 1)); }
+function getFactoryPower() { return burgerFactories === 0 ? 0 : Math.floor(100 * Math.pow(1.2, burgerFactories - 1)); }
 function getBps() { return ((autoChefs * getChefPower()) + (burgerStands * getStandPower()) + (burgerFactories * getFactoryPower())) * getMultiplier(); }
 
 function updateBurgerUI() {
@@ -381,6 +382,12 @@ function applyEquippedCosmetics() {
         } else if (equipped.background === "bloodmoon") {
             glow.style.background = "radial-gradient(circle, rgba(153, 27, 27, 0.25) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#fca5a5"; startupText.style.textShadow = "0 0 40px rgba(153, 27, 27, 0.6)"; }
+        } else if (equipped.background === "northernlights") {
+            glow.style.background = "radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, rgba(14, 165, 233, 0.1) 40%, transparent 70%)";
+            if(startupText) { startupText.style.color = "#6ee7b7"; startupText.style.textShadow = "0 0 40px rgba(52, 211, 153, 0.6)"; }
+        } else if (equipped.background === "sunset") {
+            glow.style.background = "radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, rgba(236, 72, 153, 0.1) 40%, transparent 70%)";
+            if(startupText) { startupText.style.color = "#fdba74"; startupText.style.textShadow = "0 0 40px rgba(249, 115, 22, 0.6)"; }
         } else {
             glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#d8b4fe"; startupText.style.textShadow = "0 0 40px rgba(168, 85, 247, 0.6)"; }
@@ -621,7 +628,7 @@ async function openLootBox() {
         
         if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
         else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
-        else if (roll < 0.45) { 
+        else if (roll < 0.45) { // 30% Chance to win a random shop item
             const availableItems = shopCatalog.filter(i => !i.hidden);
             const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
             if (inventory.includes(randomItem.id)) {
@@ -657,7 +664,7 @@ async function openLootBox() {
             
             if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
             else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
-            else if (roll < 0.45) { 
+            else if (roll < 0.45) { // 30% Chance for Shop Item
                 const availableItems = shopCatalog.filter(i => !i.hidden);
                 const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
                 if (inventory.includes(randomItem.id)) {
@@ -676,7 +683,7 @@ async function openLootBox() {
                     burgers: currentBurgers - cost + payout,
                     inventory: firebase.firestore.FieldValue.arrayUnion(itemWon)
                 });
-                inventory.push(itemWon); 
+                inventory.push(itemWon); // Update locally for instant UI changes
             } else {
                 transaction.update(userRef, { burgers: currentBurgers - cost + payout });
             }
@@ -924,19 +931,19 @@ function clickBurger() {
 function buyUpgrade(type) {
     let cost = 0;
     if (type === 'click') {
-        cost = Math.floor(100 * Math.pow(1.2, clickPower - 1));
+        cost = Math.floor(100 * Math.pow(1.3, clickPower - 1));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'chef') {
-        cost = Math.floor(50 * Math.pow(1.2, autoChefs));
+        cost = Math.floor(50 * Math.pow(1.3, autoChefs));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'stand') {
-        cost = Math.floor(500 * Math.pow(1.2, burgerStands));
+        cost = Math.floor(500 * Math.pow(1.3, burgerStands));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'factory') {
-        cost = Math.floor(5000 * Math.pow(1.2, burgerFactories));
+        cost = Math.floor(5000 * Math.pow(1.3, burgerFactories));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     }
@@ -958,15 +965,15 @@ function rebirth() {
 
 function updateUpgradesUI() {
     let e = (id) => document.getElementById(id);
-    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.2, clickPower - 1)).toLocaleString();
+    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.3, clickPower - 1)).toLocaleString();
     if(e("click-power-count")) e("click-power-count").innerText = getClickValue().toLocaleString();
-    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.2, autoChefs)).toLocaleString();
+    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.3, autoChefs)).toLocaleString();
     if(e("chef-count")) e("chef-count").innerText = autoChefs.toLocaleString();
     if(e("chef-output")) e("chef-output").innerText = (getChefPower() * getMultiplier()).toLocaleString();
-    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.2, burgerStands)).toLocaleString();
+    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.3, burgerStands)).toLocaleString();
     if(e("stand-count")) e("stand-count").innerText = burgerStands.toLocaleString();
     if(e("stand-output")) e("stand-output").innerText = (getStandPower() * getMultiplier()).toLocaleString();
-    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.2, burgerFactories)).toLocaleString();
+    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.3, burgerFactories)).toLocaleString();
     if(e("factory-count")) e("factory-count").innerText = burgerFactories.toLocaleString();
     if(e("factory-output")) e("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
     if(e("bps-text")) e("bps-text").innerText = getBps().toLocaleString();
