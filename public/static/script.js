@@ -219,6 +219,18 @@ window.addEventListener("DOMContentLoaded", () => {
     const uInp = document.getElementById("user-input"); if(uInp) uInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendMessage(); });
 });
 
+// --- MOUSE TRACKING FOR DYNAMIC HOVER GLOW ---
+document.addEventListener('mousemove', (e) => {
+    const target = e.target;
+    if (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.classList.contains('notepad-editor')) {
+        const rect = target.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        target.style.setProperty('--mouse-x', `${x}px`);
+        target.style.setProperty('--mouse-y', `${y}px`);
+    }
+});
+
 function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
 
 // --- AUTHENTICATION ---
@@ -354,45 +366,64 @@ function applyEquippedCosmetics() {
     }
     const glow = document.getElementById("glow-bg");
     const startupText = document.getElementById("startup-title");
+    
+    // Default purple color for the mouse hover effect
+    let cursorGlowColor = "rgba(168, 85, 247, 0.2)";
+
     if (glow) {
         if (equipped.background === "gold") {
             glow.style.background = "radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#fcd34d"; startupText.style.textShadow = "0 0 40px rgba(245, 158, 11, 0.6)"; }
+            cursorGlowColor = "rgba(245, 158, 11, 0.2)";
         } else if (equipped.background === "cyber") {
             glow.style.background = "radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#f472b6"; startupText.style.textShadow = "0 0 40px rgba(236, 72, 153, 0.6)"; }
+            cursorGlowColor = "rgba(236, 72, 153, 0.2)";
         } else if (equipped.background === "ocean") {
             glow.style.background = "radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#7dd3fc"; startupText.style.textShadow = "0 0 40px rgba(14, 165, 233, 0.6)"; }
+            cursorGlowColor = "rgba(14, 165, 233, 0.2)";
         } else if (equipped.background === "matrix") {
             glow.style.background = "radial-gradient(circle, rgba(34, 197, 94, 0.25) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#86efac"; startupText.style.textShadow = "0 0 40px rgba(34, 197, 94, 0.6)"; }
+            cursorGlowColor = "rgba(34, 197, 94, 0.2)";
         } else if (equipped.background === "void") {
             glow.style.background = "radial-gradient(circle, rgba(88, 28, 135, 0.1) 0%, transparent 70%)";
             if(startupText) { startupText.style.color = "#a855f7"; startupText.style.textShadow = "0 0 20px rgba(88, 28, 135, 0.3)"; }
+            cursorGlowColor = "rgba(88, 28, 135, 0.2)";
         } else if (equipped.background === "inferno") {
             glow.style.background = "radial-gradient(circle, rgba(220, 38, 38, 0.25) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#f87171"; startupText.style.textShadow = "0 0 40px rgba(220, 38, 38, 0.6)"; }
+            cursorGlowColor = "rgba(220, 38, 38, 0.2)";
         } else if (equipped.background === "stars") {
             glow.style.background = "radial-gradient(circle, rgba(253, 224, 71, 0.15) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#fef08a"; startupText.style.textShadow = "0 0 30px rgba(253, 224, 71, 0.5)"; }
+            cursorGlowColor = "rgba(253, 224, 71, 0.2)";
         } else if (equipped.background === "nebula") {
             glow.style.background = "radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.1) 40%, transparent 70%)";
             if(startupText) { startupText.style.color = "#c4b5fd"; startupText.style.textShadow = "0 0 40px rgba(139, 92, 246, 0.6)"; }
+            cursorGlowColor = "rgba(139, 92, 246, 0.2)";
         } else if (equipped.background === "bloodmoon") {
             glow.style.background = "radial-gradient(circle, rgba(153, 27, 27, 0.25) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#fca5a5"; startupText.style.textShadow = "0 0 40px rgba(153, 27, 27, 0.6)"; }
+            cursorGlowColor = "rgba(153, 27, 27, 0.2)";
         } else if (equipped.background === "northernlights") {
             glow.style.background = "radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, rgba(14, 165, 233, 0.1) 40%, transparent 70%)";
             if(startupText) { startupText.style.color = "#6ee7b7"; startupText.style.textShadow = "0 0 40px rgba(52, 211, 153, 0.6)"; }
+            cursorGlowColor = "rgba(52, 211, 153, 0.2)";
         } else if (equipped.background === "sunset") {
             glow.style.background = "radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, rgba(236, 72, 153, 0.1) 40%, transparent 70%)";
             if(startupText) { startupText.style.color = "#fdba74"; startupText.style.textShadow = "0 0 40px rgba(249, 115, 22, 0.6)"; }
+            cursorGlowColor = "rgba(249, 115, 22, 0.2)";
         } else {
             glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)";
             if(startupText) { startupText.style.color = "#d8b4fe"; startupText.style.textShadow = "0 0 40px rgba(168, 85, 247, 0.6)"; }
         }
     }
+    
+    // Updates the global css variable for the dynamic mouse hover glow
+    document.documentElement.style.setProperty('--cursor-glow-color', cursorGlowColor);
+
     const bjArena = document.getElementById("bj-felt-arena");
     if (bjArena) {
         bjArena.className = "bj-arena";
@@ -483,90 +514,90 @@ function switchView(viewId) {
 // --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
 // =========================================================================
 const shopCatalog = [
-    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", icon: "🏴‍☠️", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
-    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", icon: "👨‍🍳", cost: 2000, desc: "Carl reviews your questions like a furious five-star culinary chef." },
-    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", icon: "🤖", cost: 2500, desc: "Carl talks in cool dystopian cyberpunk terminology." },
-    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", icon: "😏", cost: 1800, desc: "Carl answers your questions with maximum sarcasm and wit." },
-    { id: "persona_yoda", type: "persona", val: "yoda", name: "Master Yoda", icon: "🐸", cost: 2500, desc: "Carl speaks like Yoda. May the force be with you!" },
-    { id: "persona_surfer", type: "persona", val: "surfer", name: "Surfer Dude", icon: "🏄", cost: 1200, desc: "Carl is a chill surfer dude. Gnarly!" },
-    { id: "persona_dog", type: "persona", val: "dog", name: "Good Boy Carl", icon: "🐶", cost: 1200, desc: "Carl only speaks in enthusiastic barks and tail wags." },
-    { id: "persona_alien", type: "persona", val: "alien", name: "Zorp from Mars", icon: "👽", cost: 3500, desc: "Carl transmits extraterrestrial cosmic knowledge." },
-    { id: "persona_dracula", type: "persona", val: "dracula", name: "Count Carl", icon: "🦇", cost: 2000, desc: "Carl speaks like a thirsty vampire." },
-    { id: "persona_knight", type: "persona", val: "knight", name: "Knight Carl", icon: "⚔️", cost: 2000, desc: "Carl speaks like a valiant medieval knight." },
-    { id: "persona_wizard", type: "persona", val: "wizard", name: "Wizard Carl", icon: "🧙‍♂️", cost: 3000, desc: "Carl speaks like a wise, ancient wizard." },
-    { id: "persona_ninja", type: "persona", val: "ninja", name: "Ninja Carl", icon: "🥷", cost: 2800, desc: "Carl answers with stealthy, disciplined precision." },
-    { id: "persona_cowboy", type: "persona", val: "cowboy", name: "Cowboy Carl", icon: "🤠", cost: 1600, desc: "Carl speaks like a rootin' tootin' wild west cowboy." },
-    { id: "persona_detective", type: "persona", val: "detective", name: "Detective Carl", icon: "🕵️‍♂️", cost: 2200, desc: "Carl investigates your prompts like a 1940s noir detective." },
+    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
+    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", cost: 2000, desc: "Carl reviews your questions like a furious five-star culinary chef." },
+    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", cost: 2500, desc: "Carl talks in cool dystopian cyberpunk terminology." },
+    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", cost: 1800, desc: "Carl answers your questions with maximum sarcasm and wit." },
+    { id: "persona_yoda", type: "persona", val: "yoda", name: "Master Yoda", cost: 2500, desc: "Carl speaks like Yoda. May the force be with you!" },
+    { id: "persona_surfer", type: "persona", val: "surfer", name: "Surfer Dude", cost: 1200, desc: "Carl is a chill surfer dude. Gnarly!" },
+    { id: "persona_dog", type: "persona", val: "dog", name: "Good Boy Carl", cost: 1200, desc: "Carl only speaks in enthusiastic barks and tail wags." },
+    { id: "persona_alien", type: "persona", val: "alien", name: "Zorp from Mars", cost: 3500, desc: "Carl transmits extraterrestrial cosmic knowledge." },
+    { id: "persona_dracula", type: "persona", val: "dracula", name: "Count Carl", cost: 2000, desc: "Carl speaks like a thirsty vampire." },
+    { id: "persona_knight", type: "persona", val: "knight", name: "Knight Carl", cost: 2000, desc: "Carl speaks like a valiant medieval knight." },
+    { id: "persona_wizard", type: "persona", val: "wizard", name: "Wizard Carl", cost: 3000, desc: "Carl speaks like a wise, ancient wizard." },
+    { id: "persona_ninja", type: "persona", val: "ninja", name: "Ninja Carl", cost: 2800, desc: "Carl answers with stealthy, disciplined precision." },
+    { id: "persona_cowboy", type: "persona", val: "cowboy", name: "Cowboy Carl", cost: 1600, desc: "Carl speaks like a rootin' tootin' wild west cowboy." },
+    { id: "persona_detective", type: "persona", val: "detective", name: "Detective Carl", cost: 2200, desc: "Carl investigates your prompts like a 1940s noir detective." },
     
-    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
-    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
-    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", icon: "🔮", cost: 2500, desc: "Deep purple-pink retro synthwave gradient." },
-    { id: "bubble_lava", type: "bubble", val: "lava", name: "Magma Lava Bubble", icon: "🌋", cost: 2200, desc: "Fiery orange and red molten lava chat bubble." },
-    { id: "bubble_forest", type: "bubble", val: "forest", name: "Enchanted Forest", icon: "🌲", cost: 2400, desc: "Mystical green and emerald chat bubble." },
-    { id: "bubble_ocean", type: "bubble", val: "ocean", name: "Deep Ocean Bubble", icon: "🌊", cost: 2200, desc: "Cool and calming deep sea blue gradient." },
-    { id: "bubble_matrix", type: "bubble", val: "matrix", name: "Hacker Terminal Bubble", icon: "💻", cost: 2500, desc: "Green and black matrix coding chat bubble." },
-    { id: "bubble_galaxy", type: "bubble", val: "galaxy", name: "Galaxy Bubble", icon: "🌌", cost: 3500, desc: "Deep space cosmic chat bubble." },
-    { id: "bubble_toxic", type: "bubble", val: "toxic", name: "Toxic Slime", icon: "☣️", cost: 2200, desc: "Radioactive neon green chat bubble." },
-    { id: "bubble_plasma", type: "bubble", val: "plasma", name: "Plasma Bubble", icon: "🧬", cost: 3200, desc: "A super-heated, pulsating purple plasma bubble." },
-    { id: "bubble_ice", type: "bubble", val: "ice", name: "Glacier Bubble", icon: "🧊", cost: 2600, desc: "A frozen, crystal-clear ice chat bubble." },
-    { id: "bubble_ghost", type: "bubble", val: "ghost", name: "Phantom Bubble", icon: "👻", cost: 2800, desc: "A spooky, semi-transparent white and grey bubble." },
-    { id: "bubble_electric", type: "bubble", val: "electric", name: "High Voltage Bubble", icon: "⚡", cost: 3000, desc: "A shocking yellow and bright cyan chat bubble." },
+    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
+    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
+    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", cost: 2500, desc: "Deep purple-pink retro synthwave gradient." },
+    { id: "bubble_lava", type: "bubble", val: "lava", name: "Magma Lava Bubble", cost: 2200, desc: "Fiery orange and red molten lava chat bubble." },
+    { id: "bubble_forest", type: "bubble", val: "forest", name: "Enchanted Forest", cost: 2400, desc: "Mystical green and emerald chat bubble." },
+    { id: "bubble_ocean", type: "bubble", val: "ocean", name: "Deep Ocean Bubble", cost: 2200, desc: "Cool and calming deep sea blue gradient." },
+    { id: "bubble_matrix", type: "bubble", val: "matrix", name: "Hacker Terminal Bubble", cost: 2500, desc: "Green and black matrix coding chat bubble." },
+    { id: "bubble_galaxy", type: "bubble", val: "galaxy", name: "Galaxy Bubble", cost: 3500, desc: "Deep space cosmic chat bubble." },
+    { id: "bubble_toxic", type: "bubble", val: "toxic", name: "Toxic Slime", cost: 2200, desc: "Radioactive neon green chat bubble." },
+    { id: "bubble_plasma", type: "bubble", val: "plasma", name: "Plasma Bubble", cost: 3200, desc: "A super-heated, pulsating purple plasma bubble." },
+    { id: "bubble_ice", type: "bubble", val: "ice", name: "Glacier Bubble", cost: 2600, desc: "A frozen, crystal-clear ice chat bubble." },
+    { id: "bubble_ghost", type: "bubble", val: "ghost", name: "Phantom Bubble", cost: 2800, desc: "A spooky, semi-transparent white and grey bubble." },
+    { id: "bubble_electric", type: "bubble", val: "electric", name: "High Voltage Bubble", cost: 3000, desc: "A shocking yellow and bright cyan chat bubble." },
 
-    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
-    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
-    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", icon: "🔥", cost: 3500, desc: "Fiery red & orange border around your avatar." },
-    { id: "frame_ice", type: "frame", val: "ice", name: "Frozen Frost Frame", icon: "❄️", cost: 2500, desc: "Chilly bright blue frosted border." },
-    { id: "frame_lightning", type: "frame", val: "lightning", name: "Static Shock Frame", icon: "🌩️", cost: 3200, desc: "Crackling yellow and blue electrical border." },
-    { id: "frame_amethyst", type: "frame", val: "amethyst", name: "Amethyst Crystal Frame", icon: "💎", cost: 3000, desc: "Radiant purple and magenta gem frame." },
-    { id: "frame_blood", type: "frame", val: "blood", name: "Blood Moon Frame", icon: "🩸", cost: 4000, desc: "Dark crimson and black vampiric frame." },
-    { id: "frame_diamond", type: "frame", val: "diamond", name: "Diamond Frame", icon: "💎", cost: 5000, desc: "Ultra luxury shiny diamond border." },
-    { id: "frame_rainbow", type: "frame", val: "rainbow", name: "RGB Rainbow Frame", icon: "🌈", cost: 4500, desc: "Animated gamer RGB border." },
-    { id: "frame_magma", type: "frame", val: "magma", name: "Magma Frame", icon: "🌋", cost: 3800, desc: "A molten rock border that burns with heat." },
-    { id: "frame_hacker", type: "frame", val: "hacker", name: "Hacker Frame", icon: "💻", cost: 3200, desc: "A digital glitch-art border for your avatar." },
-    { id: "frame_void", type: "frame", val: "void", name: "Void Frame", icon: "🕳️", cost: 5000, desc: "A pitch-black, dark matter gravitational frame." },
-    { id: "frame_emerald", type: "frame", val: "emerald", name: "Emerald Frame", icon: "🟩", cost: 3000, desc: "A brilliant, glowing green gem frame." },
-    { id: "frame_ruby", type: "frame", val: "ruby", name: "Ruby Frame", icon: "🟥", cost: 3000, desc: "A deep, glowing red gem frame." },
+    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
+    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
+    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", cost: 3500, desc: "Fiery red & orange border around your avatar." },
+    { id: "frame_ice", type: "frame", val: "ice", name: "Frozen Frost Frame", cost: 2500, desc: "Chilly bright blue frosted border." },
+    { id: "frame_lightning", type: "frame", val: "lightning", name: "Static Shock Frame", cost: 3200, desc: "Crackling yellow and blue electrical border." },
+    { id: "frame_amethyst", type: "frame", val: "amethyst", name: "Amethyst Crystal Frame", cost: 3000, desc: "Radiant purple and magenta gem frame." },
+    { id: "frame_blood", type: "frame", val: "blood", name: "Blood Moon Frame", cost: 4000, desc: "Dark crimson and black vampiric frame." },
+    { id: "frame_diamond", type: "frame", val: "diamond", name: "Diamond Frame", cost: 5000, desc: "Ultra luxury shiny diamond border." },
+    { id: "frame_rainbow", type: "frame", val: "rainbow", name: "RGB Rainbow Frame", cost: 4500, desc: "Animated gamer RGB border." },
+    { id: "frame_magma", type: "frame", val: "magma", name: "Magma Frame", cost: 3800, desc: "A molten rock border that burns with heat." },
+    { id: "frame_hacker", type: "frame", val: "hacker", name: "Hacker Frame", cost: 3200, desc: "A digital glitch-art border for your avatar." },
+    { id: "frame_void", type: "frame", val: "void", name: "Void Frame", cost: 5000, desc: "A pitch-black, dark matter gravitational frame." },
+    { id: "frame_emerald", type: "frame", val: "emerald", name: "Emerald Frame", cost: 3000, desc: "A brilliant, glowing green gem frame." },
+    { id: "frame_ruby", type: "frame", val: "ruby", name: "Ruby Frame", cost: 3000, desc: "A deep, glowing red gem frame." },
 
-    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
-    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
-    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", icon: "🐐", cost: 3000, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
-    { id: "title_flipper", type: "title", val: "Fry Cook", name: "Title: Fry Cook", icon: "🍟", cost: 800, desc: "Displays the [FRY COOK] badge next to your name." },
-    { id: "title_chef", type: "title", val: "Executive Chef", name: "Title: Exec Chef", icon: "🔪", cost: 4500, desc: "Displays the [EXECUTIVE CHEF] badge." },
-    { id: "title_tycoon", type: "title", val: "Tycoon", name: "Title: Tycoon", icon: "💰", cost: 8000, desc: "Displays the [TYCOON] badge. Flex your wealth." },
-    { id: "title_whale", type: "title", val: "The Whale", name: "Title: The Whale", icon: "🐋", cost: 5000, desc: "Displays [THE WHALE] to show off how rich you are." },
-    { id: "title_god", type: "title", val: "Burger God", name: "Title: Burger God", icon: "👑", cost: 10000, desc: "The ultimate flex. [BURGER GOD]" },
-    { id: "title_emperor", type: "title", val: "Burger Emperor", name: "Title: Emperor", icon: "👑", cost: 15000, desc: "Displays the highly coveted [BURGER EMPEROR] badge." },
-    { id: "title_legend", type: "title", val: "The Legend", name: "Title: The Legend", icon: "🏆", cost: 12000, desc: "Displays [THE LEGEND] badge." },
-    { id: "title_noob", type: "title", val: "Noob", name: "Title: Noob", icon: "🤡", cost: 500, desc: "Displays the [NOOB] badge. Wear it with pride." },
-    { id: "title_codemaster", type: "title", val: "Code Master", name: "Title: Code Master", icon: "⌨️", cost: 5000, desc: "Displays the [CODE MASTER] badge. Show off your Dev skills." },
-    { id: "title_unstoppable", type: "title", val: "Unstoppable", name: "Title: Unstoppable", icon: "🚀", cost: 8500, desc: "Displays the [UNSTOPPABLE] badge." },
+    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
+    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
+    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", cost: 3000, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
+    { id: "title_flipper", type: "title", val: "Fry Cook", name: "Title: Fry Cook", cost: 800, desc: "Displays the [FRY COOK] badge next to your name." },
+    { id: "title_chef", type: "title", val: "Executive Chef", name: "Title: Exec Chef", cost: 4500, desc: "Displays the [EXECUTIVE CHEF] badge." },
+    { id: "title_tycoon", type: "title", val: "Tycoon", name: "Title: Tycoon", cost: 8000, desc: "Displays the [TYCOON] badge. Flex your wealth." },
+    { id: "title_whale", type: "title", val: "The Whale", name: "Title: The Whale", cost: 5000, desc: "Displays [THE WHALE] to show off how rich you are." },
+    { id: "title_god", type: "title", val: "Burger God", name: "Title: Burger God", cost: 10000, desc: "The ultimate flex. [BURGER GOD]" },
+    { id: "title_emperor", type: "title", val: "Burger Emperor", name: "Title: Emperor", cost: 15000, desc: "Displays the highly coveted [BURGER EMPEROR] badge." },
+    { id: "title_legend", type: "title", val: "The Legend", name: "Title: The Legend", cost: 12000, desc: "Displays [THE LEGEND] badge." },
+    { id: "title_noob", type: "title", val: "Noob", name: "Title: Noob", cost: 500, desc: "Displays the [NOOB] badge. Wear it with pride." },
+    { id: "title_codemaster", type: "title", val: "Code Master", name: "Title: Code Master", cost: 5000, desc: "Displays the [CODE MASTER] badge. Show off your Dev skills." },
+    { id: "title_unstoppable", type: "title", val: "Unstoppable", name: "Title: Unstoppable", cost: 8500, desc: "Displays the [UNSTOPPABLE] badge." },
 
-    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
-    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
-    { id: "bg_ocean", type: "background", val: "ocean", name: "Deep Ocean Glow", icon: "🌊", cost: 2000, desc: "Changes the ambient background to calming water blue." },
-    { id: "bg_matrix", type: "background", val: "matrix", name: "Matrix Green Glow", icon: "🟩", cost: 2000, desc: "Changes the ambient background to hacker green." },
-    { id: "bg_void", type: "background", val: "void", name: "The Void Glow", icon: "🕳️", cost: 2500, desc: "Changes the ambient background to pitch black and deep violet." },
-    { id: "bg_inferno", type: "background", val: "inferno", name: "Inferno Glow", icon: "🌋", cost: 2500, desc: "Changes the ambient background to blistering heat." },
-    { id: "bg_stars", type: "background", val: "stars", name: "Starlight Glow", icon: "⭐", cost: 3000, desc: "Twinkling starlight background glow." },
-    { id: "bg_nebula", type: "background", val: "nebula", name: "Galactic Nebula", icon: "🪐", cost: 3500, desc: "A swirling, multi-colored deep space background." },
-    { id: "bg_bloodmoon", type: "background", val: "bloodmoon", name: "Blood Moon Glow", icon: "🩸", cost: 3000, desc: "A dark crimson, eerie background glow." },
-    { id: "bg_northernlights", type: "background", val: "northernlights", name: "Northern Lights", icon: "✨", cost: 4000, desc: "A beautiful dancing aurora borealis glow." },
-    { id: "bg_sunset", type: "background", val: "sunset", name: "Sunset Glow", icon: "🌅", cost: 2000, desc: "A warm, relaxing orange and pink sunset glow." },
+    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
+    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
+    { id: "bg_ocean", type: "background", val: "ocean", name: "Deep Ocean Glow", cost: 2000, desc: "Changes the ambient background to calming water blue." },
+    { id: "bg_matrix", type: "background", val: "matrix", name: "Matrix Green Glow", cost: 2000, desc: "Changes the ambient background to hacker green." },
+    { id: "bg_void", type: "background", val: "void", name: "The Void Glow", cost: 2500, desc: "Changes the ambient background to pitch black and deep violet." },
+    { id: "bg_inferno", type: "background", val: "inferno", name: "Inferno Glow", cost: 2500, desc: "Changes the ambient background to blistering heat." },
+    { id: "bg_stars", type: "background", val: "stars", name: "Starlight Glow", cost: 3000, desc: "Twinkling starlight background glow." },
+    { id: "bg_nebula", type: "background", val: "nebula", name: "Galactic Nebula", cost: 3500, desc: "A swirling, multi-colored deep space background." },
+    { id: "bg_bloodmoon", type: "background", val: "bloodmoon", name: "Blood Moon Glow", cost: 3000, desc: "A dark crimson, eerie background glow." },
+    { id: "bg_northernlights", type: "background", val: "northernlights", name: "Northern Lights", cost: 4000, desc: "A beautiful dancing aurora borealis glow." },
+    { id: "bg_sunset", type: "background", val: "sunset", name: "Sunset Glow", cost: 2000, desc: "A warm, relaxing orange and pink sunset glow." },
 
-    { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", icon: "🍟", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
-    { id: "skin_pizza_c4", type: "c4Skin", val: "pizza_hotdog", name: "Pizza vs Hotdog C4", icon: "🍕", cost: 2500, desc: "Play Connect Four using Pizzas and Hotdogs!" },
-    { id: "c4Skin_cookie", type: "c4Skin", val: "cookie", name: "Cookie vs Donut", icon: "🍪", cost: 2500, desc: "Play Connect 4 with cookies and donuts!" },
-    { id: "skin_sushi_c4", type: "c4Skin", val: "sushi_taco", name: "Sushi vs Taco C4", icon: "🍣", cost: 3000, desc: "Play Connect Four using Sushi and Tacos!" },
+    { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
+    { id: "skin_pizza_c4", type: "c4Skin", val: "pizza_hotdog", name: "Pizza vs Hotdog C4", cost: 2500, desc: "Play Connect Four using Pizzas and Hotdogs!" },
+    { id: "c4Skin_cookie", type: "c4Skin", val: "cookie", name: "Cookie vs Donut", cost: 2500, desc: "Play Connect 4 with cookies and donuts!" },
+    { id: "skin_sushi_c4", type: "c4Skin", val: "sushi_taco", name: "Sushi vs Taco C4", cost: 3000, desc: "Play Connect Four using Sushi and Tacos!" },
     
-    { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", icon: "🃏", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
-    { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", icon: "🎲", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
-    { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", icon: "🔮", cost: 1500, desc: "Deep cosmic purple Blackjack felt." },
-    { id: "felt_sapphire", type: "bjFelt", val: "sapphire", name: "Sapphire Blue Felt", icon: "💎", cost: 1800, desc: "Rich and elegant Sapphire Blue Blackjack felt." },
-    { id: "felt_obsidian", type: "bjFelt", val: "obsidian", name: "Obsidian Black Felt", icon: "⚫", cost: 2000, desc: "Sleek and stealthy Obsidian Black Blackjack felt." },
-    { id: "felt_goldleaf", type: "bjFelt", val: "goldleaf", name: "Gold Leaf Felt", icon: "✨", cost: 4000, desc: "The ultimate high-roller gold woven blackjack table." },
+    { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
+    { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
+    { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", cost: 1500, desc: "Deep cosmic purple Blackjack felt." },
+    { id: "felt_sapphire", type: "bjFelt", val: "sapphire", name: "Sapphire Blue Felt", cost: 1800, desc: "Rich and elegant Sapphire Blue Blackjack felt." },
+    { id: "felt_obsidian", type: "bjFelt", val: "obsidian", name: "Obsidian Black Felt", cost: 2000, desc: "Sleek and stealthy Obsidian Black Blackjack felt." },
+    { id: "felt_goldleaf", type: "bjFelt", val: "goldleaf", name: "Gold Leaf Felt", cost: 4000, desc: "The ultimate high-roller gold woven blackjack table." },
     
-    { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", icon: "🍳", cost: 5000, desc: "Permanent +50% production boost across all Burger Clicker businesses!" },
-    { id: "title_admin", type: "title", val: "Admin", name: "Title: Admin", icon: "🛠️", cost: 0, desc: "Exclusive developer badge.", hidden: true }
+    { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", cost: 5000, desc: "Permanent +50% production boost across all Burger Clicker businesses!" },
+    { id: "title_admin", type: "title", val: "Admin", name: "Title: Admin", cost: 0, desc: "Exclusive developer badge.", hidden: true }
 ];
 
 function renderShopView() {
@@ -595,25 +626,19 @@ function renderShopView() {
         const card = document.createElement("div"); card.className = "shop-card";
         let btnHTML = "";
         if (!owned) {
-            btnHTML = `<button class="shop-buy-btn buy" onclick="buyShopItem('${item.id}')">Buy (${item.cost.toLocaleString()} 🍔)</button>`;
+            btnHTML = `<button class="shop-buy-btn buy" onclick="buyShopItem('${item.id}')"><span class="btn-text">Purchase</span><span class="btn-hover-text">${item.cost.toLocaleString()} 🍔</span></button>`;
         } else if (isEq) {
-            btnHTML = `<button class="shop-buy-btn equipped">Equipped ✓</button>`;
+            btnHTML = `<button class="shop-buy-btn equipped">Equipped</button>`;
         } else {
             btnHTML = `<button class="shop-buy-btn equip" onclick="equipShopItem('${item.id}', true)">Equip</button>`;
         }
 
         card.innerHTML = `
-            <div>
-                <div class="shop-card-header">
-                    <span class="shop-item-title">${item.name}</span>
-                    <span class="shop-item-icon">${item.icon}</span>
-                </div>
+            <div class="shop-card-content">
+                <span class="shop-item-title">${item.name}</span>
                 <div class="shop-item-desc">${item.desc}</div>
             </div>
-            <div>
-                <div class="shop-item-cost">Price: ${item.cost.toLocaleString()} Burgers</div>
-                ${btnHTML}
-            </div>
+            ${btnHTML}
         `;
         container.appendChild(card);
     });
@@ -634,7 +659,7 @@ async function openLootBox() {
             if (inventory.includes(randomItem.id)) {
                 prizeText = "Duplicate Item! Refunded 500 🍔."; emoji = "♻️"; payout = 500;
             } else {
-                prizeText = "LUCKY DROP! Unlocked: " + randomItem.name + "!"; emoji = randomItem.icon;
+                prizeText = "LUCKY DROP! Unlocked: " + randomItem.name + "!"; emoji = "📦";
                 inventory.push(randomItem.id); saveSessionData();
             }
         }
@@ -671,7 +696,7 @@ async function openLootBox() {
                     prizeText = "Duplicate Item! Refunded 500 🍔."; emoji = "♻️"; payout = 500;
                 } else {
                     prizeText = "LUCKY DROP! Unlocked: " + randomItem.name + "!";
-                    emoji = randomItem.icon;
+                    emoji = "📦";
                     itemWon = randomItem.id;
                 }
             }
@@ -837,8 +862,8 @@ function renderInventoryView() {
             const btnText = isEq ? "Unequip" : "Equip";
 
             card.innerHTML = `
-                <div>
-                    <div class="shop-card-header"><span class="shop-item-title">${item.name}</span><span class="shop-item-icon">${item.icon}</span></div>
+                <div class="shop-card-content">
+                    <span class="shop-item-title">${item.name}</span>
                     <div class="shop-item-desc">${item.desc}</div>
                 </div>
                 <button class="inv-action-btn ${btnClass}" onclick="toggleInventoryItem('${item.id}')">${btnText}</button>
@@ -931,19 +956,19 @@ function clickBurger() {
 function buyUpgrade(type) {
     let cost = 0;
     if (type === 'click') {
-        cost = Math.floor(100 * Math.pow(1.3, clickPower - 1));
+        cost = Math.floor(100 * Math.pow(1.2, clickPower - 1));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'chef') {
-        cost = Math.floor(50 * Math.pow(1.3, autoChefs));
+        cost = Math.floor(50 * Math.pow(1.2, autoChefs));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'stand') {
-        cost = Math.floor(500 * Math.pow(1.3, burgerStands));
+        cost = Math.floor(500 * Math.pow(1.2, burgerStands));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'factory') {
-        cost = Math.floor(5000 * Math.pow(1.3, burgerFactories));
+        cost = Math.floor(5000 * Math.pow(1.2, burgerFactories));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     }
@@ -965,15 +990,15 @@ function rebirth() {
 
 function updateUpgradesUI() {
     let e = (id) => document.getElementById(id);
-    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.3, clickPower - 1)).toLocaleString();
+    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.2, clickPower - 1)).toLocaleString();
     if(e("click-power-count")) e("click-power-count").innerText = getClickValue().toLocaleString();
-    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.3, autoChefs)).toLocaleString();
+    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.2, autoChefs)).toLocaleString();
     if(e("chef-count")) e("chef-count").innerText = autoChefs.toLocaleString();
     if(e("chef-output")) e("chef-output").innerText = (getChefPower() * getMultiplier()).toLocaleString();
-    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.3, burgerStands)).toLocaleString();
+    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.2, burgerStands)).toLocaleString();
     if(e("stand-count")) e("stand-count").innerText = burgerStands.toLocaleString();
     if(e("stand-output")) e("stand-output").innerText = (getStandPower() * getMultiplier()).toLocaleString();
-    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.3, burgerFactories)).toLocaleString();
+    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.2, burgerFactories)).toLocaleString();
     if(e("factory-count")) e("factory-count").innerText = burgerFactories.toLocaleString();
     if(e("factory-output")) e("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
     if(e("bps-text")) e("bps-text").innerText = getBps().toLocaleString();
@@ -1704,35 +1729,3 @@ function makeDraggable(element, dragHandle) {
     }
     function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
 }
-
-// =========================================================================
-// --- 3D TILT EFFECT (GAMES, SHOP, INVENTORY) ---
-// =========================================================================
-document.addEventListener('mouseover', (e) => {
-    const target = e.target.closest('.game-card-img, .shop-card');
-    if (target && !target.dataset.tiltInitialized) {
-        target.dataset.tiltInitialized = "true";
-        
-        target.addEventListener('mousemove', function(e) {
-            const rect = this.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            // Calculate rotation (max 12 degrees)
-            const rotateX = ((y - centerY) / centerY) * -12;
-            const rotateY = ((x - centerX) / centerX) * 12;
-            
-            this.style.transition = "transform 0.1s ease-out";
-            this.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
-            this.style.zIndex = "10";
-        });
-        
-        target.addEventListener('mouseleave', function() {
-            this.style.transition = "transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)";
-            this.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
-            this.style.zIndex = "1";
-        });
-    }
-});
