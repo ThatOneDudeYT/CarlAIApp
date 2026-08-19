@@ -219,7 +219,6 @@
             <div id="view-friends" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
-                    <!-- PHASE 3: NEW GLOBAL & GROUP BUTTONS -->
                     <div style="display: flex; gap: 10px; margin-right: 20px;">
                         <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px;" onclick="openGlobalChat()">🌐 Public Lobby</button>
                         <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px; background-color: #3b82f6;" onclick="openCreateGroupModal()">👥 New Group</button>
@@ -235,7 +234,6 @@
                     </div>
                     <div class="friends-divider"></div>
                     <div class="friends-col">
-                        <!-- PHASE 3: MY GROUPS LIST -->
                         <h2 class="friends-col-title">My Groups</h2>
                         <div class="friends-list-container" id="my-groups-list" style="margin-bottom: 20px;"></div>
                         <h2 class="friends-col-title">Friends</h2>
@@ -285,6 +283,19 @@
                             <button type="button" class="settings-upload-btn" onclick="redeemCode()">Redeem</button>
                         </div>
                     </div>
+
+                    <!-- ADMIN / DEVELOPER PANEL ROW (Hidden by default until unlocked via Admin1234) -->
+                    <div class="settings-row vertical-on-mobile req-login" id="admin-panel-row" style="display: none; flex-direction: column; align-items: stretch; background: var(--bg-input); padding: 16px; border-radius: 16px; border: 2px dashed #9333ea; gap: 12px;">
+                        <span class="settings-label" style="font-size: 24px; color: #a855f7; text-align: center;">🛠️ Admin / Developer Controls</span>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="admin-add-burgers" placeholder="Spawn Real Burgers (🍔)" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-card); color: white;">
+                            <button type="button" class="settings-upload-btn" onclick="adminGiveBurgers()" style="border-color: #84cc16;">Give</button>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="admin-add-clicker" placeholder="Spawn Clicker Burgers" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-card); color: white;">
+                            <button type="button" class="settings-upload-btn" onclick="adminGiveClickerBurgers()" style="border-color: #a855f7;">Give</button>
+                        </div>
+                    </div>
                     
                     <div class="settings-row">
                         <label class="settings-label">Theme</label>
@@ -313,8 +324,8 @@
                     </div>
 
                     <div class="settings-row req-login">
-                        <label class="settings-label">The Pantry (Notepad)</label>
-                        <button class="settings-upload-btn" onclick="toggleNotepad()">Open Notepad</button>
+                        <label class="settings-label">The Pantry</label>
+                        <button class="settings-upload-btn" onclick="toggleNotepad()">Open The Pantry</button>
                     </div>
 
                     <div class="settings-row vertical-on-mobile req-login">
@@ -554,7 +565,7 @@
     </div>
 
     <!-- PHASE 2: THE PANTRY FLOATING NOTEPAD -->
-    <div id="floating-notepad" class="floating-notepad" style="display: none;">
+    <div id="floating-notepad" class="floating-notepad">
         <div class="notepad-header" id="notepad-header">
             <span style="display: flex; align-items: center; gap: 8px;">
                 <img src="/static/icons/Clipboard.png" style="width: 20px; height: 20px;" draggable="false"> The Pantry
