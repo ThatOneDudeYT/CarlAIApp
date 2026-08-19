@@ -81,12 +81,15 @@ body.guest-mode .burger-wallet { display: none !important; }
 .guest-auth-btn:hover { background-color: #444444; color: #ffffff; }
 
 /* DYNAMIC HOVER GLOW FOR TEXT BARS & INPUTS */
-input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input {
+input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor {
     background-color: var(--bg-input);
     background-image: radial-gradient(circle 90px at var(--mouse-x, -999px) var(--mouse-y, -999px), var(--cursor-glow-color, rgba(168, 85, 247, 0.15)), transparent);
     background-repeat: no-repeat;
     border: 1px solid var(--border-color);
     border-radius: 12px;
+    padding: 12px 16px; /* RESTORED */
+    width: 100%; /* RESTORED */
+    font-size: 16px; /* RESTORED */
     color: var(--text-main);
     outline: none;
     transition: border-color 0.2s;
@@ -103,10 +106,15 @@ input:focus, .notepad-editor:focus { border-color: #9333ea; }
     width: 100%;
     position: relative;
     z-index: 21;
+    background-color: var(--bg-input);
+    background-image: radial-gradient(circle 90px at var(--mouse-x, -999px) var(--mouse-y, -999px), var(--cursor-glow-color, rgba(168, 85, 247, 0.15)), transparent);
+    background-repeat: no-repeat;
+    border: 1px solid var(--border-color);
+    transition: border-color 0.2s;
 }
 .input-container input {
     background: transparent !important;
-    background-image: none !important;
+    background-image: none !important; /* Removes double glow */
     border: none !important;
     padding: 0 !important;
     border-radius: 0 !important;
@@ -115,6 +123,7 @@ input:focus, .notepad-editor:focus { border-color: #9333ea; }
     font-size: 16px; 
     outline: none; 
     letter-spacing: 0.5px;
+    width: auto;
 }
 .input-container input::placeholder { color: var(--text-sub); }
 
@@ -135,8 +144,6 @@ input:checked + .slider:before { transform: translateX(28px); }
 .slider.round:before { border-radius: 50%; }
 .input-with-help { display: flex; align-items: center; gap: 12px; flex: 1; max-width: 440px; }
 .password-inputs { display: flex; gap: 12px; flex: 1; max-width: 440px; }
-.settings-row input[type="password"], .settings-row input[type="text"] { padding: 12px 16px; font-size: 16px; width: 100%; }
-.settings-row input::placeholder { color: var(--text-sub); font-size: 14px; }
 .help-btn-inline { background: none; border: none; color: #a855f7; font-size: 18px; cursor: pointer; white-space: nowrap; text-decoration: none; }
 .help-btn-inline:hover { color: #c084fc; text-decoration: underline; }
 .api-help-box { background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-top: -12px; }
@@ -192,6 +199,17 @@ input:checked + .slider:before { transform: translateX(28px); }
 .sidebar-footer { padding: 20px; display: flex; align-items: center; margin-top: auto; }
 .settings-icon-img { width: 28px; height: 28px; object-fit: contain; cursor: pointer; transition: transform 0.2s ease; }
 .settings-icon-img:hover { transform: rotate(90deg) scale(1.1); }
+
+/* FLAVORS DROPDOWN UI */
+.flavor-dropdown-container { position: relative; margin-left: 8px; z-index: 900; }
+.flavor-dropdown-btn { background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer; display: flex; align-items: center; gap: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-family: 'Lilita One', cursive, sans-serif; }
+.flavor-dropdown-btn:hover { color: #d8b4fe; }
+#flavors-arrow { font-family: Arial, sans-serif; font-size: 16px; margin-top: 4px; transition: transform 0.2s; }
+.flavors-menu { position: absolute; top: 100%; left: 0; background-color: #1a1a1a; border: 2px solid #333; border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); margin-top: 10px; min-width: 180px; transform-origin: top left; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s; }
+.flavors-menu.collapsed { transform: scaleY(0); opacity: 0; pointer-events: none; }
+.flavor-option { padding: 10px 14px; color: var(--text-sub); cursor: pointer; border-radius: 10px; font-size: 16px; transition: 0.2s; white-space: nowrap; font-family: 'Lilita One', cursive, sans-serif; }
+.flavor-option:hover { background-color: var(--bg-input); color: #fff; }
+.flavor-option.active { color: #fff; font-weight: bold; }
 
 .main-content { position: relative; flex: 1; width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
 .view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; opacity: 0; transform: translateX(40px) scale(0.98); pointer-events: none; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1; overflow-y: auto; overflow-x: hidden; }
@@ -542,27 +560,27 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .c4-drop-row { display: grid; grid-template-columns: repeat(7, 38px); gap: 5px; margin-bottom: 8px; justify-content: center; }
 .c4-drop-btn { background-color: var(--bg-input); color: #ff4757; font-size: 18px; border: 2px solid var(--border-color); border-radius: 6px; height: 30px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 .c4-board { display: grid; grid-template-columns: repeat(7, 38px); grid-template-rows: repeat(6, 38px); gap: 5px; justify-content: center; }
-.c4-cell { background-color: #1a1a1a; border-radius: 50%; width: 38px; height: 38px; box-shadow: inset 0 0 6px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; }
+.c4-cell { background-color: #1a1a1a; border-radius: 50%; width: 38px; height: 38px; box-shadow: inset 0 0 6px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; position: relative; }
 .c4-cell.red { background-color: #ff4757; } 
 .c4-cell.yellow { background-color: #eccc68; }
 
 /* Force skin rendering by stripping out background circle and injecting emojis */
 .c4-cell.skin-burger, .c4-cell.burger { background-color: transparent !important; box-shadow: none !important; }
-.c4-cell.skin-burger::after, .c4-cell.burger::after { content: "🍔"; font-size: 32px; }
+.c4-cell.skin-burger::after, .c4-cell.burger::after { content: "🍔"; font-size: 32px; position: absolute; }
 .c4-cell.skin-fry, .c4-cell.fry { background-color: transparent !important; box-shadow: none !important; }
-.c4-cell.skin-fry::after, .c4-cell.fry::after { content: "🍟"; font-size: 32px; }
+.c4-cell.skin-fry::after, .c4-cell.fry::after { content: "🍟"; font-size: 32px; position: absolute; }
 .c4-cell.skin-pizza, .c4-cell.pizza { background-color: transparent !important; box-shadow: none !important; }
-.c4-cell.skin-pizza::after, .c4-cell.pizza::after { content: "🍕"; font-size: 32px; }
+.c4-cell.skin-pizza::after, .c4-cell.pizza::after { content: "🍕"; font-size: 32px; position: absolute; }
 .c4-cell.skin-hotdog, .c4-cell.hotdog { background-color: transparent !important; box-shadow: none !important; }
-.c4-cell.skin-hotdog::after, .c4-cell.hotdog::after { content: "🌭"; font-size: 32px; }
+.c4-cell.skin-hotdog::after, .c4-cell.hotdog::after { content: "🌭"; font-size: 32px; position: absolute; }
 .c4-cell.skin-cookie, .c4-cell.cookie { background-color: transparent !important; box-shadow: none !important; }
-.c4-cell.skin-cookie::after, .c4-cell.cookie::after { content: "🍪"; font-size: 32px; }
+.c4-cell.skin-cookie::after, .c4-cell.cookie::after { content: "🍪"; font-size: 32px; position: absolute; }
 .c4-cell.skin-donut, .c4-cell.donut { background-color: transparent !important; box-shadow: none !important; }
-.c4-cell.skin-donut::after, .c4-cell.donut::after { content: "🍩"; font-size: 32px; }
+.c4-cell.skin-donut::after, .c4-cell.donut::after { content: "🍩"; font-size: 32px; position: absolute; }
 .c4-cell.skin-sushi, .c4-cell.sushi { background-color: transparent !important; box-shadow: none !important; }
-.c4-cell.skin-sushi::after, .c4-cell.sushi::after { content: "🍣"; font-size: 32px; }
+.c4-cell.skin-sushi::after, .c4-cell.sushi::after { content: "🍣"; font-size: 32px; position: absolute; }
 .c4-cell.skin-taco, .c4-cell.taco { background-color: transparent !important; box-shadow: none !important; }
-.c4-cell.skin-taco::after, .c4-cell.taco::after { content: "🌮"; font-size: 32px; }
+.c4-cell.skin-taco::after, .c4-cell.taco::after { content: "🌮"; font-size: 32px; position: absolute; }
 
 /* BATTLESHIP */
 .bs-container { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: auto 0; }
@@ -629,17 +647,6 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .group-avatar-2 .collage-text { width: 50%; height: 100%; font-size: 20px; }
 .group-avatar-3 .collage-text, .group-avatar-4 .collage-text { width: 50%; height: 50%; font-size: 14px; }
 .group-avatar-3 .collage-text:last-child { width: 100%; height: 50%; font-size: 18px; }
-
-/* FLAVORS DROPDOWN UI */
-.flavor-dropdown-container { position: relative; margin-left: 8px; z-index: 900; }
-.flavor-dropdown-btn { background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer; display: flex; align-items: center; gap: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-.flavor-dropdown-btn:hover { color: #d8b4fe; }
-#flavors-arrow { font-family: Arial, sans-serif; font-size: 16px; margin-top: 4px; transition: transform 0.2s; }
-.flavors-menu { position: absolute; top: 100%; left: 0; background-color: #1a1a1a; border: 2px solid #333; border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); margin-top: 10px; min-width: 180px; transform-origin: top left; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s; }
-.flavors-menu.collapsed { transform: scaleY(0); opacity: 0; pointer-events: none; }
-.flavor-option { padding: 10px 14px; color: var(--text-sub); cursor: pointer; border-radius: 10px; font-size: 16px; transition: 0.2s; white-space: nowrap; }
-.flavor-option:hover { background-color: var(--bg-input); color: #fff; }
-.flavor-option.active { color: #fff; font-weight: bold; }
 
 @media (min-width: 768px) {
     .app-container { max-width: 100%; border-radius: 0; }
