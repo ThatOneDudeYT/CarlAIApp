@@ -1607,12 +1607,15 @@ function updateUsageUI() {
     const resetEl = document.getElementById("usage-reset-time");
     if (!fillEl || !textEl) return;
     
-    if (hasValidApiKey()) { 
-        fillEl.style.width = "100%"; textEl.innerText = "Unlimited"; 
-        if (resetEl) resetEl.innerText = "";
-    } else {
-        let firstMsgTimestamp = localStorage.getItem("carl_first_msg_timestamp");
-        let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+   if (!hasValidApiKey()) {
+            let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+            if (count === 0) {
+                localStorage.setItem("carl_first_msg_timestamp", Date.now().toString());
+            }
+            count += 1;
+            localStorage.setItem("carl_msg_count", count.toString()); 
+            updateUsageUI();
+        }
         
         // Auto-reset the UI if they just crossed the 24 hour mark
         if (firstMsgTimestamp && (Date.now() - parseInt(firstMsgTimestamp, 10) >= 24 * 60 * 60 * 1000)) {
