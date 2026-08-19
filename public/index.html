@@ -348,11 +348,14 @@
                         <label class="settings-label">Contacts</label>
                         <button class="settings-upload-btn" onclick="switchView('view-friends')">Manage Friends</button>
                     </div>
-                    <div class="settings-row">
+                   <div class="settings-row">
                         <label class="settings-label">Usage</label>
-                        <div class="usage-bar-container">
-                            <div class="usage-bar-fill" id="usage-fill"></div>
-                            <div class="usage-bar-text" id="usage-text">0/10</div>
+                        <div style="flex: 1; max-width: 440px; display: flex; flex-direction: column;">
+                            <div class="usage-bar-container" style="max-width: 100%;">
+                                <div class="usage-bar-fill" id="usage-fill"></div>
+                                <div class="usage-bar-text" id="usage-text">0/25</div>
+                            </div>
+                            <div id="usage-reset-time" style="font-size: 13px; color: var(--text-sub); text-align: right; margin-top: 6px; font-family: Arial, sans-serif;"></div>
                         </div>
                     </div>
                     <div class="settings-row">
