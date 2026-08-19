@@ -1369,25 +1369,16 @@ function clearGroupPendingImage() { pendingGroupImageBase64 = null; pendingGroup
 // =========================================================================
 
 function checkDailyMessageLimit() {
-    let firstMsgTimestamp = localStorage.getItem("carl_first_msg_timestamp");
+    const today = new Date().toISOString().split('T')[0];
+    let lastDate = localStorage.getItem("carl_last_msg_date");
     let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-
-    // Reset if 24 hours have passed since their first message
-    if (firstMsgTimestamp) {
-        if (Date.now() - parseInt(firstMsgTimestamp, 10) >= 24 * 60 * 60 * 1000) {
-            count = 0;
-            localStorage.setItem("carl_msg_count", "0");
-            localStorage.removeItem("carl_first_msg_timestamp");
-        }
-    } else {
-        if (count > 0) { count = 0; localStorage.setItem("carl_msg_count", "0"); }
-    }
+    if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
     
-    if (count >= 25 && !hasValidApiKey()) {
+    if (count >= 10 && !hasValidApiKey()) {
         if (isGuest) {
             alert("Guest limit reached! Please refresh and sign in or create an account to continue.");
         } else {
-            alert("Daily limit reached! Free users are capped at 25 messages per 24 hours. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
+            alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
             switchView('view-settings');
         }
         return false;
@@ -1603,46 +1594,11 @@ function togglePinChat(chatId) { const chat = chatsHistory.find(c => c.id === ch
 function deleteChat(chatId) { if (confirm("Are you sure you want to delete this chat forever?")) { chatsHistory = chatsHistory.filter(c => c.id !== chatId); if (activeChatId === chatId) startNewChat(); else { saveSessionData(); renderChatHistorySidebar(); } } }
 
 function updateUsageUI() {
-    const fillEl = document.getElementById("usage-fill"), textEl = document.getElementById("usage-text");
-    const resetEl = document.getElementById("usage-reset-time");
-    if (!fillEl || !textEl) return;
-    
-   if (!hasValidApiKey()) {
-            let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-            if (count === 0) {
-                localStorage.setItem("carl_first_msg_timestamp", Date.now().toString());
-            }
-            count += 1;
-            localStorage.setItem("carl_msg_count", count.toString()); 
-            updateUsageUI();
-        }
-        
-        // Auto-reset the UI if they just crossed the 24 hour mark
-        if (firstMsgTimestamp && (Date.now() - parseInt(firstMsgTimestamp, 10) >= 24 * 60 * 60 * 1000)) {
-            count = 0;
-            localStorage.setItem("carl_msg_count", "0");
-            localStorage.removeItem("carl_first_msg_timestamp");
-            firstMsgTimestamp = null;
-        } else if (!firstMsgTimestamp && count > 0) {
-            count = 0; localStorage.setItem("carl_msg_count", "0");
-        }
-
-        let percent = (count / 25) * 100; 
-        if (percent > 100) percent = 100; 
-        fillEl.style.width = `${percent}%`; 
-        textEl.innerText = `${count}/25`;
-
-        if (resetEl) {
-            if (count >= 25) {
-                resetEl.innerText = "Resets Tomorrow";
-            } else if (count > 0 && firstMsgTimestamp) {
-                const firstDate = new Date(parseInt(firstMsgTimestamp, 10));
-                const resetTimeStr = firstDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                resetEl.innerText = `Resets ${resetTimeStr}`;
-            } else {
-                resetEl.innerText = "";
-            }
-        }
+    const fillEl = document.getElementById("usage-fill"), textEl = document.getElementById("usage-text"); if (!fillEl || !textEl) return;
+    if (hasValidApiKey()) { fillEl.style.width = "100%"; textEl.innerText = "Unlimited"; } else {
+        const today = new Date().toISOString().split('T')[0]; let lastDate = localStorage.getItem("carl_last_msg_date"); let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+        if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
+        let percent = (count / 10) * 100; if (percent > 100) percent = 100; fillEl.style.width = `${percent}%`; textEl.innerText = `${count}/10`;
     }
 }
 
