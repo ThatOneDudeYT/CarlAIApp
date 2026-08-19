@@ -1,4 +1,5 @@
 let pendingAuthCredentials = { email: "", pass: "" };
+let currentFlavor = "quick"; 
 
 async function handleLogin(e) {
     if (e) {
@@ -169,6 +170,7 @@ function getMultiplier() {
     return mult;
 }
 
+// PRODUCTION MATH: Scales amount by 1.2x
 function getClickValue() { return Math.floor(1 * Math.pow(1.2, clickPower - 1)) * getMultiplier(); }
 function getChefPower() { return autoChefs === 0 ? 0 : Math.floor(1 * Math.pow(1.2, autoChefs - 1)); }
 function getStandPower() { return burgerStands === 0 ? 0 : Math.floor(10 * Math.pow(1.2, burgerStands - 1)); }
@@ -235,6 +237,14 @@ document.addEventListener('mousemove', (e) => {
             el.style.setProperty('--mouse-x', `-999px`);
             el.style.setProperty('--mouse-y', `-999px`);
         }
+    });
+});
+
+document.addEventListener('mouseleave', () => {
+    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
+    glowElements.forEach(el => {
+        el.style.setProperty('--mouse-x', `-999px`);
+        el.style.setProperty('--mouse-y', `-999px`);
     });
 });
 
@@ -428,6 +438,7 @@ function applyEquippedCosmetics() {
         }
     }
     
+    // Updates the global css variable for the dynamic mouse hover glow
     document.documentElement.style.setProperty('--cursor-glow-color', cursorGlowColor);
 
     const bjArena = document.getElementById("bj-felt-arena");
@@ -1492,23 +1503,43 @@ function clearGroupPendingImage() { pendingGroupImageBase64 = null; pendingGroup
 // --- GENERAL APP LOGIC & CHAT ---
 // =========================================================================
 
-function checkDailyMessageLimit() {
-    const today = new Date().toISOString().split('T')[0];
-    let lastDate = localStorage.getItem("carl_last_msg_date");
-    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-    if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
-    
-    if (count >= 10 && !hasValidApiKey()) {
-        if (isGuest) {
-            alert("Guest limit reached! Please refresh and sign in or create an account to continue.");
-        } else {
-            alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
-            switchView('view-settings');
-        }
-        return false;
+// --- FLAVORS MENU TOGGLE ---
+function toggleFlavors(e) {
+    if(e) e.stopPropagation();
+    const menu = document.getElementById("flavors-menu");
+    const arrow = document.getElementById("flavors-arrow");
+    if (menu.classList.contains("collapsed")) {
+        menu.classList.remove("collapsed");
+        arrow.style.transform = "rotate(180deg)";
+    } else {
+        menu.classList.add("collapsed");
+        arrow.style.transform = "rotate(0deg)";
     }
-    return true;
 }
+
+function selectFlavor(flavor) {
+    currentFlavor = flavor;
+    document.getElementById("flavor-quick").classList.remove("active");
+    document.getElementById("flavor-endless").classList.remove("active");
+    
+    if (flavor === "quick") {
+        document.getElementById("flavor-quick").classList.add("active");
+    } else {
+        document.getElementById("flavor-endless").classList.add("active");
+    }
+    
+    document.getElementById("flavors-menu").classList.add("collapsed");
+    document.getElementById("flavors-arrow").style.transform = "rotate(0deg)";
+}
+
+document.addEventListener("click", () => { 
+    const menu = document.getElementById("flavors-menu");
+    const arrow = document.getElementById("flavors-arrow");
+    if(menu && !menu.classList.contains("collapsed")) {
+        menu.classList.add("collapsed");
+        if(arrow) arrow.style.transform = "rotate(0deg)";
+    }
+});
 
 function startNewChat() {
     isDM = false;
@@ -1550,7 +1581,27 @@ async function sendMessage() {
         return;
     }
 
-    if (!checkDailyMessageLimit()) return;
+    const messageCost = (currentFlavor === "endless") ? 2 : 1;
+    const today = new Date().toISOString().split('T')[0];
+    let lastDate = localStorage.getItem("carl_last_msg_date");
+    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+    
+    if (lastDate !== today) { 
+        lastDate = today; count = 0; 
+        localStorage.setItem("carl_last_msg_date", today); 
+        localStorage.setItem("carl_msg_count", "0"); 
+    }
+
+    if (count + messageCost > 10 && !hasValidApiKey()) {
+        if (isGuest) {
+            alert("Guest limit reached! Please refresh and sign in or create an account to continue.");
+        } else {
+            alert(`Daily limit reached! Free users are capped at 10 tokens per day. Endless Bun uses 2 tokens per message! Enter a valid Gemini API key in Settings to unlock unlimited chats.`);
+            switchView('view-settings');
+        }
+        return;
+    }
+
     hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
     
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1571,15 +1622,25 @@ async function sendMessage() {
     else if (equipped.persona === "cowboy") personaPrompt = " [SYSTEM INSTRUCTION: You are Cowboy Carl. Speak like a rootin' tootin' wild west cowboy!]";
     else if (equipped.persona === "detective") personaPrompt = " [SYSTEM INSTRUCTION: You are Detective Carl. Investigate the prompt and speak like a 1940s noir detective!]";
 
+    let lengthPrompt = "";
+    let targetModel = "gemini-3.1-flash-lite"; 
+    if (currentFlavor === "quick") {
+        lengthPrompt = " [SYSTEM INSTRUCTION: YOU MUST KEEP YOUR RESPONSE VERY BRIEF. STRICT MAXIMUM OF 3 TO 5 SENTENCES LONG.]";
+    } else if (currentFlavor === "endless") {
+        lengthPrompt = " [SYSTEM INSTRUCTION: Provide a comprehensive, detailed, and completely unrestricted extensive response.]";
+        targetModel = "gemini-3.1-flash";
+    }
+
     const payload = { 
-        message: (text || "Look at this image.") + personaPrompt, 
+        message: (text || "Look at this image.") + personaPrompt + lengthPrompt, 
         history: chatHistory, 
         image_b64: pendingImageBase64, 
         image_mime: pendingImageMime, 
         api_key: customApiKey, 
         user_time: userLocalTime, 
         user_timezone: userTimezone, 
-        client_time: `${userLocalTime} (${userTimezone})`
+        client_time: `${userLocalTime} (${userTimezone})`,
+        model_preference: targetModel 
     };
 
     input.value = ""; clearPendingImage();
@@ -1599,9 +1660,9 @@ async function sendMessage() {
         }
 
         if (!hasValidApiKey()) {
-            const today = new Date().toISOString().split('T')[0];
-            let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + 1;
-            localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", count.toString()); updateUsageUI();
+            let updatedCount = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + messageCost;
+            localStorage.setItem("carl_msg_count", updatedCount.toString()); 
+            updateUsageUI();
         }
 
         const reader = response.body.getReader(), decoder = new TextDecoder();
