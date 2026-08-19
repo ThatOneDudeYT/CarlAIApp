@@ -54,6 +54,7 @@ body.guest-mode .burger-wallet { display: none !important; }
 .avatar-frame-wrapper.frame-ruby { box-shadow: 0 0 10px #ef4444, 0 0 20px #dc2626; border: 2px solid #ef4444; }
 .avatar-frame-wrapper.frame-lightning { box-shadow: 0 0 10px #fef08a, 0 0 20px #38bdf8; border: 2px dashed #fef08a; animation: pulseLightning 0.5s infinite alternate; }
 .avatar-frame-wrapper.frame-blood { box-shadow: 0 0 15px #991b1b, 0 0 30px #7f1d1d; border: 2px solid #7f1d1d; animation: pulseBlood 2s infinite alternate; }
+
 @keyframes pulseNeon { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(90deg); } }
 @keyframes rotateRainbow { 100% { filter: hue-rotate(360deg); } }
 @keyframes pulseMagma { from { filter: brightness(1); } to { filter: brightness(1.5); } }
@@ -68,7 +69,6 @@ body.guest-mode .burger-wallet { display: none !important; }
 .auth-card h2 { font-size: 28px; margin-bottom: 6px; }
 .auth-card p { color: var(--text-sub); font-size: 14px; margin-bottom: 24px; }
 #login-form { display: flex; flex-direction: column; gap: 12px; }
-#login-form input { background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 16px; color: var(--text-main); font-size: 16px; outline: none; }
 .auth-btn { background-color: #9333ea; color: #fff; border: none; border-radius: 12px; padding: 12px; font-size: 18px; cursor: pointer; margin-top: 8px; transition: transform 0.1s; }
 .auth-btn:active { transform: scale(0.97); }
 .auth-divider { display: flex; align-items: center; margin: 18px 0; color: var(--text-sub); font-size: 13px; }
@@ -221,7 +221,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .chat-bubble.user.bubble-gold, .dm-message-content.bubble-gold { background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: #fff !important; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
 .chat-bubble.user.bubble-cyber, .dm-message-content.bubble-cyber { background: linear-gradient(135deg, #ec4899, #8b5cf6) !important; color: #fff !important; box-shadow: 0 0 12px rgba(236, 72, 153, 0.4); }
 .chat-bubble.user.bubble-lava, .dm-message-content.bubble-lava { background: linear-gradient(135deg, #ea580c, #b91c1c) !important; color: #fff !important; box-shadow: 0 0 12px rgba(234, 88, 12, 0.4); }
-.chat-bubble.user.bubble-matrix, .dm-message-content.bubble-matrix { background: linear-gradient(135deg, #166534, #15803d) !important; color: #4ade80 !important; box-shadow: 0 0 12px rgba(22, 101, 52, 0.4); font-family: 'Courier New', Courier, monospace !important; }
+.chat-bubble.user.bubble-matrix, .dm-message-content.bubble-matrix { background: linear-gradient(135deg, #166534, #15803d) !important; color: #4ade80 !important; box-shadow: 0 0 12px rgba(22, 101, 52, 0.4); }
 .chat-bubble.user.bubble-matrix *, .dm-message-content.bubble-matrix * { font-family: 'Courier New', Courier, monospace !important; }
 .chat-bubble.user.bubble-forest, .dm-message-content.bubble-forest { background: linear-gradient(135deg, #059669, #047857) !important; color: #fff !important; box-shadow: 0 0 12px rgba(4, 120, 87, 0.4); }
 .chat-bubble.user.bubble-ocean, .dm-message-content.bubble-ocean { background: linear-gradient(135deg, #0284c7, #0369a1) !important; color: #fff !important; box-shadow: 0 0 12px rgba(2, 132, 199, 0.4); }
@@ -606,6 +606,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .friends-divider { display: none; width: 2px; background-color: var(--border-color); border-radius: 2px; margin: 0 10px; }
 .friends-col-title { text-align: center; font-size: 24px; color: var(--text-main); margin-bottom: 5px; }
 .friends-search-container { margin: 10px 0; width: 100%; display: flex; justify-content: center; }
+.friends-search-container input { width: 100%; background-color: transparent; border: none; padding: 12px 20px; color: var(--text-main); font-size: 18px; outline: none; text-align: center; }
 .friends-list-container { display: flex; flex-direction: column; gap: 16px; align-items: center; }
 .friend-item { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px; border-radius: 16px; transition: background-color 0.2s; }
 .friend-item:hover { background-color: var(--bg-input); }
@@ -629,6 +630,17 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .group-avatar-3 .collage-text, .group-avatar-4 .collage-text { width: 50%; height: 50%; font-size: 14px; }
 .group-avatar-3 .collage-text:last-child { width: 100%; height: 50%; font-size: 18px; }
 
+/* FLAVORS DROPDOWN UI */
+.flavor-dropdown-container { position: relative; margin-left: 8px; z-index: 900; }
+.flavor-dropdown-btn { background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer; display: flex; align-items: center; gap: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.flavor-dropdown-btn:hover { color: #d8b4fe; }
+#flavors-arrow { font-family: Arial, sans-serif; font-size: 16px; margin-top: 4px; transition: transform 0.2s; }
+.flavors-menu { position: absolute; top: 100%; left: 0; background-color: #1a1a1a; border: 2px solid #333; border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); margin-top: 10px; min-width: 180px; transform-origin: top left; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s; }
+.flavors-menu.collapsed { transform: scaleY(0); opacity: 0; pointer-events: none; }
+.flavor-option { padding: 10px 14px; color: var(--text-sub); cursor: pointer; border-radius: 10px; font-size: 16px; transition: 0.2s; white-space: nowrap; }
+.flavor-option:hover { background-color: var(--bg-input); color: #fff; }
+.flavor-option.active { color: #fff; font-weight: bold; }
+
 @media (min-width: 768px) {
     .app-container { max-width: 100%; border-radius: 0; }
     .mobile-top-header { display: none !important; }
@@ -642,6 +654,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     .mini-nav-btn { width: 36px; height: 36px; object-fit: contain; cursor: pointer; }
     .mini-nav-btn:hover { transform: scale(1.15); }
     .desktop-sidebar.collapsed .sidebar-logo-watermark { opacity: 0; pointer-events: none; }
+    .desktop-sidebar.collapsed .flavor-dropdown-container { display: none; }
     .desktop-sidebar.expanded .mini-nav-items { display: none; }
     .desktop-sidebar.collapsed .full-nav-items { display: none; }
     .desktop-sidebar.collapsed .mini-nav-items { display: flex; }
