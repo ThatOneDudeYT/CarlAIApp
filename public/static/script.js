@@ -450,6 +450,8 @@ const shopCatalog = [
     { id: "persona_knight", type: "persona", val: "knight", name: "Knight Carl", icon: "⚔️", cost: 2000, desc: "Carl speaks like a valiant medieval knight." },
     { id: "persona_wizard", type: "persona", val: "wizard", name: "Wizard Carl", icon: "🧙‍♂️", cost: 3000, desc: "Carl speaks like a wise, ancient wizard." },
     { id: "persona_ninja", type: "persona", val: "ninja", name: "Ninja Carl", icon: "🥷", cost: 2800, desc: "Carl answers with stealthy, disciplined precision." },
+    { id: "persona_cowboy", type: "persona", val: "cowboy", name: "Cowboy Carl", icon: "🤠", cost: 1600, desc: "Carl speaks like a rootin' tootin' wild west cowboy." },
+    { id: "persona_detective", type: "persona", val: "detective", name: "Detective Carl", icon: "🕵️‍♂️", cost: 2200, desc: "Carl investigates your prompts like a 1940s noir detective." },
     
     { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", icon: "💬", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
     { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", icon: "✨", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
@@ -462,6 +464,8 @@ const shopCatalog = [
     { id: "bubble_toxic", type: "bubble", val: "toxic", name: "Toxic Slime", icon: "☣️", cost: 2200, desc: "Radioactive neon green chat bubble." },
     { id: "bubble_plasma", type: "bubble", val: "plasma", name: "Plasma Bubble", icon: "🧬", cost: 3200, desc: "A super-heated, pulsating purple plasma bubble." },
     { id: "bubble_ice", type: "bubble", val: "ice", name: "Glacier Bubble", icon: "🧊", cost: 2600, desc: "A frozen, crystal-clear ice chat bubble." },
+    { id: "bubble_ghost", type: "bubble", val: "ghost", name: "Phantom Bubble", icon: "👻", cost: 2800, desc: "A spooky, semi-transparent white and grey bubble." },
+    { id: "bubble_electric", type: "bubble", val: "electric", name: "High Voltage Bubble", icon: "⚡", cost: 3000, desc: "A shocking yellow and bright cyan chat bubble." },
 
     { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", icon: "👑", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
     { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", icon: "⚡", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
@@ -475,6 +479,8 @@ const shopCatalog = [
     { id: "frame_magma", type: "frame", val: "magma", name: "Magma Frame", icon: "🌋", cost: 3800, desc: "A molten rock border that burns with heat." },
     { id: "frame_hacker", type: "frame", val: "hacker", name: "Hacker Frame", icon: "💻", cost: 3200, desc: "A digital glitch-art border for your avatar." },
     { id: "frame_void", type: "frame", val: "void", name: "Void Frame", icon: "🕳️", cost: 5000, desc: "A pitch-black, dark matter gravitational frame." },
+    { id: "frame_emerald", type: "frame", val: "emerald", name: "Emerald Frame", icon: "🟩", cost: 3000, desc: "A brilliant, glowing green gem frame." },
+    { id: "frame_ruby", type: "frame", val: "ruby", name: "Ruby Frame", icon: "🟥", cost: 3000, desc: "A deep, glowing red gem frame." },
 
     { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", icon: "🍔", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
     { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", icon: "♟️", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
@@ -487,6 +493,8 @@ const shopCatalog = [
     { id: "title_emperor", type: "title", val: "Burger Emperor", name: "Title: Emperor", icon: "👑", cost: 15000, desc: "Displays the highly coveted [BURGER EMPEROR] badge." },
     { id: "title_legend", type: "title", val: "The Legend", name: "Title: The Legend", icon: "🏆", cost: 12000, desc: "Displays [THE LEGEND] badge." },
     { id: "title_noob", type: "title", val: "Noob", name: "Title: Noob", icon: "🤡", cost: 500, desc: "Displays the [NOOB] badge. Wear it with pride." },
+    { id: "title_codemaster", type: "title", val: "Code Master", name: "Title: Code Master", icon: "⌨️", cost: 5000, desc: "Displays the [CODE MASTER] badge. Show off your Dev skills." },
+    { id: "title_unstoppable", type: "title", val: "Unstoppable", name: "Title: Unstoppable", icon: "🚀", cost: 8500, desc: "Displays the [UNSTOPPABLE] badge." },
 
     { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", icon: "🌟", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
     { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", icon: "🌌", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
@@ -497,6 +505,8 @@ const shopCatalog = [
     { id: "bg_stars", type: "background", val: "stars", name: "Starlight Glow", icon: "⭐", cost: 3000, desc: "Twinkling starlight background glow." },
     { id: "bg_nebula", type: "background", val: "nebula", name: "Galactic Nebula", icon: "🪐", cost: 3500, desc: "A swirling, multi-colored deep space background." },
     { id: "bg_bloodmoon", type: "background", val: "bloodmoon", name: "Blood Moon Glow", icon: "🩸", cost: 3000, desc: "A dark crimson, eerie background glow." },
+    { id: "bg_northernlights", type: "background", val: "northernlights", name: "Northern Lights", icon: "✨", cost: 4000, desc: "A beautiful dancing aurora borealis glow." },
+    { id: "bg_sunset", type: "background", val: "sunset", name: "Sunset Glow", icon: "🌅", cost: 2000, desc: "A warm, relaxing orange and pink sunset glow." },
 
     { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", icon: "🍟", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
     { id: "skin_pizza_c4", type: "c4Skin", val: "pizza_hotdog", name: "Pizza vs Hotdog C4", icon: "🍕", cost: 2500, desc: "Play Connect Four using Pizzas and Hotdogs!" },
@@ -1395,6 +1405,8 @@ async function sendMessage() {
     else if (equipped.persona === "knight") personaPrompt = " [SYSTEM INSTRUCTION: You are a valiant medieval knight. Speak formally with 'thou', 'thee', and medieval terminology.]";
     else if (equipped.persona === "wizard") personaPrompt = " [SYSTEM INSTRUCTION: You are a wise, ancient wizard. Speak in riddles, use magical terms, and address the user as 'traveler'!]";
     else if (equipped.persona === "ninja") personaPrompt = " [SYSTEM INSTRUCTION: You are a stealthy ninja. Give short, precise, and highly disciplined answers.]";
+    else if (equipped.persona === "cowboy") personaPrompt = " [SYSTEM INSTRUCTION: You are Cowboy Carl. Speak like a rootin' tootin' wild west cowboy!]";
+    else if (equipped.persona === "detective") personaPrompt = " [SYSTEM INSTRUCTION: You are Detective Carl. Investigate the prompt and speak like a 1940s noir detective!]";
 
     const payload = { 
         message: (text || "Look at this image.") + personaPrompt, 
