@@ -111,16 +111,6 @@
 
             <!-- CHAT VIEW (For Carl AI) -->
             <div id="view-chat" class="view active startup-active">
-                
-                <!-- NEW: FLAVORS DROPDOWN -->
-                <div class="flavors-dropdown-container">
-                    <button class="flavors-toggle-btn" onclick="toggleFlavors()">Flavors <span id="flavors-arrow" style="font-size: 14px;">▼</span></button>
-                    <div class="flavors-menu collapsed" id="flavors-menu">
-                        <div class="flavor-option active" id="flavor-quick" onclick="selectFlavor('quick')">Quick Flip 3.1</div>
-                        <div class="flavor-option" id="flavor-endless" onclick="selectFlavor('endless')">Endless Bun 3.1</div>
-                    </div>
-                </div>
-
                 <div id="glow-bg" class="glow-bg"></div>
                 <div id="startup-screen" class="startup-screen">
                     <h1 id="startup-title">Ask Away!<span class="typing-cursor"></span></h1>
@@ -372,6 +362,7 @@
                 <div class="social-footer">
                     <h2>Find Us At</h2>
                     <div class="social-link"><img src="/static/icons/MailIcon.png" alt="Email" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> carlaisupport@gmail.com</div>
+                    <!-- FIXED YOUTUBE ICON SRC -->
                     <div class="social-link"><img src="/static/icons/YoutubeIcon.png" alt="YouTube" draggable="false"> @CarlAIApp</div>
                     <div class="social-link"><img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> https://discord.gg/kkq7gPPqMB</div>
                 </div>
