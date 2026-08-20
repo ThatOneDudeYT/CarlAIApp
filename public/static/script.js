@@ -1,5 +1,4 @@
 let pendingAuthCredentials = { email: "", pass: "" };
-let currentFlavor = "quick"; 
 
 async function handleLogin(e) {
     if (e) {
@@ -170,7 +169,6 @@ function getMultiplier() {
     return mult;
 }
 
-// PRODUCTION MATH: Scales amount by 1.2x
 function getClickValue() { return Math.floor(1 * Math.pow(1.2, clickPower - 1)) * getMultiplier(); }
 function getChefPower() { return autoChefs === 0 ? 0 : Math.floor(1 * Math.pow(1.2, autoChefs - 1)); }
 function getStandPower() { return burgerStands === 0 ? 0 : Math.floor(10 * Math.pow(1.2, burgerStands - 1)); }
@@ -201,44 +199,6 @@ function hideStartupScreen() { const s=document.getElementById("startup-screen")
 function showStartupScreen() { const s=document.getElementById("startup-screen"), c=document.getElementById("view-chat"); if(s) { s.classList.remove("hidden"); initTypingAnimation(); } if(c) c.classList.add("startup-active"); }
 function hasValidApiKey() { return customApiKey && customApiKey.trim().length > 20; }
 
-// --- FLAVORS MENU TOGGLE ---
-function toggleFlavors(e) {
-    if(e) e.stopPropagation();
-    const menu = document.getElementById("flavors-menu");
-    const arrow = document.getElementById("flavors-arrow");
-    if (menu.classList.contains("collapsed")) {
-        menu.classList.remove("collapsed");
-        arrow.style.transform = "rotate(180deg)";
-    } else {
-        menu.classList.add("collapsed");
-        arrow.style.transform = "rotate(0deg)";
-    }
-}
-
-function selectFlavor(flavor) {
-    currentFlavor = flavor;
-    document.getElementById("flavor-quick").classList.remove("active");
-    document.getElementById("flavor-endless").classList.remove("active");
-    
-    if (flavor === "quick") {
-        document.getElementById("flavor-quick").classList.add("active");
-    } else {
-        document.getElementById("flavor-endless").classList.add("active");
-    }
-    
-    document.getElementById("flavors-menu").classList.add("collapsed");
-    document.getElementById("flavors-arrow").style.transform = "rotate(0deg)";
-}
-
-document.addEventListener("click", () => { 
-    const menu = document.getElementById("flavors-menu");
-    const arrow = document.getElementById("flavors-arrow");
-    if(menu && !menu.classList.contains("collapsed")) {
-        menu.classList.add("collapsed");
-        if(arrow) arrow.style.transform = "rotate(0deg)";
-    }
-});
-
 window.addEventListener("DOMContentLoaded", () => {
     initMobileNavIcons(); initTypingAnimation(); updateUsageUI(); updateBurgerUI();
     const oldNav = document.querySelector('.bottom-nav'); if (oldNav) oldNav.style.display = 'none';
@@ -256,6 +216,26 @@ window.addEventListener("DOMContentLoaded", () => {
     
     const sBtn = document.getElementById("send-btn"); if(sBtn) sBtn.addEventListener("click", sendMessage);
     const uInp = document.getElementById("user-input"); if(uInp) uInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendMessage(); });
+});
+
+// --- MOUSE TRACKING FOR DYNAMIC HOVER GLOW ---
+document.addEventListener('mousemove', (e) => {
+    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
+    
+    glowElements.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right &&
+            e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            el.style.setProperty('--mouse-x', `${x}px`);
+            el.style.setProperty('--mouse-y', `${y}px`);
+        } else {
+            // Instantly banish the glow if cursor leaves the box limits
+            el.style.setProperty('--mouse-x', `-999px`);
+            el.style.setProperty('--mouse-y', `-999px`);
+        }
+    });
 });
 
 function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
@@ -1064,19 +1044,19 @@ function clickBurger() {
 function buyUpgrade(type) {
     let cost = 0;
     if (type === 'click') {
-        cost = Math.floor(100 * Math.pow(1.3, clickPower - 1));
+        cost = Math.floor(100 * Math.pow(1.2, clickPower - 1));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'chef') {
-        cost = Math.floor(50 * Math.pow(1.3, autoChefs));
+        cost = Math.floor(50 * Math.pow(1.2, autoChefs));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'stand') {
-        cost = Math.floor(500 * Math.pow(1.3, burgerStands));
+        cost = Math.floor(500 * Math.pow(1.2, burgerStands));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'factory') {
-        cost = Math.floor(5000 * Math.pow(1.3, burgerFactories));
+        cost = Math.floor(5000 * Math.pow(1.2, burgerFactories));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     }
@@ -1098,15 +1078,15 @@ function rebirth() {
 
 function updateUpgradesUI() {
     let e = (id) => document.getElementById(id);
-    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.3, clickPower - 1)).toLocaleString();
+    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.2, clickPower - 1)).toLocaleString();
     if(e("click-power-count")) e("click-power-count").innerText = getClickValue().toLocaleString();
-    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.3, autoChefs)).toLocaleString();
+    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.2, autoChefs)).toLocaleString();
     if(e("chef-count")) e("chef-count").innerText = autoChefs.toLocaleString();
     if(e("chef-output")) e("chef-output").innerText = (getChefPower() * getMultiplier()).toLocaleString();
-    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.3, burgerStands)).toLocaleString();
+    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.2, burgerStands)).toLocaleString();
     if(e("stand-count")) e("stand-count").innerText = burgerStands.toLocaleString();
     if(e("stand-output")) e("stand-output").innerText = (getStandPower() * getMultiplier()).toLocaleString();
-    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.3, burgerFactories)).toLocaleString();
+    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.2, burgerFactories)).toLocaleString();
     if(e("factory-count")) e("factory-count").innerText = burgerFactories.toLocaleString();
     if(e("factory-output")) e("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
     if(e("bps-text")) e("bps-text").innerText = getBps().toLocaleString();
@@ -1512,58 +1492,17 @@ function clearGroupPendingImage() { pendingGroupImageBase64 = null; pendingGroup
 // --- GENERAL APP LOGIC & CHAT ---
 // =========================================================================
 
-// --- FLAVORS MENU TOGGLE ---
-function toggleFlavors(e) {
-    if(e) e.stopPropagation();
-    const menu = document.getElementById("flavors-menu");
-    const arrow = document.getElementById("flavors-arrow");
-    if (menu.classList.contains("collapsed")) {
-        menu.classList.remove("collapsed");
-        arrow.style.transform = "rotate(180deg)";
-    } else {
-        menu.classList.add("collapsed");
-        arrow.style.transform = "rotate(0deg)";
-    }
-}
-
-function selectFlavor(flavor) {
-    currentFlavor = flavor;
-    document.getElementById("flavor-quick").classList.remove("active");
-    document.getElementById("flavor-endless").classList.remove("active");
-    
-    if (flavor === "quick") {
-        document.getElementById("flavor-quick").classList.add("active");
-    } else {
-        document.getElementById("flavor-endless").classList.add("active");
-    }
-    
-    document.getElementById("flavors-menu").classList.add("collapsed");
-    document.getElementById("flavors-arrow").style.transform = "rotate(0deg)";
-}
-
-document.addEventListener("click", () => { 
-    const menu = document.getElementById("flavors-menu");
-    const arrow = document.getElementById("flavors-arrow");
-    if(menu && !menu.classList.contains("collapsed")) {
-        menu.classList.add("collapsed");
-        if(arrow) arrow.style.transform = "rotate(0deg)";
-    }
-});
-
 function checkDailyMessageLimit() {
     const today = new Date().toISOString().split('T')[0];
     let lastDate = localStorage.getItem("carl_last_msg_date");
     let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
     if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
     
-    // Quick is 1 token, Endless is 2 tokens
-    const messageCost = (currentFlavor === "endless") ? 2 : 1;
-
-    if (count + messageCost > 10 && !hasValidApiKey()) {
+    if (count >= 10 && !hasValidApiKey()) {
         if (isGuest) {
             alert("Guest limit reached! Please refresh and sign in or create an account to continue.");
         } else {
-            alert(`Daily limit reached! Free users are capped at 10 tokens per day. Endless Bun uses 2 tokens per message! Enter a valid Gemini API key in Settings to unlock unlimited chats.`);
+            alert("Daily limit reached! Free users are capped at 10 messages per day. Enter a valid Gemini API key in Settings to unlock unlimited chats!");
             switchView('view-settings');
         }
         return false;
@@ -1612,9 +1551,6 @@ async function sendMessage() {
     }
 
     if (!checkDailyMessageLimit()) return;
-
-    const messageCost = (currentFlavor === "endless") ? 2 : 1;
-    
     hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
     
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1635,25 +1571,15 @@ async function sendMessage() {
     else if (equipped.persona === "cowboy") personaPrompt = " [SYSTEM INSTRUCTION: You are Cowboy Carl. Speak like a rootin' tootin' wild west cowboy!]";
     else if (equipped.persona === "detective") personaPrompt = " [SYSTEM INSTRUCTION: You are Detective Carl. Investigate the prompt and speak like a 1940s noir detective!]";
 
-    let lengthPrompt = "";
-    let targetModel = "gemini-3.1-flash-lite"; 
-    if (currentFlavor === "quick") {
-        lengthPrompt = " [SYSTEM INSTRUCTION: YOU MUST KEEP YOUR RESPONSE VERY BRIEF. STRICT MAXIMUM OF 3 TO 5 SENTENCES LONG.]";
-    } else if (currentFlavor === "endless") {
-        lengthPrompt = " [SYSTEM INSTRUCTION: Provide a comprehensive, detailed, and completely unrestricted extensive response.]";
-        targetModel = "gemini-3.1-flash";
-    }
-
     const payload = { 
-        message: (text || "Look at this image.") + personaPrompt + lengthPrompt, 
+        message: (text || "Look at this image.") + personaPrompt, 
         history: chatHistory, 
         image_b64: pendingImageBase64, 
         image_mime: pendingImageMime, 
         api_key: customApiKey, 
         user_time: userLocalTime, 
         user_timezone: userTimezone, 
-        client_time: `${userLocalTime} (${userTimezone})`,
-        model_preference: targetModel 
+        client_time: `${userLocalTime} (${userTimezone})`
     };
 
     input.value = ""; clearPendingImage();
@@ -1673,9 +1599,9 @@ async function sendMessage() {
         }
 
         if (!hasValidApiKey()) {
-            let updatedCount = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + messageCost;
-            localStorage.setItem("carl_msg_count", updatedCount.toString()); 
-            updateUsageUI();
+            const today = new Date().toISOString().split('T')[0];
+            let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + 1;
+            localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", count.toString()); updateUsageUI();
         }
 
         const reader = response.body.getReader(), decoder = new TextDecoder();
