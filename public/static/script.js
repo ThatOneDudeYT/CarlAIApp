@@ -260,7 +260,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 // --- MOUSE TRACKING FOR DYNAMIC HOVER GLOW ---
 document.addEventListener('mousemove', (e) => {
-    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container');
+    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
     
     glowElements.forEach(el => {
         const rect = el.getBoundingClientRect();
@@ -271,7 +271,6 @@ document.addEventListener('mousemove', (e) => {
             el.style.setProperty('--mouse-x', `${x}px`);
             el.style.setProperty('--mouse-y', `${y}px`);
         } else {
-            // Instantly banish the glow if cursor leaves the box limits
             el.style.setProperty('--mouse-x', `-999px`);
             el.style.setProperty('--mouse-y', `-999px`);
         }
@@ -279,7 +278,7 @@ document.addEventListener('mousemove', (e) => {
 });
 
 document.addEventListener('mouseleave', () => {
-    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container');
+    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
     glowElements.forEach(el => {
         el.style.setProperty('--mouse-x', `-999px`);
         el.style.setProperty('--mouse-y', `-999px`);
@@ -566,7 +565,7 @@ function switchView(viewId) {
 }
 
 // =========================================================================
-// --- BURGER SHOP & INVENTORY SYSTEM ---
+// --- BURGER SHOP & INVENTORY SYSTEM (WITH MYSTERY LOOT BOX) ---
 // =========================================================================
 const shopCatalog = [
     { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
