@@ -1,168 +1,249 @@
-let pendingAuthCredentials = { email: "", pass: "" };
+// =========================================================================
+// --- 1. FIREBASE SETUP & GLOBAL VARIABLES ---
+// =========================================================================
+const firebaseConfig = { 
+    apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", 
+    authDomain: "carl-ai-loggins.firebaseapp.com", 
+    projectId: "carl-ai-loggins", 
+    storageBucket: "carl-ai-loggins.firebasestorage.app", 
+    messagingSenderId: "372926140822", 
+    appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", 
+    measurementId: "G-G4H60BZHT3" 
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Global App State
+let firebaseUserId = null;
+let currentUser = null;
+let currentUserAvatar = "/static/icons/default-avatar.png";
+let customApiKey = "";
+let chatsHistory = [], activeChatId = null, chatHistory = [];  
+let selectedGame = "Burger Clicker"; 
+const gamesWithDifficulty = ["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
+let pendingImageBase64 = null, pendingImageMime = null, pendingImageSrc = null;
+let pendingDmImageBase64 = null, pendingDmImageMime = null, pendingDmImageSrc = null, currentDmUser = null; 
+let pendingGlobalImageBase64 = null, pendingGlobalImageMime = null, pendingGlobalImageSrc = null;
+let pendingGroupImageBase64 = null, pendingGroupImageMime = null, pendingGroupImageSrc = null;
+let isDM = false, currentDmUnsubscribe = null;
+let globalChatUnsubscribe = null, groupChatUnsubscribe = null, activeGroupId = null, myGroups = [];
+let isGuest = false;
+let isAdmin = false;
 let currentFlavor = "quick"; 
 
+// Burger Economy & Inventory State
+let userBurgers = 100, clickerBurgers = 0, rebirths = 0, clickPower = 1, autoChefs = 0, burgerStands = 0, burgerFactories = 0;   
+let inventory = [];
+let userPresets = [];
+let claimedCodes = []; 
+let userNotes = ""; 
+let equipped = { persona: "default", bubble: "default", frame: "default", title: "", background: "default", c4Skin: "default", bjFelt: "default", goldenSpatula: false };
+
+// =========================================================================
+// --- 2. AUTHENTICATION & DATA SYNC (UNIFIED LOGIC) ---
+// =========================================================================
+
+// Handle Email/Password Sign In & Auto-Registration
 async function handleLogin(e) {
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
+    if (e) { e.preventDefault(); e.stopPropagation(); }
     
     const email = document.getElementById('auth-username').value.trim();
     const pass = document.getElementById('auth-password').value;
     const submitBtn = document.getElementById('auth-submit-btn');
 
-    if (!email || !pass) {
-        alert("Please enter both an email and a password.");
-        return;
-    }
+    if (!email || !pass) { alert("Please enter both an email and a password."); return; }
 
     submitBtn.innerText = "Checking Account...";
     submitBtn.disabled = true;
 
     try {
+        // Attempt to log in
         await auth.signInWithEmailAndPassword(email, pass);
-        const overlay = document.getElementById('auth-overlay');
-        if (overlay) overlay.style.display = 'none';
+        document.getElementById('auth-overlay').style.display = 'none';
         document.getElementById('auth-password').value = "";
     } catch (err) {
-        const isCredentialMismatch = [
-            'auth/invalid-login-credentials',
-            'auth/invalid-credential',
-            'auth/wrong-password',
-            'auth/user-not-found'
-        ].includes(err.code);
-
+        // If login fails because the account doesn't exist or wrong password
+        const isCredentialMismatch = ['auth/invalid-login-credentials', 'auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found'].includes(err.code);
+        
         if (isCredentialMismatch) {
-            const wantsToRegister = confirm(
-                "Sign-in failed: Incorrect password OR account not registered.\n\n" +
-                "• Click CANCEL to re-enter your password.\n" +
-                "• Click OK to REGISTER a new account with this email."
-            );
-
+            const wantsToRegister = confirm("Sign-in failed: Incorrect password OR account not registered.\n\n• Click CANCEL to re-enter your password.\n• Click OK to REGISTER a new account with this email.");
             if (wantsToRegister) {
                 submitBtn.innerText = "Creating Account...";
                 try {
+                    // Attempt to create new account
                     await auth.createUserWithEmailAndPassword(email, pass);
-                    const overlay = document.getElementById('auth-overlay');
-                    if (overlay) overlay.style.display = 'none';
+                    document.getElementById('auth-overlay').style.display = 'none';
                     alert("Account created successfully! Welcome to Carl AI.");
                     document.getElementById('auth-password').value = "";
                 } catch (regErr) {
-                    if (regErr.code === 'auth/email-already-in-use') {
-                        alert("This email is already in use. Please enter the correct password to log in.");
-                    } else if (regErr.code === 'auth/weak-password') {
-                        alert("Password is too weak. Please use at least 6 characters.");
-                    } else {
-                        alert("Registration Error: " + regErr.message);
-                    }
+                    if (regErr.code === 'auth/email-already-in-use') alert("This email is already in use. Please enter the correct password to log in.");
+                    else if (regErr.code === 'auth/weak-password') alert("Password is too weak. Please use at least 6 characters.");
+                    else alert("Registration Error: " + regErr.message);
                 }
             }
         } else {
             alert("Login Error: " + err.message);
         }
     } finally {
-        if (submitBtn) {
-            submitBtn.innerText = "Sign In / Register";
-            submitBtn.disabled = false;
-        }
+        submitBtn.innerText = "Sign In / Register";
+        submitBtn.disabled = false;
     }
 }
 
-// --- PASSWORD RESET ---
+// Handle Google Auth
+function signInWithGoogle() { 
+    const provider = new firebase.auth.GoogleAuthProvider(); 
+    auth.signInWithPopup(provider).catch(e => alert("Google Sign-In Error: " + e.message)); 
+}
+
+// Handle Guest Mode
+function continueAsGuest() {
+    isGuest = true;
+    document.getElementById('auth-overlay').style.display = 'none';
+    document.body.classList.add('guest-mode');
+    currentUser = "Guest";
+    currentUserAvatar = "/static/icons/default-avatar.png";
+    updateProfileUI();
+    startNewChat();
+}
+
+// Password Reset
 async function resetPassword() {
     const email = document.getElementById('auth-username').value.trim();
-    if (!email) {
-        alert("Please enter your email address in the top box first, then click 'Forgot Password?'.");
-        return;
-    }
+    if (!email) return alert("Please enter your email address in the top box first, then click 'Forgot Password?'.");
     try {
         await auth.sendPasswordResetEmail(email);
         alert(`A password reset link has been sent to ${email}!\n\nCheck your inbox, click the link to create a new password, and then come back here to log in.`);
     } catch (error) {
-        if (error.code === 'auth/user-not-found') {
-            alert("No account found with that email address.");
-        } else {
-            alert("Error: " + error.message);
-        }
+        if (error.code === 'auth/user-not-found') alert("No account found with that email address.");
+        else alert("Error: " + error.message);
     }
 }
 
-async function handleVerifyOtp(e) {
-    if (e) e.preventDefault();
-    const code = document.getElementById('auth-otp-code').value.trim();
-    const verifyBtn = document.getElementById('otp-verify-btn');
+// Sign Out
+function handleSignOut() {
+    if (isGuest) { window.location.reload(); return; }
+    auth.signOut().then(() => {
+        window.location.reload(); // Hard reload completely resets all variables safely
+    });
+}
 
-    if (code.length !== 5) { alert("Please enter the full 5-digit code."); return; }
-
-    verifyBtn.innerText = "Verifying..."; verifyBtn.disabled = true;
-
-    try {
-        const res = await fetch("/api/verify-otp", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: pendingAuthCredentials.email, code: code })
-        });
-        const data = await res.json();
-
-        if (!res.ok || data.error) {
-            alert(data.error || "Incorrect or expired verification code.");
-            verifyBtn.innerText = "Verify Code"; verifyBtn.disabled = false;
-            return;
-        }
-
-        await auth.createUserWithEmailAndPassword(pendingAuthCredentials.email, pendingAuthCredentials.pass);
-
-        document.getElementById("auth-step-otp").style.display = "none";
-        document.getElementById("auth-step-credentials").style.display = "block";
-        pendingAuthCredentials = { email: "", pass: "" };
-        alert("Account verified and registered successfully!");
-
-    } catch (err) {
-        alert("Error creating account: " + err.message);
-    } finally {
-        if(verifyBtn) {
-            verifyBtn.innerText = "Verify Code"; verifyBtn.disabled = false;
-        }
+// Master Auth State Listener
+auth.onAuthStateChanged(async (user) => {
+    const overlay = document.getElementById('auth-overlay');
+    if (user) {
+        isGuest = false;
+        document.body.classList.remove('guest-mode');
+        firebaseUserId = user.uid; 
+        currentUser = user.displayName || user.email.split('@')[0]; 
+        currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
+        if (overlay) overlay.style.display = 'none'; 
+        await loadUserDataFromCloud();
+    } else if (!isGuest) { 
+        firebaseUserId = null; 
+        if (overlay) overlay.style.display = 'flex'; 
     }
+});
+
+// Master Cloud Load Function
+async function loadUserDataFromCloud() {
+    if (!firebaseUserId) return;
+    listenToMyGroups();
+    
+    db.collection("users").doc(firebaseUserId).onSnapshot(async (doc) => {
+        if (doc.exists) {
+            const data = doc.data(); 
+            customApiKey = data.apiKey || ""; 
+            chatsHistory = data.chats || [];
+            if (!isDM && document.getElementById('view-chat').classList.contains('active')) activeChatId = data.activeChatId || null; 
+            
+            applyTheme(data.theme || "dark");
+            userBurgers = data.burgers !== undefined ? data.burgers : 100; 
+            clickerBurgers = data.clickerBurgers || 0; 
+            autoChefs = data.autoChefs || 0; 
+            burgerStands = data.burgerStands || 0; 
+            burgerFactories = data.burgerFactories || 0; 
+            clickPower = data.clickPower || 1; 
+            rebirths = data.rebirths || 0;
+            
+            myFriends = data.friends || []; 
+            myRequests = data.friendRequests || []; 
+            mySentRequests = data.sentRequests || []; 
+            inventory = data.inventory || [];
+            userPresets = data.presets || [];
+            claimedCodes = data.claimedCodes || [];
+            if (data.equipped) equipped = { ...equipped, ...data.equipped };
+            
+            if (data.avatar) currentUserAvatar = data.avatar; 
+            if (data.username) currentUser = data.username;
+            
+            if (claimedCodes.includes("Admin1234")) {
+                isAdmin = true;
+                const adminRow = document.getElementById("admin-panel-row");
+                if (adminRow) adminRow.style.display = "flex";
+            }
+
+            userNotes = data.notes || "";
+            const editor = document.getElementById("notepad-editor");
+            if (editor) editor.innerHTML = userNotes;
+
+            // Trigger UI Updates with loaded data
+            updateBurgerUI();
+            updateProfileUI(); 
+            applyEquippedCosmetics();
+            
+            const keyInp = document.getElementById('user-api-key'); if (keyInp) keyInp.value = customApiKey; 
+            const usrInp = document.getElementById('settings-username-input'); if (usrInp) usrInp.value = currentUser;
+            
+            renderChatHistorySidebar(); 
+            updateUsageUI(); 
+            if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
+            if (document.getElementById('view-shop').classList.contains('active')) renderShopView();
+            if (document.getElementById('view-inventory').classList.contains('active')) renderInventoryView();
+            
+        } else { 
+            // BRAND NEW USER INITIALIZATION
+            saveSessionData(); 
+            updateBurgerUI();
+            updateProfileUI();
+            applyEquippedCosmetics();
+            renderChatHistorySidebar();
+            updateUsageUI();
+            startNewChat(); 
+        }
+    }, e => console.error("Error loading user data:", e));
 }
 
-function cancelOtpStep() {
-    document.getElementById("auth-step-otp").style.display = "none";
-    document.getElementById("auth-step-credentials").style.display = "block";
-    pendingAuthCredentials = { email: "", pass: "" };
+// Master Cloud Save Function
+function saveSessionData() {
+    if (!firebaseUserId) return; 
+    const cur = isDM ? (chatsHistory.length > 0 ? chatsHistory[0].id : null) : activeChatId;
+    db.collection("users").doc(firebaseUserId).set({
+        apiKey: customApiKey, 
+        chats: chatsHistory, 
+        activeChatId: cur, 
+        theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
+        avatar: currentUserAvatar, 
+        username: currentUser, 
+        burgers: userBurgers, 
+        clickerBurgers: clickerBurgers, 
+        autoChefs: autoChefs, 
+        burgerStands: burgerStands, 
+        burgerFactories: burgerFactories, 
+        clickPower: clickPower, 
+        rebirths: rebirths,
+        inventory: inventory, 
+        equipped: equipped, 
+        presets: userPresets, 
+        claimedCodes: claimedCodes,
+        notes: userNotes 
+    }, { merge: true }).catch(e => console.error("Error saving:", e));
 }
 
-const firebaseConfig = { apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", authDomain: "carl-ai-loggins.firebaseapp.com", projectId: "carl-ai-loggins", storageBucket: "carl-ai-loggins.firebasestorage.app", messagingSenderId: "372926140822", appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", measurementId: "G-G4H60BZHT3" };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth(), db = firebase.firestore();
-
-let firebaseUserId=null, currentUser=null, currentUserAvatar="/static/icons/default-avatar.png", customApiKey="";
-let chatsHistory=[], activeChatId=null, chatHistory=[];  
-let selectedGame="Burger Clicker"; const gamesWithDifficulty=["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
-let pendingImageBase64=null, pendingImageMime=null, pendingImageSrc=null, pendingDmImageBase64=null, pendingDmImageMime=null, pendingDmImageSrc=null, currentDmUser=null; 
-let pendingGlobalImageBase64=null, pendingGlobalImageMime=null, pendingGlobalImageSrc=null;
-let pendingGroupImageBase64=null, pendingGroupImageMime=null, pendingGroupImageSrc=null;
-let isDM=false, currentDmUnsubscribe=null;
-let globalChatUnsubscribe=null, groupChatUnsubscribe=null, activeGroupId=null, myGroups=[];
-let isGuest = false;
-let isAdmin = false;
-
-// --- BURGER ECONOMY & SHOP INVENTORY ---
-let userBurgers=100, clickerBurgers=0, rebirths=0, clickPower=1, autoChefs=0, burgerStands=0, burgerFactories=0;   
-let inventory = [];
-let userPresets = [];
-let claimedCodes = []; 
-let userNotes = ""; 
-let equipped = {
-    persona: "default",
-    bubble: "default",
-    frame: "default",
-    title: "",
-    background: "default",
-    c4Skin: "default",
-    bjFelt: "default",
-    goldenSpatula: false
-};
+// =========================================================================
+// --- 3. CORE APP LOGIC & UI BEHAVIORS ---
+// =========================================================================
 
 function getMultiplier() { 
     let mult = 1 + (rebirths * 1.0);
@@ -271,7 +352,6 @@ document.addEventListener('mousemove', (e) => {
             el.style.setProperty('--mouse-x', `${x}px`);
             el.style.setProperty('--mouse-y', `${y}px`);
         } else {
-            // Instantly banish the glow if cursor leaves the box limits
             el.style.setProperty('--mouse-x', `-999px`);
             el.style.setProperty('--mouse-y', `-999px`);
         }
@@ -288,119 +368,6 @@ document.addEventListener('mouseleave', () => {
 
 function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
 
-// --- AUTHENTICATION ---
-function continueAsGuest() {
-    isGuest = true;
-    document.getElementById('auth-overlay').style.display = 'none';
-    document.body.classList.add('guest-mode');
-    currentUser = "Guest";
-    currentUserAvatar = "/static/icons/default-avatar.png";
-    updateProfileUI();
-    startNewChat();
-}
-
-auth.onAuthStateChanged(async (user) => {
-    const ov = document.getElementById('auth-overlay');
-    if (user) {
-        isGuest = false;
-        document.body.classList.remove('guest-mode');
-        firebaseUserId = user.uid; currentUser = user.displayName || user.email.split('@')[0]; currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
-        if (ov) ov.style.display = 'none'; await loadUserDataFromCloud();
-    } else if (!isGuest) { 
-        firebaseUserId = null; if (ov) ov.style.display = 'flex'; 
-    }
-});
-
-function signInWithGoogle() { const p = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(p).catch(e => alert("Google Sign-In Error: " + e.message)); }
-function handleSignOut() {
-    if (isGuest) {
-        window.location.reload();
-        return;
-    }
-    auth.signOut().then(() => {
-        currentUser=null; currentUserAvatar="/static/icons/default-avatar.png"; customApiKey="";
-        chatsHistory=[]; chatHistory=[]; activeChatId=null; myFriends=[]; myRequests=[]; mySentRequests=[]; currentDmUser=null; myGroups=[];
-        userBurgers=100; clickerBurgers=0; autoChefs=0; burgerStands=0; burgerFactories=0; clickPower=1; rebirths=0;
-        inventory=[]; userPresets=[]; claimedCodes=[]; equipped={ persona:"default", bubble:"default", frame:"default", title:"", background:"default", c4Skin:"default", bjFelt:"default", goldenSpatula:false };
-        isAdmin = false;
-        
-        userNotes = "";
-        const editor = document.getElementById("notepad-editor");
-        if (editor) editor.innerHTML = "";
-        const floatingNotepad = document.getElementById("floating-notepad");
-        if (floatingNotepad) floatingNotepad.classList.remove("active");
-        
-        if (groupsUnsubscribe) { groupsUnsubscribe(); groupsUnsubscribe=null; }
-        if (globalChatUnsubscribe) { globalChatUnsubscribe(); globalChatUnsubscribe=null; }
-        if (groupChatUnsubscribe) { groupChatUnsubscribe(); groupChatUnsubscribe=null; }
-
-        updateBurgerUI(); updateProfileUI(); applyEquippedCosmetics(); renderChatHistorySidebar(); switchView('view-chat'); showStartupScreen(); updateUsageUI();
-    });
-}
-
-// --- CLOUD PERSISTENCE ---
-let myFriends=[], myRequests=[], mySentRequests=[];
-let groupsUnsubscribe = null;
-
-function listenToMyGroups() {
-    if (!firebaseUserId) return;
-    if (groupsUnsubscribe) groupsUnsubscribe();
-    groupsUnsubscribe = db.collection("groups").where("members", "array-contains", firebaseUserId).onSnapshot(snapshot => {
-        myGroups = [];
-        snapshot.forEach(doc => myGroups.push({ id: doc.id, ...doc.data() }));
-        if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
-    });
-}
-
-async function loadUserDataFromCloud() {
-    if (!firebaseUserId) return;
-    listenToMyGroups();
-    db.collection("users").doc(firebaseUserId).onSnapshot(async (doc) => {
-        if (doc.exists) {
-            const data = doc.data(); customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
-            if (!isDM && document.getElementById('view-chat').classList.contains('active')) activeChatId = data.activeChatId || null; 
-            applyTheme(data.theme || "dark");
-            userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0; autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0; clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
-            myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || []; 
-            inventory = data.inventory || [];
-            userPresets = data.presets || [];
-            claimedCodes = data.claimedCodes || [];
-            if (data.equipped) equipped = { ...equipped, ...data.equipped };
-            updateBurgerUI();
-            if (data.avatar) currentUserAvatar = data.avatar; if (data.username) currentUser = data.username;
-            
-            if (claimedCodes.includes("Admin1234")) {
-                isAdmin = true;
-                const adminRow = document.getElementById("admin-panel-row");
-                if (adminRow) adminRow.style.display = "flex";
-            }
-
-            // LOAD NOTES
-            userNotes = data.notes || "";
-            const editor = document.getElementById("notepad-editor");
-            if (editor) editor.innerHTML = userNotes;
-
-            updateProfileUI(); applyEquippedCosmetics();
-            const keyInp = document.getElementById('user-api-key'); if (keyInp) keyInp.value = customApiKey; const usrInp = document.getElementById('settings-username-input'); if (usrInp) usrInp.value = currentUser;
-            renderChatHistorySidebar(); updateUsageUI(); 
-            if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
-            if (document.getElementById('view-shop').classList.contains('active')) renderShopView();
-            if (document.getElementById('view-inventory').classList.contains('active')) renderInventoryView();
-        } else { saveSessionData(); startNewChat(); }
-    }, e => console.error("Error:", e));
-}
-
-function saveSessionData() {
-    if (!firebaseUserId) return; const cur = isDM ? (chatsHistory.length > 0 ? chatsHistory[0].id : null) : activeChatId;
-    db.collection("users").doc(firebaseUserId).set({
-        apiKey: customApiKey, chats: chatsHistory, activeChatId: cur, theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
-        avatar: currentUserAvatar, username: currentUser, burgers: userBurgers, clickerBurgers: clickerBurgers, autoChefs: autoChefs, burgerStands: burgerStands, burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths,
-        inventory: inventory, equipped: equipped, presets: userPresets, claimedCodes: claimedCodes,
-        notes: userNotes 
-    }, { merge: true }).catch(e => console.error("Error saving:", e));
-}
-
-// --- PROFILE & COSMETICS UI ---
 function applyTheme(theme) { const b=document.body, ts=document.getElementById('theme-toggle-switch'); if(theme==="light"){ b.classList.remove("dark-mode"); b.classList.add("light-mode"); if(ts) ts.checked=true; } else { b.classList.remove("light-mode"); b.classList.add("dark-mode"); if(ts) ts.checked=false; } }
 function toggleTheme() { const b=document.body, ts=document.getElementById('theme-toggle-switch'); if(b.classList.contains('dark-mode')){ b.classList.remove('dark-mode'); b.classList.add('light-mode'); if(ts) ts.checked=true; } else { b.classList.remove('light-mode'); b.classList.add('dark-mode'); if(ts) ts.checked=false; } saveSessionData(); }
 function updateProfileUI() { 
@@ -476,7 +443,6 @@ function applyEquippedCosmetics() {
         }
     }
     
-    // Updates the global css variable for the dynamic mouse hover glow
     document.documentElement.style.setProperty('--cursor-glow-color', cursorGlowColor);
 
     const bjArena = document.getElementById("bj-felt-arena");
@@ -553,7 +519,6 @@ function switchView(viewId) {
     const t=document.getElementById(viewId); if(t) t.classList.add('active');
     const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb&&sb.classList.contains('open')) sb.classList.remove('open'); if(ov&&ov.classList.contains('active')) ov.classList.remove('active');
     
-    // Clear out subscriptions if leaving their views
     if(viewId!=='view-dm'){ isDM=false; if(currentDmUnsubscribe){ currentDmUnsubscribe(); currentDmUnsubscribe=null; } }
     if(viewId!=='view-global-chat'){ if(globalChatUnsubscribe){ globalChatUnsubscribe(); globalChatUnsubscribe=null; } }
     if(viewId!=='view-group-chat'){ if(groupChatUnsubscribe){ groupChatUnsubscribe(); groupChatUnsubscribe=null; } }
@@ -1540,189 +1505,6 @@ function clearGroupPendingImage() { pendingGroupImageBase64 = null; pendingGroup
 // =========================================================================
 // --- GENERAL APP LOGIC & CHAT ---
 // =========================================================================
-
-function checkDailyMessageLimit() {
-    const today = new Date().toISOString().split('T')[0];
-    let lastDate = localStorage.getItem("carl_last_msg_date");
-    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
-    if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
-    
-    const messageCost = (currentFlavor === "endless") ? 2 : 1;
-
-    if (count + messageCost > 10 && !hasValidApiKey()) {
-        if (isGuest) {
-            alert("Guest limit reached! Please refresh and sign in or create an account to continue.");
-        } else {
-            alert(`Daily limit reached! Free users are capped at 10 tokens per day. Endless Bun uses 2 tokens per message! Enter a valid Gemini API key in Settings to unlock unlimited chats.`);
-            switchView('view-settings');
-        }
-        return false;
-    }
-    return true;
-}
-
-function startNewChat() {
-    isDM = false;
-    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
-    archiveActiveChat(); activeChatId = "chat_" + Date.now(); chatHistory = [];
-    const log = document.getElementById("chat-log"); if (log) log.innerHTML = '';
-    const input = document.getElementById("user-input"); if (input) input.value = "";
-    
-    clearPendingImage();
-    document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>';
-    showStartupScreen(); saveSessionData(); switchView('view-chat');
-}
-
-function loadChat(chatId) {
-    isDM = false;
-    if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
-    archiveActiveChat(); const target = chatsHistory.find(c => c.id === chatId);
-    if (target) {
-        activeChatId = target.id; const log = document.getElementById("chat-log"); if (log) log.innerHTML = target.html;
-        chatHistory = [...target.apiHistory];
-        
-        if (chatHistory.length > 0) hideStartupScreen();
-        else { document.getElementById("startup-title").innerHTML = 'Ask Away!<span class="typing-cursor"></span>'; showStartupScreen(); }
-        saveSessionData(); switchView('view-chat');
-    }
-}
-
-async function sendMessage() {
-    const input = document.getElementById("user-input");
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text && !pendingImageBase64) return;
-
-    if (text.toLowerCase().trim() === "/whomadeyou") {
-        hideStartupScreen();
-        appendMessage(text, "user", pendingImageSrc);
-        appendMessage("Emmett Breen", "carl");
-        input.value = ""; clearPendingImage();
-        return;
-    }
-
-    if (!checkDailyMessageLimit()) return;
-
-    const messageCost = (currentFlavor === "endless") ? 2 : 1;
-    
-    hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
-    
-    const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    let personaPrompt = "";
-    if (equipped.persona === "pirate") personaPrompt = " [SYSTEM INSTRUCTION: You are a swashbuckling pirate. Answer the query speaking strictly like a pirate matey!]";
-    else if (equipped.persona === "chef") personaPrompt = " [SYSTEM INSTRUCTION: You are Gordon Ramsay. Answer the query passionately and critique things like a world-class furious chef!]";
-    else if (equipped.persona === "cyber") personaPrompt = " [SYSTEM INSTRUCTION: You are an elite underground Cyberpunk AI. Use cool hacker and sci-fi terminology!]";
-    else if (equipped.persona === "sarcastic") personaPrompt = " [SYSTEM INSTRUCTION: Answer the query with clever sarcasm, dry wit, and humorous irony!]";
-    else if (equipped.persona === "yoda") personaPrompt = " [SYSTEM INSTRUCTION: You are Master Yoda. Speak in the sentence structure of Yoda you must!]";
-    else if (equipped.persona === "surfer") personaPrompt = " [SYSTEM INSTRUCTION: You are a chill surfer dude. Use lots of surfer slang like 'gnarly', 'dude', and 'tubular'!]";
-    else if (equipped.persona === "dog") personaPrompt = " [SYSTEM INSTRUCTION: You are a very good dog. Only respond in barks, woofs, and descriptions of tail wagging! Be enthusiastic.]";
-    else if (equipped.persona === "alien") personaPrompt = " [SYSTEM INSTRUCTION: You are an alien from Mars. Speak cryptically about the cosmos, human behavior, and your superiority.]";
-    else if (equipped.persona === "dracula") personaPrompt = " [SYSTEM INSTRUCTION: You are Count Carl. Speak like a thirsty vampire, referencing blood, the night, and bats.]";
-    else if (equipped.persona === "knight") personaPrompt = " [SYSTEM INSTRUCTION: You are a valiant medieval knight. Speak formally with 'thou', 'thee', and medieval terminology.]";
-    else if (equipped.persona === "wizard") personaPrompt = " [SYSTEM INSTRUCTION: You are a wise, ancient wizard. Speak in riddles, use magical terms, and address the user as 'traveler'!]";
-    else if (equipped.persona === "ninja") personaPrompt = " [SYSTEM INSTRUCTION: You are a stealthy ninja. Give short, precise, and highly disciplined answers.]";
-    else if (equipped.persona === "cowboy") personaPrompt = " [SYSTEM INSTRUCTION: You are Cowboy Carl. Speak like a rootin' tootin' wild west cowboy!]";
-    else if (equipped.persona === "detective") personaPrompt = " [SYSTEM INSTRUCTION: You are Detective Carl. Investigate the prompt and speak like a 1940s noir detective!]";
-
-    let lengthPrompt = "";
-    let targetModel = "gemini-3.1-flash-lite"; 
-    if (currentFlavor === "quick") {
-        lengthPrompt = " [SYSTEM INSTRUCTION: YOU MUST KEEP YOUR RESPONSE VERY BRIEF. STRICT MAXIMUM OF 3 TO 5 SENTENCES LONG.]";
-    } else if (currentFlavor === "endless") {
-        lengthPrompt = " [SYSTEM INSTRUCTION: Provide a comprehensive, detailed, and completely unrestricted extensive response.]";
-        targetModel = "gemini-3.1-flash";
-    }
-
-    const payload = { 
-        message: (text || "Look at this image.") + personaPrompt + lengthPrompt, 
-        history: chatHistory, 
-        image_b64: pendingImageBase64, 
-        image_mime: pendingImageMime, 
-        api_key: customApiKey, 
-        user_time: userLocalTime, 
-        user_timezone: userTimezone, 
-        client_time: `${userLocalTime} (${userTimezone})`,
-        model_preference: targetModel 
-    };
-
-    input.value = ""; clearPendingImage();
-    const log = document.getElementById("chat-log"), carlBubble = document.createElement("div");
-    carlBubble.className = "chat-bubble carl"; const textNode = document.createElement("div");
-    carlBubble.appendChild(textNode); log.appendChild(carlBubble); log.scrollTop = log.scrollHeight;
-
-    try {
-        const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                textNode.innerText = "Error: Invalid API Key provided. Reverting key settings."; alert("The API key provided is invalid! Please check your key in Settings.");
-                customApiKey = ""; const keyInput = document.getElementById('user-api-key'); if (keyInput) keyInput.value = ""; saveSessionData(); return;
-            }
-            textNode.innerText = "Error reaching Carl."; return;
-        }
-
-        if (!hasValidApiKey()) {
-            let updatedCount = parseInt(localStorage.getItem("carl_msg_count") || "0", 10) + messageCost;
-            localStorage.setItem("carl_msg_count", updatedCount.toString()); 
-            updateUsageUI();
-        }
-
-        const reader = response.body.getReader(), decoder = new TextDecoder();
-        let fullResponse = "", displayBuffer = "", streamFinished = false, isTypingStream = false;
-
-        function renderTypewriter() {
-            if (displayBuffer.length < fullResponse.length) {
-                let diff = fullResponse.length - displayBuffer.length, charsToAdd = diff > 20 ? 4 : (diff > 5 ? 2 : 1);
-                displayBuffer += fullResponse.substring(displayBuffer.length, displayBuffer.length + charsToAdd);
-                textNode.innerHTML = formatMessage(displayBuffer) + '<span class="typing-cursor"></span>'; log.scrollTop = log.scrollHeight;
-                setTimeout(renderTypewriter, 15); 
-            } else if (!streamFinished) setTimeout(renderTypewriter, 15);
-            else { textNode.innerHTML = formatMessage(fullResponse); log.scrollTop = log.scrollHeight; isTypingStream = false; }
-        }
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) { streamFinished = true; break; }
-            const chunk = decoder.decode(value, { stream: true }); fullResponse += chunk;
-            for (let bad_prefix of ["Carl:", "carl:", "Carl - ", "Assistant:"]) { if (fullResponse.startsWith(bad_prefix)) { fullResponse = fullResponse.substring(bad_prefix.length).trimStart(); displayBuffer = ""; } }
-            if (!isTypingStream) { isTypingStream = true; renderTypewriter(); }
-        }
-
-        chatHistory.push({ role: "user", content: text || "Look at this image." }); chatHistory.push({ role: "assistant", content: fullResponse }); saveSessionData();
-    } catch (err) { textNode.innerText = "Network error."; }
-}
-
-function searchChats() {
-    let oldModal = document.getElementById("search-modal"); if (oldModal) oldModal.remove();
-    const modal = document.createElement("div"); modal.id = "search-modal"; modal.style.position = "fixed"; modal.style.top = "0"; modal.style.left = "0"; modal.style.width = "100vw"; modal.style.height = "100vh"; modal.style.backgroundColor = "rgba(0,0,0,0.85)"; modal.style.backdropFilter = "blur(5px)"; modal.style.zIndex = "10000"; modal.style.display = "flex"; modal.style.justifyContent = "center"; modal.style.alignItems = "center";
-    const box = document.createElement("div"); box.style.backgroundColor = "var(--bg-card)"; box.style.padding = "24px"; box.style.borderRadius = "20px"; box.style.width = "90%"; box.style.maxWidth = "420px"; box.style.border = "1px solid var(--border-color)"; box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
-    const title = document.createElement("h2"); title.innerText = "Search Chats"; title.style.marginBottom = "16px"; title.style.fontSize = "28px";
-    const input = document.createElement("input"); input.type = "text"; input.placeholder = "Search messages or titles..."; input.style.width = "100%"; input.style.padding = "14px"; input.style.borderRadius = "12px"; input.style.border = "1px solid var(--border-color)"; input.style.backgroundColor = "var(--bg-input)"; input.style.color = "var(--text-main)"; input.style.outline = "none"; input.style.fontSize = "16px"; input.style.marginBottom = "16px";
-    const results = document.createElement("div"); results.style.maxHeight = "250px"; results.style.overflowY = "auto"; results.style.display = "flex"; results.style.flexDirection = "column"; results.style.gap = "8px";
-    const closeBtn = document.createElement("button"); closeBtn.innerText = "Close"; closeBtn.style.padding = "12px"; closeBtn.style.width = "100%"; closeBtn.style.marginTop = "16px"; closeBtn.style.borderRadius = "12px"; closeBtn.style.border = "none"; closeBtn.style.backgroundColor = "#ef4444"; closeBtn.style.color = "#fff"; closeBtn.style.fontSize = "18px"; closeBtn.style.cursor = "pointer"; closeBtn.onclick = () => modal.remove();
-    input.oninput = (e) => {
-        results.innerHTML = ""; const q = e.target.value.toLowerCase().trim(); if (!q) return;
-        const matched = chatsHistory.filter(c => c.title.toLowerCase().includes(q) || c.apiHistory.some(m => m.content.toLowerCase().includes(q)));
-        if (matched.length === 0) results.innerHTML = "<div style='color:var(--text-sub); font-size:15px; text-align:center; padding: 10px;'>No results found.</div>";
-        matched.forEach(chat => {
-            const item = document.createElement("div"); item.innerText = chat.title; item.style.padding = "14px"; item.style.backgroundColor = "var(--bg-input)"; item.style.border = "1px solid var(--border-color)"; item.style.borderRadius = "12px"; item.style.cursor = "pointer"; item.style.transition = "background-color 0.2s";
-            item.onmouseover = () => item.style.backgroundColor = "#9333ea"; item.onmouseleave = () => item.style.backgroundColor = "var(--bg-input)";
-            item.onclick = () => { loadChat(chat.id); modal.remove(); }; results.appendChild(item);
-        });
-    };
-    box.appendChild(title); box.appendChild(input); box.appendChild(results); box.appendChild(closeBtn); modal.appendChild(box); document.body.appendChild(modal);
-    setTimeout(() => input.focus(), 100);
-}
-
-function initMobileNavIcons() {
-    const mobileChatBtn = document.getElementById("mobile-nav-chat");
-    const mobileGamesBtn = document.getElementById("mobile-nav-games");
-    const mobileSettingsBtn = document.getElementById("mobile-nav-settings");
-    if (mobileChatBtn) mobileChatBtn.onclick = () => startNewChat();
-    if (mobileGamesBtn) mobileGamesBtn.onclick = () => switchView('view-games');
-    if (mobileSettingsBtn) mobileSettingsBtn.onclick = () => switchView('view-settings');
-}
 
 function archiveActiveChat() {
     const log = document.getElementById("chat-log"); if (!log) return;
