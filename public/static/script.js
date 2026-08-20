@@ -1,249 +1,30 @@
-// =========================================================================
-// --- 1. FIREBASE SETUP & GLOBAL VARIABLES ---
-// =========================================================================
-const firebaseConfig = { 
-    apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", 
-    authDomain: "carl-ai-loggins.firebaseapp.com", 
-    projectId: "carl-ai-loggins", 
-    storageBucket: "carl-ai-loggins.firebasestorage.app", 
-    messagingSenderId: "372926140822", 
-    appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", 
-    measurementId: "G-G4H60BZHT3" 
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// Global App State
-let firebaseUserId = null;
-let currentUser = null;
-let currentUserAvatar = "/static/icons/default-avatar.png";
-let customApiKey = "";
-let chatsHistory = [], activeChatId = null, chatHistory = [];  
-let selectedGame = "Burger Clicker"; 
-const gamesWithDifficulty = ["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
-let pendingImageBase64 = null, pendingImageMime = null, pendingImageSrc = null;
-let pendingDmImageBase64 = null, pendingDmImageMime = null, pendingDmImageSrc = null, currentDmUser = null; 
-let pendingGlobalImageBase64 = null, pendingGlobalImageMime = null, pendingGlobalImageSrc = null;
-let pendingGroupImageBase64 = null, pendingGroupImageMime = null, pendingGroupImageSrc = null;
-let isDM = false, currentDmUnsubscribe = null;
-let globalChatUnsubscribe = null, groupChatUnsubscribe = null, activeGroupId = null, myGroups = [];
-let isGuest = false;
+let customApiKey="";
+let chatsHistory=[], activeChatId=null, chatHistory=[];  
+let selectedGame="Burger Clicker"; const gamesWithDifficulty=["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers"];
+let pendingImageBase64=null, pendingImageMime=null, pendingImageSrc=null, pendingDmImageBase64=null, pendingDmImageMime=null, pendingDmImageSrc=null, currentDmUser=null; 
+let pendingGlobalImageBase64=null, pendingGlobalImageMime=null, pendingGlobalImageSrc=null;
+let pendingGroupImageBase64=null, pendingGroupImageMime=null, pendingGroupImageSrc=null;
+let isDM=false, currentDmUnsubscribe=null;
+let globalChatUnsubscribe=null, groupChatUnsubscribe=null, activeGroupId=null, myGroups=[];
 let isAdmin = false;
 let currentFlavor = "quick"; 
 
-// Burger Economy & Inventory State
-let userBurgers = 100, clickerBurgers = 0, rebirths = 0, clickPower = 1, autoChefs = 0, burgerStands = 0, burgerFactories = 0;   
+// --- BURGER ECONOMY & SHOP INVENTORY ---
+let userBurgers=100, clickerBurgers=0, rebirths=0, clickPower=1, autoChefs=0, burgerStands=0, burgerFactories=0;   
 let inventory = [];
 let userPresets = [];
 let claimedCodes = []; 
 let userNotes = ""; 
-let equipped = { persona: "default", bubble: "default", frame: "default", title: "", background: "default", c4Skin: "default", bjFelt: "default", goldenSpatula: false };
-
-// =========================================================================
-// --- 2. AUTHENTICATION & DATA SYNC (UNIFIED LOGIC) ---
-// =========================================================================
-
-// Handle Email/Password Sign In & Auto-Registration
-async function handleLogin(e) {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    
-    const email = document.getElementById('auth-username').value.trim();
-    const pass = document.getElementById('auth-password').value;
-    const submitBtn = document.getElementById('auth-submit-btn');
-
-    if (!email || !pass) { alert("Please enter both an email and a password."); return; }
-
-    submitBtn.innerText = "Checking Account...";
-    submitBtn.disabled = true;
-
-    try {
-        // Attempt to log in
-        await auth.signInWithEmailAndPassword(email, pass);
-        document.getElementById('auth-overlay').style.display = 'none';
-        document.getElementById('auth-password').value = "";
-    } catch (err) {
-        // If login fails because the account doesn't exist or wrong password
-        const isCredentialMismatch = ['auth/invalid-login-credentials', 'auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found'].includes(err.code);
-        
-        if (isCredentialMismatch) {
-            const wantsToRegister = confirm("Sign-in failed: Incorrect password OR account not registered.\n\n• Click CANCEL to re-enter your password.\n• Click OK to REGISTER a new account with this email.");
-            if (wantsToRegister) {
-                submitBtn.innerText = "Creating Account...";
-                try {
-                    // Attempt to create new account
-                    await auth.createUserWithEmailAndPassword(email, pass);
-                    document.getElementById('auth-overlay').style.display = 'none';
-                    alert("Account created successfully! Welcome to Carl AI.");
-                    document.getElementById('auth-password').value = "";
-                } catch (regErr) {
-                    if (regErr.code === 'auth/email-already-in-use') alert("This email is already in use. Please enter the correct password to log in.");
-                    else if (regErr.code === 'auth/weak-password') alert("Password is too weak. Please use at least 6 characters.");
-                    else alert("Registration Error: " + regErr.message);
-                }
-            }
-        } else {
-            alert("Login Error: " + err.message);
-        }
-    } finally {
-        submitBtn.innerText = "Sign In / Register";
-        submitBtn.disabled = false;
-    }
-}
-
-// Handle Google Auth
-function signInWithGoogle() { 
-    const provider = new firebase.auth.GoogleAuthProvider(); 
-    auth.signInWithPopup(provider).catch(e => alert("Google Sign-In Error: " + e.message)); 
-}
-
-// Handle Guest Mode
-function continueAsGuest() {
-    isGuest = true;
-    document.getElementById('auth-overlay').style.display = 'none';
-    document.body.classList.add('guest-mode');
-    currentUser = "Guest";
-    currentUserAvatar = "/static/icons/default-avatar.png";
-    updateProfileUI();
-    startNewChat();
-}
-
-// Password Reset
-async function resetPassword() {
-    const email = document.getElementById('auth-username').value.trim();
-    if (!email) return alert("Please enter your email address in the top box first, then click 'Forgot Password?'.");
-    try {
-        await auth.sendPasswordResetEmail(email);
-        alert(`A password reset link has been sent to ${email}!\n\nCheck your inbox, click the link to create a new password, and then come back here to log in.`);
-    } catch (error) {
-        if (error.code === 'auth/user-not-found') alert("No account found with that email address.");
-        else alert("Error: " + error.message);
-    }
-}
-
-// Sign Out
-function handleSignOut() {
-    if (isGuest) { window.location.reload(); return; }
-    auth.signOut().then(() => {
-        window.location.reload(); // Hard reload completely resets all variables safely
-    });
-}
-
-// Master Auth State Listener
-auth.onAuthStateChanged(async (user) => {
-    const overlay = document.getElementById('auth-overlay');
-    if (user) {
-        isGuest = false;
-        document.body.classList.remove('guest-mode');
-        firebaseUserId = user.uid; 
-        currentUser = user.displayName || user.email.split('@')[0]; 
-        currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
-        if (overlay) overlay.style.display = 'none'; 
-        await loadUserDataFromCloud();
-    } else if (!isGuest) { 
-        firebaseUserId = null; 
-        if (overlay) overlay.style.display = 'flex'; 
-    }
-});
-
-// Master Cloud Load Function
-async function loadUserDataFromCloud() {
-    if (!firebaseUserId) return;
-    listenToMyGroups();
-    
-    db.collection("users").doc(firebaseUserId).onSnapshot(async (doc) => {
-        if (doc.exists) {
-            const data = doc.data(); 
-            customApiKey = data.apiKey || ""; 
-            chatsHistory = data.chats || [];
-            if (!isDM && document.getElementById('view-chat').classList.contains('active')) activeChatId = data.activeChatId || null; 
-            
-            applyTheme(data.theme || "dark");
-            userBurgers = data.burgers !== undefined ? data.burgers : 100; 
-            clickerBurgers = data.clickerBurgers || 0; 
-            autoChefs = data.autoChefs || 0; 
-            burgerStands = data.burgerStands || 0; 
-            burgerFactories = data.burgerFactories || 0; 
-            clickPower = data.clickPower || 1; 
-            rebirths = data.rebirths || 0;
-            
-            myFriends = data.friends || []; 
-            myRequests = data.friendRequests || []; 
-            mySentRequests = data.sentRequests || []; 
-            inventory = data.inventory || [];
-            userPresets = data.presets || [];
-            claimedCodes = data.claimedCodes || [];
-            if (data.equipped) equipped = { ...equipped, ...data.equipped };
-            
-            if (data.avatar) currentUserAvatar = data.avatar; 
-            if (data.username) currentUser = data.username;
-            
-            if (claimedCodes.includes("Admin1234")) {
-                isAdmin = true;
-                const adminRow = document.getElementById("admin-panel-row");
-                if (adminRow) adminRow.style.display = "flex";
-            }
-
-            userNotes = data.notes || "";
-            const editor = document.getElementById("notepad-editor");
-            if (editor) editor.innerHTML = userNotes;
-
-            // Trigger UI Updates with loaded data
-            updateBurgerUI();
-            updateProfileUI(); 
-            applyEquippedCosmetics();
-            
-            const keyInp = document.getElementById('user-api-key'); if (keyInp) keyInp.value = customApiKey; 
-            const usrInp = document.getElementById('settings-username-input'); if (usrInp) usrInp.value = currentUser;
-            
-            renderChatHistorySidebar(); 
-            updateUsageUI(); 
-            if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
-            if (document.getElementById('view-shop').classList.contains('active')) renderShopView();
-            if (document.getElementById('view-inventory').classList.contains('active')) renderInventoryView();
-            
-        } else { 
-            // BRAND NEW USER INITIALIZATION
-            saveSessionData(); 
-            updateBurgerUI();
-            updateProfileUI();
-            applyEquippedCosmetics();
-            renderChatHistorySidebar();
-            updateUsageUI();
-            startNewChat(); 
-        }
-    }, e => console.error("Error loading user data:", e));
-}
-
-// Master Cloud Save Function
-function saveSessionData() {
-    if (!firebaseUserId) return; 
-    const cur = isDM ? (chatsHistory.length > 0 ? chatsHistory[0].id : null) : activeChatId;
-    db.collection("users").doc(firebaseUserId).set({
-        apiKey: customApiKey, 
-        chats: chatsHistory, 
-        activeChatId: cur, 
-        theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
-        avatar: currentUserAvatar, 
-        username: currentUser, 
-        burgers: userBurgers, 
-        clickerBurgers: clickerBurgers, 
-        autoChefs: autoChefs, 
-        burgerStands: burgerStands, 
-        burgerFactories: burgerFactories, 
-        clickPower: clickPower, 
-        rebirths: rebirths,
-        inventory: inventory, 
-        equipped: equipped, 
-        presets: userPresets, 
-        claimedCodes: claimedCodes,
-        notes: userNotes 
-    }, { merge: true }).catch(e => console.error("Error saving:", e));
-}
-
-// =========================================================================
-// --- 3. CORE APP LOGIC & UI BEHAVIORS ---
-// =========================================================================
+let equipped = {
+    persona: "default",
+    bubble: "default",
+    frame: "default",
+    title: "",
+    background: "default",
+    c4Skin: "default",
+    bjFelt: "default",
+    goldenSpatula: false
+};
 
 function getMultiplier() { 
     let mult = 1 + (rebirths * 1.0);
@@ -368,6 +149,74 @@ document.addEventListener('mouseleave', () => {
 
 function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
 
+// --- CLOUD PERSISTENCE ---
+function listenToMyGroups() {
+    if (!firebaseUserId) return;
+    if (groupsUnsubscribe) groupsUnsubscribe();
+    groupsUnsubscribe = db.collection("groups").where("members", "array-contains", firebaseUserId).onSnapshot(snapshot => {
+        myGroups = [];
+        snapshot.forEach(doc => myGroups.push({ id: doc.id, ...doc.data() }));
+        if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
+    });
+}
+
+async function loadUserDataFromCloud() {
+    if (!firebaseUserId) return;
+    listenToMyGroups();
+    db.collection("users").doc(firebaseUserId).onSnapshot(async (doc) => {
+        if (doc.exists) {
+            const data = doc.data(); customApiKey = data.apiKey || ""; chatsHistory = data.chats || [];
+            if (!isDM && document.getElementById('view-chat').classList.contains('active')) activeChatId = data.activeChatId || null; 
+            applyTheme(data.theme || "dark");
+            userBurgers = data.burgers !== undefined ? data.burgers : 100; clickerBurgers = data.clickerBurgers || 0; autoChefs = data.autoChefs || 0; burgerStands = data.burgerStands || 0; burgerFactories = data.burgerFactories || 0; clickPower = data.clickPower || 1; rebirths = data.rebirths || 0;
+            myFriends = data.friends || []; myRequests = data.friendRequests || []; mySentRequests = data.sentRequests || []; 
+            inventory = data.inventory || [];
+            userPresets = data.presets || [];
+            claimedCodes = data.claimedCodes || [];
+            if (data.equipped) equipped = { ...equipped, ...data.equipped };
+            updateBurgerUI();
+            
+            // Anti-Bug check: Never load "Guest" from the DB if it accidentally got saved
+            if (data.username && data.username !== "Guest") currentUser = data.username;
+            if (data.avatar) currentUserAvatar = data.avatar; 
+            
+            if (claimedCodes.includes("Admin1234")) {
+                isAdmin = true;
+                const adminRow = document.getElementById("admin-panel-row");
+                if (adminRow) adminRow.style.display = "flex";
+            }
+
+            // LOAD NOTES
+            userNotes = data.notes || "";
+            const editor = document.getElementById("notepad-editor");
+            if (editor) editor.innerHTML = userNotes;
+
+            updateProfileUI(); applyEquippedCosmetics();
+            const keyInp = document.getElementById('user-api-key'); if (keyInp) keyInp.value = customApiKey; const usrInp = document.getElementById('settings-username-input'); if (usrInp) usrInp.value = currentUser;
+            renderChatHistorySidebar(); updateUsageUI(); 
+            if (document.getElementById('view-friends').classList.contains('active')) renderFriendsView();
+            if (document.getElementById('view-shop').classList.contains('active')) renderShopView();
+            if (document.getElementById('view-inventory').classList.contains('active')) renderInventoryView();
+        } else { 
+            // Anti-Bug: If brand new user, ensure we aren't saving "Guest" to DB
+            if (currentUser === "Guest") currentUser = auth.currentUser.displayName || auth.currentUser.email.split('@')[0];
+            saveSessionData(); 
+            startNewChat(); 
+        }
+    }, e => console.error("Error:", e));
+}
+
+function saveSessionData() {
+    if (!firebaseUserId) return; const cur = isDM ? (chatsHistory.length > 0 ? chatsHistory[0].id : null) : activeChatId;
+    db.collection("users").doc(firebaseUserId).set({
+        apiKey: customApiKey, chats: chatsHistory, activeChatId: cur, theme: document.body.classList.contains("dark-mode") ? "dark" : "light",
+        avatar: currentUserAvatar, username: currentUser, burgers: userBurgers, clickerBurgers: clickerBurgers, autoChefs: autoChefs, burgerStands: burgerStands, burgerFactories: burgerFactories, clickPower: clickPower, rebirths: rebirths,
+        inventory: inventory, equipped: equipped, presets: userPresets, claimedCodes: claimedCodes,
+        notes: userNotes 
+    }, { merge: true }).catch(e => console.error("Error saving:", e));
+}
+
+// --- PROFILE & COSMETICS UI ---
 function applyTheme(theme) { const b=document.body, ts=document.getElementById('theme-toggle-switch'); if(theme==="light"){ b.classList.remove("dark-mode"); b.classList.add("light-mode"); if(ts) ts.checked=true; } else { b.classList.remove("light-mode"); b.classList.add("dark-mode"); if(ts) ts.checked=false; } }
 function toggleTheme() { const b=document.body, ts=document.getElementById('theme-toggle-switch'); if(b.classList.contains('dark-mode')){ b.classList.remove('dark-mode'); b.classList.add('light-mode'); if(ts) ts.checked=true; } else { b.classList.remove('light-mode'); b.classList.add('dark-mode'); if(ts) ts.checked=false; } saveSessionData(); }
 function updateProfileUI() { 
@@ -443,6 +292,7 @@ function applyEquippedCosmetics() {
         }
     }
     
+    // Updates the global css variable for the dynamic mouse hover glow
     document.documentElement.style.setProperty('--cursor-glow-color', cursorGlowColor);
 
     const bjArena = document.getElementById("bj-felt-arena");
@@ -519,6 +369,7 @@ function switchView(viewId) {
     const t=document.getElementById(viewId); if(t) t.classList.add('active');
     const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb&&sb.classList.contains('open')) sb.classList.remove('open'); if(ov&&ov.classList.contains('active')) ov.classList.remove('active');
     
+    // Clear out subscriptions if leaving their views
     if(viewId!=='view-dm'){ isDM=false; if(currentDmUnsubscribe){ currentDmUnsubscribe(); currentDmUnsubscribe=null; } }
     if(viewId!=='view-global-chat'){ if(globalChatUnsubscribe){ globalChatUnsubscribe(); globalChatUnsubscribe=null; } }
     if(viewId!=='view-group-chat'){ if(groupChatUnsubscribe){ groupChatUnsubscribe(); groupChatUnsubscribe=null; } }
