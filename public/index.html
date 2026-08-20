@@ -99,6 +99,17 @@
         <!-- MAIN CONTENT AREA -->
         <main class="main-content">
             
+            <!-- TOP-LEFT FLAVOR WIDGET -->
+            <div class="top-flavor-bar" id="top-flavor-bar">
+                <div class="flavor-dropdown-container">
+                    <button class="flavor-dropdown-btn" onclick="toggleFlavors(event)">Flavors <span id="flavors-arrow">▼</span></button>
+                    <div id="flavors-menu" class="flavors-menu collapsed">
+                        <div class="flavor-option active" id="flavor-quick" onclick="selectFlavor('quick')">Quick Flip 3.1</div>
+                        <div class="flavor-option" id="flavor-endless" onclick="selectFlavor('endless')">Endless Bun 3.1</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- TOP-RIGHT PROFILE WIDGET -->
             <div class="top-profile-bar" id="top-profile-bar">
                 <div class="burger-wallet" onclick="switchView('view-shop')" style="cursor:pointer;" title="Visit Shop">🍔 <span id="burger-count">100</span></div>
@@ -362,7 +373,6 @@
                 <div class="social-footer">
                     <h2>Find Us At</h2>
                     <div class="social-link"><img src="/static/icons/MailIcon.png" alt="Email" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> carlaisupport@gmail.com</div>
-                    <!-- FIXED YOUTUBE ICON SRC -->
                     <div class="social-link"><img src="/static/icons/YoutubeIcon.png" alt="YouTube" draggable="false"> @CarlAIApp</div>
                     <div class="social-link"><img src="/static/icons/DiscordIcon.png" alt="Discord" onerror="this.src='/static/icons/CarlAILogo.png'" draggable="false"> https://discord.gg/kkq7gPPqMB</div>
                 </div>
