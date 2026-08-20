@@ -258,33 +258,6 @@ window.addEventListener("DOMContentLoaded", () => {
     const uInp = document.getElementById("user-input"); if(uInp) uInp.addEventListener("keypress", (e) => { if(e.key==="Enter") sendMessage(); });
 });
 
-// --- MOUSE TRACKING FOR DYNAMIC HOVER GLOW ---
-document.addEventListener('mousemove', (e) => {
-    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
-    
-    glowElements.forEach(el => {
-        const rect = el.getBoundingClientRect();
-        if (e.clientX >= rect.left && e.clientX <= rect.right &&
-            e.clientY >= rect.top && e.clientY <= rect.bottom) {
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            el.style.setProperty('--mouse-x', `${x}px`);
-            el.style.setProperty('--mouse-y', `${y}px`);
-        } else {
-            el.style.setProperty('--mouse-x', `-999px`);
-            el.style.setProperty('--mouse-y', `-999px`);
-        }
-    });
-});
-
-document.addEventListener('mouseleave', () => {
-    const glowElements = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .input-container, .friends-search-container input');
-    glowElements.forEach(el => {
-        el.style.setProperty('--mouse-x', `-999px`);
-        el.style.setProperty('--mouse-y', `-999px`);
-    });
-});
-
 function toggleMobileSidebar() { const sb=document.querySelector('.desktop-sidebar'), ov=document.getElementById('sidebar-overlay'); if(sb) sb.classList.toggle('open'); if(ov) ov.classList.toggle('active'); }
 
 // --- AUTHENTICATION ---
@@ -475,7 +448,6 @@ function applyEquippedCosmetics() {
         }
     }
     
-    // Updates the global css variable for the dynamic mouse hover glow
     document.documentElement.style.setProperty('--cursor-glow-color', cursorGlowColor);
 
     const bjArena = document.getElementById("bj-felt-arena");
@@ -1092,19 +1064,19 @@ function clickBurger() {
 function buyUpgrade(type) {
     let cost = 0;
     if (type === 'click') {
-        cost = Math.floor(100 * Math.pow(1.2, clickPower - 1));
+        cost = Math.floor(100 * Math.pow(1.3, clickPower - 1));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; clickPower++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'chef') {
-        cost = Math.floor(50 * Math.pow(1.2, autoChefs));
+        cost = Math.floor(50 * Math.pow(1.3, autoChefs));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; autoChefs++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'stand') {
-        cost = Math.floor(500 * Math.pow(1.2, burgerStands));
+        cost = Math.floor(500 * Math.pow(1.3, burgerStands));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerStands++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     } else if (type === 'factory') {
-        cost = Math.floor(5000 * Math.pow(1.2, burgerFactories));
+        cost = Math.floor(5000 * Math.pow(1.3, burgerFactories));
         if (clickerBurgers >= cost) { clickerBurgers -= cost; burgerFactories++; }
         else { alert("Not enough Clicker Burgers!"); return; }
     }
@@ -1126,15 +1098,15 @@ function rebirth() {
 
 function updateUpgradesUI() {
     let e = (id) => document.getElementById(id);
-    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.2, clickPower - 1)).toLocaleString();
+    if(e("click-cost")) e("click-cost").innerText = Math.floor(100 * Math.pow(1.3, clickPower - 1)).toLocaleString();
     if(e("click-power-count")) e("click-power-count").innerText = getClickValue().toLocaleString();
-    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.2, autoChefs)).toLocaleString();
+    if(e("chef-cost")) e("chef-cost").innerText = Math.floor(50 * Math.pow(1.3, autoChefs)).toLocaleString();
     if(e("chef-count")) e("chef-count").innerText = autoChefs.toLocaleString();
     if(e("chef-output")) e("chef-output").innerText = (getChefPower() * getMultiplier()).toLocaleString();
-    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.2, burgerStands)).toLocaleString();
+    if(e("stand-cost")) e("stand-cost").innerText = Math.floor(500 * Math.pow(1.3, burgerStands)).toLocaleString();
     if(e("stand-count")) e("stand-count").innerText = burgerStands.toLocaleString();
     if(e("stand-output")) e("stand-output").innerText = (getStandPower() * getMultiplier()).toLocaleString();
-    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.2, burgerFactories)).toLocaleString();
+    if(e("factory-cost")) e("factory-cost").innerText = Math.floor(5000 * Math.pow(1.3, burgerFactories)).toLocaleString();
     if(e("factory-count")) e("factory-count").innerText = burgerFactories.toLocaleString();
     if(e("factory-output")) e("factory-output").innerText = (getFactoryPower() * getMultiplier()).toLocaleString();
     if(e("bps-text")) e("bps-text").innerText = getBps().toLocaleString();
@@ -1578,6 +1550,27 @@ document.addEventListener("click", () => {
     }
 });
 
+function checkDailyMessageLimit() {
+    const today = new Date().toISOString().split('T')[0];
+    let lastDate = localStorage.getItem("carl_last_msg_date");
+    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
+    if (lastDate !== today) { lastDate = today; count = 0; localStorage.setItem("carl_last_msg_date", today); localStorage.setItem("carl_msg_count", "0"); }
+    
+    // Quick is 1 token, Endless is 2 tokens
+    const messageCost = (currentFlavor === "endless") ? 2 : 1;
+
+    if (count + messageCost > 10 && !hasValidApiKey()) {
+        if (isGuest) {
+            alert("Guest limit reached! Please refresh and sign in or create an account to continue.");
+        } else {
+            alert(`Daily limit reached! Free users are capped at 10 tokens per day. Endless Bun uses 2 tokens per message! Enter a valid Gemini API key in Settings to unlock unlimited chats.`);
+            switchView('view-settings');
+        }
+        return false;
+    }
+    return true;
+}
+
 function startNewChat() {
     isDM = false;
     if (currentDmUnsubscribe) { currentDmUnsubscribe(); currentDmUnsubscribe = null; }
@@ -1618,27 +1611,10 @@ async function sendMessage() {
         return;
     }
 
+    if (!checkDailyMessageLimit()) return;
+
     const messageCost = (currentFlavor === "endless") ? 2 : 1;
-    const today = new Date().toISOString().split('T')[0];
-    let lastDate = localStorage.getItem("carl_last_msg_date");
-    let count = parseInt(localStorage.getItem("carl_msg_count") || "0", 10);
     
-    if (lastDate !== today) { 
-        lastDate = today; count = 0; 
-        localStorage.setItem("carl_last_msg_date", today); 
-        localStorage.setItem("carl_msg_count", "0"); 
-    }
-
-    if (count + messageCost > 10 && !hasValidApiKey()) {
-        if (isGuest) {
-            alert("Guest limit reached! Please refresh and sign in or create an account to continue.");
-        } else {
-            alert(`Daily limit reached! Free users are capped at 10 tokens per day. Endless Bun uses 2 tokens per message! Enter a valid Gemini API key in Settings to unlock unlimited chats.`);
-            switchView('view-settings');
-        }
-        return;
-    }
-
     hideStartupScreen(); appendMessage(text, "user", pendingImageSrc);
     
     const userLocalTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }), userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
