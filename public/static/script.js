@@ -1,3 +1,20 @@
+// --- 1. FIREBASE INITIALIZATION (MUST BE AT THE VERY TOP) ---
+const firebaseConfig = { 
+    apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", 
+    authDomain: "carl-ai-loggins.firebaseapp.com", 
+    projectId: "carl-ai-loggins", 
+    storageBucket: "carl-ai-loggins.firebasestorage.app", 
+    messagingSenderId: "372926140822", 
+    appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", 
+    measurementId: "G-G4H60BZHT3" 
+};
+
+// Initialize Firebase App & Auth Services immediately
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// --- 2. AUTHENTICATION STATE & OTP HANDLERS ---
 let pendingAuthCredentials = { email: "", pass: "" };
 
 async function handleLogin(e) {
@@ -12,24 +29,22 @@ async function handleLogin(e) {
     submitBtn.disabled = true;
 
     try {
-        // Attempt to sign in first (for existing users)
+        // Attempt sign in first for existing users
         await auth.signInWithEmailAndPassword(email, pass);
     } catch (err) {
-        // Check if the user doesn't exist yet (needs Firebase Identity Platform checks or basic error codes)
         if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
             
-            // Check if they typed a wrong password for an EXISTING account, or if it's actually a NEW account.
+            // Check if account already exists with wrong password
             try {
                 const methods = await auth.fetchSignInMethodsForEmail(email);
-                if (methods.length > 0) {
-                    // User exists, they just typed the wrong password
-                    alert("Incorrect password for existing account.");
+                if (methods && methods.length > 0) {
+                    alert("Incorrect password for this account.");
                     submitBtn.innerText = "Sign In / Register";
                     submitBtn.disabled = false;
                     return;
                 }
             } catch (fetchErr) {
-                console.warn("Could not fetch sign-in methods (might be blocked by privacy settings). Proceeding to OTP.");
+                console.warn("Proceeding to OTP flow.");
             }
 
             submitBtn.innerText = "Sending 5-Digit Code...";
@@ -49,7 +64,7 @@ async function handleLogin(e) {
                     return;
                 }
 
-                // Code sent successfully, show OTP screen
+                // Show OTP Step
                 pendingAuthCredentials = { email, pass };
                 document.getElementById("auth-step-credentials").style.display = "none";
                 document.getElementById("auth-step-otp").style.display = "block";
@@ -57,7 +72,7 @@ async function handleLogin(e) {
                 document.getElementById("auth-otp-code").value = "";
                 document.getElementById("auth-otp-code").focus();
             } catch (networkErr) {
-                console.warn("Backend missing, falling back to standard Firebase Auth...");
+                console.warn("Backend unavailable, falling back to Firebase Auth...");
                 try {
                     const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
                     await userCredential.user.sendEmailVerification();
@@ -71,7 +86,7 @@ async function handleLogin(e) {
             alert(err.message);
         }
     } finally {
-        if(submitBtn) {
+        if (submitBtn) {
             submitBtn.innerText = "Sign In / Register";
             submitBtn.disabled = false;
         }
@@ -83,9 +98,13 @@ async function handleVerifyOtp(e) {
     const code = document.getElementById('auth-otp-code').value.trim();
     const verifyBtn = document.getElementById('otp-verify-btn');
 
-    if (code.length !== 5) { alert("Please enter the full 5-digit code."); return; }
+    if (code.length !== 5) { 
+        alert("Please enter the full 5-digit code."); 
+        return; 
+    }
 
-    verifyBtn.innerText = "Verifying..."; verifyBtn.disabled = true;
+    verifyBtn.innerText = "Verifying..."; 
+    verifyBtn.disabled = true;
 
     try {
         const res = await fetch("/api/verify-otp", {
@@ -97,11 +116,12 @@ async function handleVerifyOtp(e) {
 
         if (!res.ok || data.error) {
             alert(data.error || "Incorrect or expired verification code.");
-            verifyBtn.innerText = "Verify Code"; verifyBtn.disabled = false;
+            verifyBtn.innerText = "Verify Code"; 
+            verifyBtn.disabled = false;
             return;
         }
 
-        // ONLY create the account in Firebase after the OTP is verified
+        // Register the new user account in Firebase
         await auth.createUserWithEmailAndPassword(pendingAuthCredentials.email, pendingAuthCredentials.pass);
 
         document.getElementById("auth-step-otp").style.display = "none";
@@ -112,8 +132,9 @@ async function handleVerifyOtp(e) {
     } catch (err) {
         alert("Error creating account: " + err.message);
     } finally {
-        if(verifyBtn) {
-            verifyBtn.innerText = "Verify Code"; verifyBtn.disabled = false;
+        if (verifyBtn) {
+            verifyBtn.innerText = "Verify Code"; 
+            verifyBtn.disabled = false;
         }
     }
 }
@@ -123,7 +144,6 @@ function cancelOtpStep() {
     document.getElementById("auth-step-credentials").style.display = "block";
     pendingAuthCredentials = { email: "", pass: "" };
 }
-const auth = firebase.auth(), db = firebase.firestore();
 
 let firebaseUserId=null, currentUser=null, currentUserAvatar="/static/icons/default-avatar.png", customApiKey="";
 let chatsHistory=[], activeChatId=null, chatHistory=[];  
