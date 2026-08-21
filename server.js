@@ -10,11 +10,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const otpStore = {}; // { email: { code: '12345', expires: timestamp } }
 
+// Updated Transporter for Brevo (Sendinblue)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false, // true for 465, false for other ports
     auth: {
-        user: 'carlaisupport@gmail.com',
-        pass: 'xtay cxac ufly dxom' // Replace this with your Google App Password!
+        user: 'erbreen@icloud.com', // Replace with your Brevo SMTP login email
+        pass: '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' // Replace with your Brevo SMTP key
     }
 });
 
@@ -23,18 +26,19 @@ app.post('/api/send-otp', async (req, res) => {
     if (!email) return res.status(400).json({ error: "Email is required" });
 
     const code = Math.floor(10000 + Math.random() * 90000).toString();
-    otpStore[email] = { code, expires: Date.now() + 10 * 60 * 1000 };
+    otpStore[email] = { code, expires: Date.now() + 10 * 60 * 1000 }; // 10 min expiration
 
     try {
         await transporter.sendMail({
-            from: '"Carl AI Support" <carlaisupport@gmail.com>',
+            from: '"Carl AI Support" <carlaisupport@gmail.com>', // Ensure this email is authorized in Brevo
             to: email,
             subject: 'Your Carl AI Verification Code',
             text: `Here's your one time use Carl AI code!\n\n${code}\n\nThis code will expire in 10 minutes.`
         });
         res.json({ success: true, message: "Code sent successfully" });
     } catch (err) {
-        res.status(500).json({ error: "Failed to send email: " + err.message });
+        console.error(err);
+        res.status(500).json({ error: "Failed to send email. Check your Brevo configuration." });
     }
 });
 
