@@ -1,88 +1,79 @@
 let pendingAuthCredentials = { email: "", pass: "" };
-let currentFlavor = "quick"; 
 
 async function handleLogin(e) {
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    
+    if (e) e.preventDefault();
     const email = document.getElementById('auth-username').value.trim();
     const pass = document.getElementById('auth-password').value;
     const submitBtn = document.getElementById('auth-submit-btn');
 
-    if (!email || !pass) {
-        alert("Please enter both an email and a password.");
-        return;
-    }
+    if (!email || !pass) return;
 
     submitBtn.innerText = "Checking Account...";
     submitBtn.disabled = true;
 
     try {
+        // Attempt to sign in first (for existing users)
         await auth.signInWithEmailAndPassword(email, pass);
-        const overlay = document.getElementById('auth-overlay');
-        if (overlay) overlay.style.display = 'none';
-        document.getElementById('auth-password').value = "";
     } catch (err) {
-        const isCredentialMismatch = [
-            'auth/invalid-login-credentials',
-            'auth/invalid-credential',
-            'auth/wrong-password',
-            'auth/user-not-found'
-        ].includes(err.code);
+        // Check if the user doesn't exist yet (needs Firebase Identity Platform checks or basic error codes)
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-credential') {
+            
+            // Check if they typed a wrong password for an EXISTING account, or if it's actually a NEW account.
+            try {
+                const methods = await auth.fetchSignInMethodsForEmail(email);
+                if (methods.length > 0) {
+                    // User exists, they just typed the wrong password
+                    alert("Incorrect password for existing account.");
+                    submitBtn.innerText = "Sign In / Register";
+                    submitBtn.disabled = false;
+                    return;
+                }
+            } catch (fetchErr) {
+                console.warn("Could not fetch sign-in methods (might be blocked by privacy settings). Proceeding to OTP.");
+            }
 
-        if (isCredentialMismatch) {
-            const wantsToRegister = confirm(
-                "Sign-in failed: Incorrect password OR account not registered.\n\n" +
-                "• Click CANCEL to re-enter your password.\n" +
-                "• Click OK to REGISTER a new account with this email."
-            );
+            submitBtn.innerText = "Sending 5-Digit Code...";
+            
+            try {
+                const res = await fetch("/api/send-otp", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: email })
+                });
+                const data = await res.json();
 
-            if (wantsToRegister) {
-                submitBtn.innerText = "Creating Account...";
+                if (!res.ok || data.error) {
+                    alert(data.error || "Failed to send verification code.");
+                    submitBtn.innerText = "Sign In / Register";
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                // Code sent successfully, show OTP screen
+                pendingAuthCredentials = { email, pass };
+                document.getElementById("auth-step-credentials").style.display = "none";
+                document.getElementById("auth-step-otp").style.display = "block";
+                document.getElementById("otp-sent-email-display").innerText = email;
+                document.getElementById("auth-otp-code").value = "";
+                document.getElementById("auth-otp-code").focus();
+            } catch (networkErr) {
+                console.warn("Backend missing, falling back to standard Firebase Auth...");
                 try {
-                    await auth.createUserWithEmailAndPassword(email, pass);
-                    const overlay = document.getElementById('auth-overlay');
-                    if (overlay) overlay.style.display = 'none';
-                    alert("Account created successfully! Welcome to Carl AI.");
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
+                    await userCredential.user.sendEmailVerification();
+                    alert("Account created! A verification link has been sent to your email.");
                     document.getElementById('auth-password').value = "";
-                } catch (regErr) {
-                    if (regErr.code === 'auth/email-already-in-use') {
-                        alert("This email is already in use. Please enter the correct password to log in.");
-                    } else if (regErr.code === 'auth/weak-password') {
-                        alert("Password is too weak. Please use at least 6 characters.");
-                    } else {
-                        alert("Registration Error: " + regErr.message);
-                    }
+                } catch (fbErr) {
+                    alert("Sign Up Error: " + fbErr.message);
                 }
             }
         } else {
-            alert("Login Error: " + err.message);
+            alert(err.message);
         }
     } finally {
-        if (submitBtn) {
+        if(submitBtn) {
             submitBtn.innerText = "Sign In / Register";
             submitBtn.disabled = false;
-        }
-    }
-}
-
-// --- PASSWORD RESET ---
-async function resetPassword() {
-    const email = document.getElementById('auth-username').value.trim();
-    if (!email) {
-        alert("Please enter your email address in the top box first, then click 'Forgot Password?'.");
-        return;
-    }
-    try {
-        await auth.sendPasswordResetEmail(email);
-        alert(`A password reset link has been sent to ${email}!\n\nCheck your inbox, click the link to create a new password, and then come back here to log in.`);
-    } catch (error) {
-        if (error.code === 'auth/user-not-found') {
-            alert("No account found with that email address.");
-        } else {
-            alert("Error: " + error.message);
         }
     }
 }
@@ -110,6 +101,7 @@ async function handleVerifyOtp(e) {
             return;
         }
 
+        // ONLY create the account in Firebase after the OTP is verified
         await auth.createUserWithEmailAndPassword(pendingAuthCredentials.email, pendingAuthCredentials.pass);
 
         document.getElementById("auth-step-otp").style.display = "none";
@@ -131,9 +123,6 @@ function cancelOtpStep() {
     document.getElementById("auth-step-credentials").style.display = "block";
     pendingAuthCredentials = { email: "", pass: "" };
 }
-
-const firebaseConfig = { apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", authDomain: "carl-ai-loggins.firebaseapp.com", projectId: "carl-ai-loggins", storageBucket: "carl-ai-loggins.firebasestorage.app", messagingSenderId: "372926140822", appId: "1:372926140822:web:4bf13c6dd802cbc047cdb7", measurementId: "G-G4H60BZHT3" };
-firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
 
 let firebaseUserId=null, currentUser=null, currentUserAvatar="/static/icons/default-avatar.png", customApiKey="";
