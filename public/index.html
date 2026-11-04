@@ -25,7 +25,6 @@
                     <input type="email" id="auth-username" placeholder="Email" required autocomplete="off">
                     <input type="password" id="auth-password" placeholder="Password" required>
                     <button type="button" id="auth-submit-btn" class="auth-btn" onclick="handleLogin(event)">Sign In / Register</button>
-                    <!-- Forgot Password Link -->
                     <a href="#" onclick="resetPassword()" style="color: var(--text-sub); font-size: 13px; text-decoration: underline; margin-top: 8px; cursor: pointer; display: inline-block;">Forgot Password?</a>
                 </form>
                 <div class="auth-divider"><span>OR</span></div>
@@ -55,7 +54,7 @@
     <!-- MAIN APP CONTAINER -->
     <div class="app-container">
         
-        <!-- DESKTOP SIDEBAR -->
+        <!-- DESKTOP SIDEBAR (Bug #10: Chats at top, 6 buttons below Chats, Settings in bottom-left) -->
         <aside class="desktop-sidebar expanded" id="desktop-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
@@ -63,7 +62,14 @@
                 </div>
                 <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn">❮</button>
             </div>
+
+            <!-- CHATS SECTION MOVED TO TOP OF SIDEBAR ABOVE THE 6 BUTTONS -->
+            <div class="sidebar-chats">
+                <h3 class="chats-header">Chats</h3>
+                <div id="saved-chats-list"></div>
+            </div>
             
+            <!-- 6 NAVIGATION BUTTONS BELOW CHATS -->
             <div class="sidebar-nav">
                 <!-- Expanded PC Buttons -->
                 <div class="full-nav-items">
@@ -85,12 +91,8 @@
                     <img src="/static/icons/InventoryIcon.png" class="mini-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" title="Inventory" draggable="false">
                 </div>
             </div>
-
-            <div class="sidebar-chats">
-                <h3 class="chats-header">Chats</h3>
-                <div id="saved-chats-list"></div>
-            </div>
             
+            <!-- SETTINGS KEPT IN BOTTOM LEFT OF SIDEBAR -->
             <div class="sidebar-footer">
                 <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="switchView('view-settings')" draggable="false">
             </div>
@@ -295,7 +297,7 @@
                         </div>
                     </div>
 
-                    <!-- ADMIN / DEVELOPER PANEL ROW (Hidden by default until unlocked via Admin1234) -->
+                    <!-- ADMIN / DEVELOPER PANEL ROW -->
                     <div class="settings-row vertical-on-mobile req-login" id="admin-panel-row" style="display: none; flex-direction: column; align-items: stretch; background: var(--bg-input); padding: 16px; border-radius: 16px; border: 2px dashed #9333ea; gap: 12px;">
                         <span class="settings-label" style="font-size: 24px; color: #a855f7; text-align: center;">🛠️ Admin / Developer Controls</span>
                         <div style="display: flex; gap: 10px;">
@@ -317,7 +319,7 @@
                             </label>
                         </div>
                     </div>
-                    <div class="settings-row vertical-on-mobile">
+                    <div class="settings-row vertical-on-mobile" id="settings-api-key-row">
                         <label class="settings-label" for="user-api-key">API Key</label>
                         <div class="input-with-help">
                             <input type="password" id="user-api-key" name="user_api_key_field" placeholder="Paste API Key Here" autocomplete="new-password" onchange="saveSettings()">
@@ -334,9 +336,9 @@
                         </p>
                     </div>
 
-                    <div class="settings-row req-login">
+                    <div class="settings-row">
                         <label class="settings-label">The Pantry</label>
-                        <button class="settings-upload-btn" onclick="toggleNotepad()">Open The Pantry</button>
+                        <button type="button" class="settings-upload-btn" onclick="toggleNotepad()">Open The Pantry</button>
                     </div>
 
                     <div class="settings-row vertical-on-mobile req-login">
@@ -418,7 +420,7 @@
                     <div class="clicker-left">
                         <div class="clicker-stats-row"><div>BPS: <span id="bps-text">0</span></div><div>Rebirths: <span id="rebirth-count">0</span></div></div>
                         <div class="clicker-score">Burgers: <br><span id="clicker-score-text">0</span></div>
-                        <div class="carl-clicker-btn" id="carl-clicker-btn" onclick="clickBurger()"><img src="/static/icons/BurgerIcon.png" alt="Burger" class="rotating-burger" draggable="false"></div>
+                        <div class="carl-clicker-btn" id="carl-clicker-btn" onclick="clickBurger(event)"><img src="/static/icons/BurgerIcon.png" alt="Burger" class="rotating-burger" draggable="false"></div>
                     </div>
                     <div class="clicker-right">
                         <div class="clicker-upgrades">
@@ -557,11 +559,39 @@
             <h2>Create Group 👥</h2>
             <p style="color: var(--text-sub); margin-bottom: 15px;">Select friends to add to your new group.</p>
             <input type="text" id="group-name-input" placeholder="Group Name" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); margin-bottom: 15px; text-align: center; font-size: 18px; outline: none;" autocomplete="off">
-            <div id="create-group-friends-list" style="overflow-y: auto; flex: 1; text-align: left; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; background: var(--bg-input);">
-                <!-- Friend checkboxes injected here via JS -->
-            </div>
+            <div id="create-group-friends-list" style="overflow-y: auto; flex: 1; text-align: left; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; background: var(--bg-input);"></div>
             <button class="auth-btn" style="width: 100%; margin-bottom: 10px;" onclick="confirmCreateGroup()">Create Group</button>
             <button type="button" class="guest-auth-btn" style="width: 100%;" onclick="document.getElementById('create-group-modal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <!-- GIFT BURGERS MODAL -->
+    <div id="gift-modal" class="auth-overlay" style="display: none;">
+        <div class="auth-card" style="text-align: center;">
+            <h2>Gift Burgers 🎁</h2>
+            <p style="color: var(--text-sub); margin-bottom: 15px;">Send burgers to <b id="gift-friend-name" style="color: #fff;">Friend</b></p>
+            <input type="number" id="gift-amount" placeholder="Amount (🍔)" min="1" style="margin-bottom: 15px; text-align: center;">
+            <button class="auth-btn" style="width: 100%; margin-bottom: 10px;" onclick="confirmSendBurgers()">Send Gift</button>
+            <button type="button" class="guest-auth-btn" style="width: 100%;" onclick="closeGiftModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- BUG #6: OUT OF USAGE / API KEY GUIDE POPUP MODAL -->
+    <div id="usage-limit-modal" class="auth-overlay" style="display: none; z-index: 10001;">
+        <div class="auth-card usage-modal-card">
+            <h2>Out of Daily Usage! 🍔</h2>
+            <p style="color: var(--text-sub); margin-bottom: 14px; font-size: 14px;">
+                You've used all <strong>10/10</strong> free daily tokens. Add your own free Gemini API Key to unlock <strong>Unlimited Chats</strong>!
+            </p>
+            <div class="usage-guide-steps">
+                <div><strong>1.Where to get a key:</strong> Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color: #a855f7; text-decoration: underline;">aistudio.google.com</a> and sign in.</div>
+                <div><strong>2.Create Key:</strong> Click <strong>"Get API key"</strong> in the left sidebar, then click <strong>"Create API key"</strong> and copy it.</div>
+                <div><strong>3.Where to upload:</strong> Paste your key below (or in <strong>Settings → API Key</strong>) and click Save!</div>
+            </div>
+            <input type="password" id="modal-api-key-input" placeholder="Paste your Gemini API Key here..." autocomplete="off" style="margin: 14px 0 10px 0;">
+            <button type="button" class="auth-btn" style="width: 100%; margin-top: 0;" onclick="saveApiKeyFromModal()">Save API Key & Unlock</button>
+            <button type="button" class="settings-upload-btn" style="width: 100%; margin-top: 8px; padding: 10px;" onclick="goToApiKeySettings()">Take Me to Settings →</button>
+            <button type="button" class="guest-auth-btn" style="width: 100%; margin-top: 8px;" onclick="closeUsageLimitModal()">Close</button>
         </div>
     </div>
 
@@ -575,13 +605,13 @@
         </div>
     </div>
 
-    <!-- PHASE 2: THE PANTRY FLOATING NOTEPAD -->
-    <div id="floating-notepad" class="floating-notepad" style="display: none;">
+    <!-- BUG #8 FIX: REMOVED INLINE display:none SO .active OPENS THE PANTRY -->
+    <div id="floating-notepad" class="floating-notepad">
         <div class="notepad-header" id="notepad-header">
             <span style="display: flex; align-items: center; gap: 8px;">
                 <img src="/static/icons/Clipboard.png" style="width: 20px; height: 20px;" draggable="false"> The Pantry
             </span>
-            <button class="notepad-close-btn" onclick="toggleNotepad()">✕</button>
+            <button type="button" class="notepad-close-btn" onclick="toggleNotepad()">✕</button>
         </div>
         <div id="notepad-editor" class="notepad-editor" contenteditable="true" spellcheck="false" data-placeholder="Jot down notes, paste images, or drop code here... auto-saved to cloud!"></div>
     </div>
