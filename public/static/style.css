@@ -83,10 +83,9 @@ body.guest-mode .burger-wallet { display: none !important; }
 .guest-auth-btn { background-color: #333333; color: #aaaaaa; border: none; border-radius: 12px; padding: 12px; font-size: 16px; cursor: pointer; width: 100%; margin-top: 8px; transition: 0.2s; font-family: Arial, sans-serif; font-weight: bold; }
 .guest-auth-btn:hover { background-color: #444444; color: #ffffff; }
 
-/* TEXT BARS & INPUTS (Bug #9: Removed hover glow effect) */
+/* TEXT BARS & INPUTS */
 input[type="text"], input[type="password"], input[type="email"], input[type="number"], .notepad-editor, .friends-search-container input {
     background-color: var(--bg-input);
-    background-image: none;
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 12px 16px; 
@@ -98,7 +97,6 @@ input[type="text"], input[type="password"], input[type="email"], input[type="num
 }
 input:focus, .notepad-editor:focus { border-color: #9333ea; }
 
-/* Chat bar specifics */
 .input-container {
     border-radius: 30px !important;
     display: flex;
@@ -109,7 +107,6 @@ input:focus, .notepad-editor:focus { border-color: #9333ea; }
     position: relative;
     z-index: 21;
     background-color: var(--bg-input);
-    background-image: none;
     border: 1px solid var(--border-color);
     transition: border-color 0.2s;
 }
@@ -117,7 +114,6 @@ input:focus, .notepad-editor:focus { border-color: #9333ea; }
 
 .input-container input {
     background: transparent !important;
-    background-image: none !important;
     border: none !important;
     padding: 0 !important;
     border-radius: 0 !important;
@@ -166,7 +162,7 @@ input:checked + .slider:before { transform: translateX(28px); }
 .social-link { display: flex; align-items: center; gap: 12px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; color: var(--text-main); font-weight: normal; }
 .social-link img { width: 28px; height: 28px; object-fit: contain; }
 
-/* APP LAYOUT & SIDEBAR (Bug #10: Chats at top above the 6 buttons, Settings at bottom-left) */
+/* SIDEBAR */
 .app-container { width: 100%; max-width: 420px; height: 100dvh; background-color: var(--bg-card); position: relative; display: flex; flex-direction: row; overflow: hidden; }
 .mobile-top-header { position: absolute; top: 20px; left: 20px; z-index: 40; background: transparent; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 5px; }
 .hamburger-line { width: 28px; height: 4px; background-color: var(--text-sub); border-radius: 2px; }
@@ -180,15 +176,14 @@ input:checked + .slider:before { transform: translateX(28px); }
 .sidebar-logo-watermark { height: 36px; object-fit: contain; }
 .sidebar-toggle { display: none; }
 
-/* Chats at top of sidebar, above the 6 buttons */
 .sidebar-chats { flex: 1; min-height: 120px; padding: 8px 20px 12px 20px; overflow-y: auto; border-bottom: 1px solid var(--border-color); }
 .chats-header { font-size: 24px; color: var(--text-main); margin-bottom: 12px; white-space: nowrap; }
 
 .mini-nav-items { display: none; }
 .full-nav-items { display: flex; flex-direction: column; gap: 10px; }
 .sidebar-nav { display: flex; flex-direction: column; padding: 14px 20px; flex-shrink: 0; }
-.pc-nav-btn { width: 100%; max-width: 150px; height: auto; object-fit: contain; object-position: left; cursor: pointer; transition: transform 0.2s ease, opacity 0.2s ease; filter: none !important; box-shadow: none !important; }
-.pc-nav-btn:hover { transform: scale(1.04) translateX(4px); opacity: 0.9; filter: none !important; box-shadow: none !important; }
+.pc-nav-btn { width: 100%; max-width: 150px; height: auto; object-fit: contain; object-position: left; cursor: pointer; transition: transform 0.2s ease, opacity 0.2s ease; }
+.pc-nav-btn:hover { transform: scale(1.04) translateX(4px); opacity: 0.9; }
 .pc-nav-btn:active { transform: scale(0.97); }
 
 .saved-chat-item { position: relative; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); font-size: 16px; padding: 8px 12px; cursor: pointer; border-radius: 8px; transition: background-color 0.1s, color 0.1s; }
@@ -207,12 +202,11 @@ input:checked + .slider:before { transform: translateX(28px); }
 .chat-dropdown-item.delete { color: #ef4444; }
 .chat-dropdown-item.delete:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
 
-/* Settings kept in bottom-left of sidebar */
 .sidebar-footer { padding: 14px 20px 20px 20px; display: flex; align-items: center; justify-content: flex-start; margin-top: auto; flex-shrink: 0; }
-.settings-icon-img { width: 28px; height: 28px; object-fit: contain; cursor: pointer; transition: transform 0.2s ease; filter: none !important; box-shadow: none !important; }
-.settings-icon-img:hover { transform: rotate(90deg) scale(1.1); filter: none !important; box-shadow: none !important; }
+.settings-icon-img { width: 28px; height: 28px; object-fit: contain; cursor: pointer; transition: transform 0.2s ease; }
+.settings-icon-img:hover { transform: rotate(90deg) scale(1.1); }
 
-/* FLAVORS DROPDOWN UI */
+/* FLAVORS DROPDOWN UI (INSIDE VIEW-CHAT) */
 .top-flavor-bar { position: absolute; top: 16px; left: 60px; z-index: 50; }
 .flavor-dropdown-container { position: relative; z-index: 900; }
 .flavor-dropdown-btn { background-color: #1a1a1a; border: 2px solid #333333; color: #ffffff; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; font-family: 'Lilita One', cursive, sans-serif; transition: all 0.2s ease; }
@@ -239,14 +233,9 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .typing-cursor { display: inline-block; width: 6px; height: 0.85em; background-color: #9333ea; margin-left: 8px; animation: blink 0.8s step-end infinite; vertical-align: middle; border-radius: 2px; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-/* BUG #3: "..." LOADING ANIMATION BEFORE CARL TYPES */
 .carl-thinking-dots { display: inline-flex; align-items: center; gap: 5px; padding: 6px 4px; }
 .carl-thinking-dots span {
-    width: 8px;
-    height: 8px;
-    background-color: #a855f7;
-    border-radius: 50%;
-    display: inline-block;
+    width: 8px; height: 8px; background-color: #a855f7; border-radius: 50%; display: inline-block;
     animation: carlDotBounce 1.2s infinite ease-in-out both;
 }
 .carl-thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
@@ -265,7 +254,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .chat-bubble.carl { color: var(--text-main); align-self: flex-start; white-space: pre-wrap; }
 .chat-image { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
 
-/* CHAT BUBBLE STYLES */
+/* CHAT BUBBLES */
 .chat-bubble.user.bubble-neon, .dm-message-content.bubble-neon { background: linear-gradient(135deg, #06b6d4, #3b82f6) !important; color: #fff !important; }
 .chat-bubble.user.bubble-gold, .dm-message-content.bubble-gold { background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: #fff !important; }
 .chat-bubble.user.bubble-cyber, .dm-message-content.bubble-cyber { background: linear-gradient(135deg, #ec4899, #8b5cf6) !important; color: #fff !important; }
@@ -281,21 +270,13 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .chat-bubble.user.bubble-ghost, .dm-message-content.bubble-ghost { background: linear-gradient(135deg, #d4d4d8, #a1a1aa) !important; color: #111 !important; opacity: 0.9; }
 .chat-bubble.user.bubble-electric, .dm-message-content.bubble-electric { background: linear-gradient(135deg, #eab308, #06b6d4) !important; color: #111 !important; }
 
-/* FADE OUT TEXT BEHIND INPUT BAR */
+/* INPUT BAR */
 .input-wrapper { 
-    position: absolute; 
-    bottom: 0; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    width: 100%; 
-    max-width: 800px; 
-    padding: 30px 20px 10px 20px; 
-    z-index: 10; 
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); 
+    width: 100%; max-width: 800px; padding: 30px 20px 10px 20px; z-index: 10; 
     background: linear-gradient(to bottom, transparent 0%, var(--bg-card) 25px, var(--bg-card) 100%);
     transition: transform 0.6s cubic-bezier(0.25, 1, 0.3, 1); 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
+    display: flex; flex-direction: column; align-items: center; 
 }
 #view-chat.startup-active .input-wrapper { bottom: 50%; transform: translate(-50%, 50%); background: transparent; }
 
@@ -314,7 +295,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .send-btn:disabled { opacity: 0.4; cursor: not-allowed; background-color: #52525b; }
 .copyright { text-align: center; color: var(--text-sub); font-size: 13px; letter-spacing: 0.5px; margin-top: 6px; flex-shrink: 0; }
 
-/* BUG #5: GEMINI-STYLE CODE BLOCKS & SYNTAX HIGHLIGHTING */
+/* CODE BLOCKS */
 .code-block-wrapper { background-color: #1e1f22; border-radius: 12px; margin: 16px 0; overflow: hidden; border: 1px solid #333333; max-width: 100%; }
 .code-block-header { display: flex; justify-content: space-between; align-items: center; background-color: #131314; padding: 10px 16px; border-bottom: 1px solid #333333; }
 .code-language { font-size: 14px; color: #c4c7c5; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; font-family: Arial, sans-serif; }
@@ -325,14 +306,13 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .code-block-body { padding: 16px; color: #e3e3e3; font-family: 'Consolas', 'Fira Code', 'Courier New', monospace; font-size: 14px; overflow-x: auto; white-space: pre; line-height: 1.55; text-align: left; }
 .code-block-body span { font-family: 'Consolas', 'Fira Code', 'Courier New', monospace; }
 
-/* Gemini Syntax Highlighting Palette */
-.tok-kw { color: #c084fc; font-weight: bold; }      /* Keywords: def, function, if, return, const, local */
-.tok-fn { color: #60a5fa; }                         /* Functions & methods */
-.tok-str { color: #4ade80; }                        /* Strings */
-.tok-num { color: #fb923c; }                        /* Numbers & booleans */
-.tok-com { color: #71717a; font-style: italic; }    /* Comments */
-.tok-bi { color: #2dd4bf; }                         /* Built-ins, types & standard classes */
-.tok-op { color: #f472b6; }                         /* Operators & tags */
+.tok-kw { color: #c084fc; font-weight: bold; }
+.tok-fn { color: #60a5fa; }
+.tok-str { color: #4ade80; }
+.tok-num { color: #fb923c; }
+.tok-com { color: #71717a; font-style: italic; }
+.tok-bi { color: #2dd4bf; }
+.tok-op { color: #f472b6; }
 
 .inline-code { background-color: #262626; padding: 2px 6px; border-radius: 6px; font-family: monospace; color: #c084fc; border: 1px solid #333333; }
 .copy-toast { position: fixed; bottom: 24px; right: 24px; background-color: #262626; border: 2px solid #333333; border-radius: 12px; padding: 12px 20px; display: flex; align-items: center; gap: 12px; z-index: 10000; opacity: 0; transform: translateY(20px); pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
@@ -365,7 +345,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .dm-del-btn:hover { opacity: 1 !important; transform: scale(1.2); }
 .dm-input-wrapper { padding: 0 20px 20px 20px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 800px; margin: 0 auto; }
 
-/* REFINED SHOP UI (Bug #9: Removed Mystery Burger Crate & icon glow effects) */
+/* SHOP */
 #view-shop { padding: 24px 20px 12px 20px; display: flex; flex-direction: column; height: 100%; }
 .shop-content-scroll { flex: 1; overflow-y: auto; padding: 10px 0; margin-bottom: 10px; }
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
@@ -425,7 +405,6 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .shop-card:hover .shop-item-default, .preset-item:hover .shop-item-default { opacity: 0; transform: scale(1.1); pointer-events: none; }
 .shop-card:hover .shop-item-preview, .preset-item:hover .shop-item-preview { opacity: 1; transform: scale(1); pointer-events: auto; }
 
-/* PILL BUTTONS (For Shop & Inventory) */
 .shop-buy-btn, .inv-action-btn { 
     position: relative;
     background-color: #1a1a1a; 
@@ -464,7 +443,6 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .shop-buy-btn.buy:hover .btn-text { display: none; }
 .shop-buy-btn.buy:hover .btn-hover-text { display: inline; }
 
-/* Bug #9: Mystery Burger Crate WITHOUT glow effect */
 .loot-box-banner { 
     background: linear-gradient(135deg, #4f46e5, #9333ea); 
     border-radius: 16px; 
@@ -506,7 +484,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .preset-del-btn { background: transparent; border: none; color: #ef4444; font-size: 18px; cursor: pointer; transition: transform 0.1s; padding: 4px; position: relative; z-index: 2; }
 .preset-del-btn:active { transform: scale(0.9); }
 
-/* GAMES & MENU UI (Bug #9: No glow effect on game icons) */
+/* GAMES & MENU UI (Bug #4: Hover effects added to games & play button) */
 .games-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--text-sub); margin-top: 80px; }
 .back-btn { margin-left: 45px; background: transparent; border: 3px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; color: var(--text-sub); font-size: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer; flex-shrink: 0; }
 .difficulty-picker { display: flex; align-items: center; justify-content: space-between; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 8px 14px; margin-top: 10px; font-size: 16px; }
@@ -514,12 +492,44 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .difficulty-dropdown { background-color: var(--bg-card); color: #84cc16; border: 1px solid #84cc16; border-radius: 8px; padding: 6px 12px; font-size: 15px; outline: none; cursor: pointer; }
 .games-scroll-box { flex: 1; overflow-y: auto; margin: 15px 0; padding-right: 5px; min-height: 0; }
 .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; justify-items: center; padding-bottom: 10px; }
-.game-card-img { width: 100%; height: auto; aspect-ratio: 9123 / 6773; border-radius: 11.36%; object-fit: contain; cursor: pointer; border: 3px solid transparent; padding: 0; transition: transform 0.15s ease, border-color 0.1s ease; box-shadow: none !important; filter: none !important; }
-.game-card-img:hover { box-shadow: none !important; filter: none !important; }
-.game-card-img:active { opacity: 0.85; }
-.game-card-img.selected { border-color: #84cc16; box-shadow: none !important; outline: none; }
-.play-btn { background-color: #84cc16; color: #ffffff; border: none; border-radius: 16px; padding: 16px; font-size: 42px; cursor: pointer; margin-bottom: 15px; width: 100%; transition: transform 0.1s; }
-.play-btn:active { transform: scale(0.97); }
+
+/* Game Cards Hover Effect */
+.game-card-img { 
+    width: 100%; height: auto; aspect-ratio: 9123 / 6773; border-radius: 11.36%; 
+    object-fit: contain; cursor: pointer; border: 3px solid transparent; padding: 0; 
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease; 
+}
+.game-card-img:hover { 
+    transform: translateY(-5px) scale(1.03); 
+    border-color: #84cc16; 
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5); 
+}
+.game-card-img:active { 
+    transform: translateY(-1px) scale(0.98); 
+    opacity: 0.9; 
+}
+.game-card-img.selected { 
+    border-color: #84cc16; 
+    box-shadow: 0 0 15px rgba(132, 204, 22, 0.3) !important; 
+    outline: none; 
+}
+
+/* Play Button Hover Effect */
+.play-btn { 
+    background-color: #84cc16; color: #ffffff; border: none; border-radius: 16px; 
+    padding: 16px; font-size: 42px; cursor: pointer; margin-bottom: 15px; width: 100%; 
+    transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease; 
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+.play-btn:hover { 
+    background-color: #9ae62e; 
+    transform: translateY(-3px) scale(1.02); 
+    box-shadow: 0 10px 28px rgba(132, 204, 22, 0.4); 
+}
+.play-btn:active { 
+    transform: translateY(1px) scale(0.98); 
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); 
+}
 .games-footer { display: flex; flex-direction: column; align-items: center; width: 100%; }
 
 /* BURGER CLICKER */
@@ -704,8 +714,8 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     .sidebar-toggle { display: block; background: transparent; border: none; color: var(--text-main); font-size: 18px; cursor: pointer; }
     .sidebar-nav { margin-top: 6px; padding: 12px 20px; }
     .mini-nav-items { display: none; flex-direction: column; gap: 18px; align-items: center; }
-    .mini-nav-btn { width: 36px; height: 36px; object-fit: contain; cursor: pointer; filter: none !important; box-shadow: none !important; }
-    .mini-nav-btn:hover { transform: scale(1.12); filter: none !important; box-shadow: none !important; }
+    .mini-nav-btn { width: 36px; height: 36px; object-fit: contain; cursor: pointer; }
+    .mini-nav-btn:hover { transform: scale(1.12); }
     .desktop-sidebar.collapsed .sidebar-logo-watermark { opacity: 0; pointer-events: none; }
     .desktop-sidebar.expanded .mini-nav-items { display: none; }
     .desktop-sidebar.collapsed .full-nav-items { display: none; }
@@ -741,7 +751,7 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     .inv-empty-text { font-size: 28px; }
 }
 
-/* --- PHASE 2: FLOATING PANTRY WINDOW --- */
+/* THE PANTRY */
 .floating-notepad {
     position: fixed;
     top: 50%;
@@ -783,7 +793,6 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     font-weight: bold;
     user-select: none;
 }
-
 .notepad-header:active { cursor: grabbing; }
 
 .notepad-close-btn {
@@ -795,7 +804,6 @@ h1 { font-size: 48px; letter-spacing: 1px; }
     cursor: pointer;
     transition: transform 0.1s;
 }
-
 .notepad-close-btn:active { transform: scale(0.9); }
 
 .notepad-editor {
