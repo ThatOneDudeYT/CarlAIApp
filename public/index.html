@@ -54,7 +54,7 @@
     <!-- MAIN APP CONTAINER -->
     <div class="app-container">
         
-        <!-- DESKTOP SIDEBAR (Bug #10: Chats at top, 6 buttons below Chats, Settings in bottom-left) -->
+        <!-- DESKTOP SIDEBAR -->
         <aside class="desktop-sidebar expanded" id="desktop-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
@@ -63,13 +63,13 @@
                 <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn">❮</button>
             </div>
 
-            <!-- CHATS SECTION MOVED TO TOP OF SIDEBAR ABOVE THE 6 BUTTONS -->
+            <!-- CHATS LIST (TOP) -->
             <div class="sidebar-chats">
                 <h3 class="chats-header">Chats</h3>
                 <div id="saved-chats-list"></div>
             </div>
             
-            <!-- 6 NAVIGATION BUTTONS BELOW CHATS -->
+            <!-- 6 NAVIGATION BUTTONS -->
             <div class="sidebar-nav">
                 <!-- Expanded PC Buttons -->
                 <div class="full-nav-items">
@@ -77,7 +77,8 @@
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
                     <img src="/static/icons/Friends.png" class="pc-nav-btn req-login" onclick="switchView('view-friends')" alt="Friends" draggable="false">
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
-                    <img src="/static/icons/Shop .png" class="pc-nav-btn req-login" onclick="switchView('view-shop')" alt="Shop" draggable="false">
+                    <!-- Fixed Shop.png path below (removed accidental space) -->
+                    <img src="/static/icons/Shop.png" onerror="this.onerror=null; this.src='/static/icons/Shop .png';" class="pc-nav-btn req-login" onclick="switchView('view-shop')" alt="Shop" draggable="false">
                     <img src="/static/icons/Inventory.png" class="pc-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" draggable="false">
                 </div>
                 
@@ -92,7 +93,7 @@
                 </div>
             </div>
             
-            <!-- SETTINGS KEPT IN BOTTOM LEFT OF SIDEBAR -->
+            <!-- SETTINGS FOOTER -->
             <div class="sidebar-footer">
                 <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="switchView('view-settings')" draggable="false">
             </div>
@@ -100,17 +101,6 @@
 
         <!-- MAIN CONTENT AREA -->
         <main class="main-content">
-            
-            <!-- TOP-LEFT FLAVOR WIDGET -->
-            <div class="top-flavor-bar" id="top-flavor-bar">
-                <div class="flavor-dropdown-container">
-                    <button class="flavor-dropdown-btn" onclick="toggleFlavors(event)">Flavors <span id="flavors-arrow">▼</span></button>
-                    <div id="flavors-menu" class="flavors-menu collapsed">
-                        <div class="flavor-option active" id="flavor-quick" onclick="selectFlavor('quick')">Quick Flip 3.1</div>
-                        <div class="flavor-option" id="flavor-endless" onclick="selectFlavor('endless')">Endless Bun 3.1</div>
-                    </div>
-                </div>
-            </div>
 
             <!-- TOP-RIGHT PROFILE WIDGET -->
             <div class="top-profile-bar" id="top-profile-bar">
@@ -124,6 +114,17 @@
 
             <!-- CHAT VIEW (For Carl AI) -->
             <div id="view-chat" class="view active startup-active">
+                <!-- Bug #2 Fix: Flavors moved inside Chat View so it only displays here -->
+                <div class="top-flavor-bar" id="top-flavor-bar">
+                    <div class="flavor-dropdown-container">
+                        <button class="flavor-dropdown-btn" onclick="toggleFlavors(event)">Flavors <span id="flavors-arrow">▼</span></button>
+                        <div id="flavors-menu" class="flavors-menu collapsed">
+                            <div class="flavor-option active" id="flavor-quick" onclick="selectFlavor('quick')">Quick Flip 3.1</div>
+                            <div class="flavor-option" id="flavor-endless" onclick="selectFlavor('endless')">Endless Bun 3.1</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="glow-bg" class="glow-bg"></div>
                 <div id="startup-screen" class="startup-screen">
                     <h1 id="startup-title">Ask Away!<span class="typing-cursor"></span></h1>
@@ -152,7 +153,7 @@
                 </div>
             </div>
 
-            <!-- DIRECT MESSAGING VIEW (For Friends) -->
+            <!-- DIRECT MESSAGING VIEW -->
             <div id="view-dm" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
@@ -178,7 +179,7 @@
                 <div class="copyright">© 2026 CarlAI. All Rights Reserved.</div>
             </div>
 
-            <!-- PHASE 3: GLOBAL CHAT VIEW -->
+            <!-- GLOBAL CHAT VIEW -->
             <div id="view-global-chat" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
@@ -203,7 +204,7 @@
                 <div class="copyright">© 2026 CarlAI. All Rights Reserved.</div>
             </div>
 
-            <!-- PHASE 3: GROUP CHAT VIEW -->
+            <!-- GROUP CHAT VIEW -->
             <div id="view-group-chat" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
@@ -297,7 +298,7 @@
                         </div>
                     </div>
 
-                    <!-- ADMIN / DEVELOPER PANEL ROW -->
+                    <!-- ADMIN PANEL -->
                     <div class="settings-row vertical-on-mobile req-login" id="admin-panel-row" style="display: none; flex-direction: column; align-items: stretch; background: var(--bg-input); padding: 16px; border-radius: 16px; border: 2px dashed #9333ea; gap: 12px;">
                         <span class="settings-label" style="font-size: 24px; color: #a855f7; text-align: center;">🛠️ Admin / Developer Controls</span>
                         <div style="display: flex; gap: 10px;">
@@ -553,7 +554,7 @@
         </main>
     </div>
 
-    <!-- PHASE 3: CREATE GROUP MODAL -->
+    <!-- CREATE GROUP MODAL -->
     <div id="create-group-modal" class="auth-overlay" style="display: none;">
         <div class="auth-card" style="text-align: center; display: flex; flex-direction: column; max-height: 80vh;">
             <h2>Create Group 👥</h2>
@@ -576,7 +577,7 @@
         </div>
     </div>
 
-    <!-- BUG #6: OUT OF USAGE / API KEY GUIDE POPUP MODAL -->
+    <!-- OUT OF USAGE MODAL -->
     <div id="usage-limit-modal" class="auth-overlay" style="display: none; z-index: 10001;">
         <div class="auth-card usage-modal-card">
             <h2>Out of Daily Usage! 🍔</h2>
@@ -584,9 +585,9 @@
                 You've used all <strong>10/10</strong> free daily tokens. Add your own free Gemini API Key to unlock <strong>Unlimited Chats</strong>!
             </p>
             <div class="usage-guide-steps">
-                <div><strong>1.Where to get a key:</strong> Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color: #a855f7; text-decoration: underline;">aistudio.google.com</a> and sign in.</div>
-                <div><strong>2.Create Key:</strong> Click <strong>"Get API key"</strong> in the left sidebar, then click <strong>"Create API key"</strong> and copy it.</div>
-                <div><strong>3.Where to upload:</strong> Paste your key below (or in <strong>Settings → API Key</strong>) and click Save!</div>
+                <div><strong>1. Where to get a key:</strong> Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color: #a855f7; text-decoration: underline;">aistudio.google.com</a> and sign in.</div>
+                <div><strong>2. Create Key:</strong> Click <strong>"Get API key"</strong> in the left sidebar, then click <strong>"Create API key"</strong> and copy it.</div>
+                <div><strong>3. Where to upload:</strong> Paste your key below (or in <strong>Settings → API Key</strong>) and click Save!</div>
             </div>
             <input type="password" id="modal-api-key-input" placeholder="Paste your Gemini API Key here..." autocomplete="off" style="margin: 14px 0 10px 0;">
             <button type="button" class="auth-btn" style="width: 100%; margin-top: 0;" onclick="saveApiKeyFromModal()">Save API Key & Unlock</button>
@@ -605,7 +606,7 @@
         </div>
     </div>
 
-    <!-- BUG #8 FIX: REMOVED INLINE display:none SO .active OPENS THE PANTRY -->
+    <!-- THE PANTRY FLOATING NOTEPAD -->
     <div id="floating-notepad" class="floating-notepad">
         <div class="notepad-header" id="notepad-header">
             <span style="display: flex; align-items: center; gap: 8px;">
