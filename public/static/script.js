@@ -147,7 +147,7 @@ const shopCatalog = [
 let firebaseUserId = null;
 let currentUser = null;
 let currentUserAvatar = "/static/icons/default-avatar.png";
-let customApiKey = "";
+let customApiKey = localStorage.getItem("carl_global_api_key") || "";
 let chatsHistory = [], activeChatId = null, chatHistory = [];  
 let selectedGame = "Burger Clicker"; 
 const gamesWithDifficulty = ["Tic Tac Toe", "Chess", "Hangman", "Connect Four", "Checkers", "Battleship", "Rock Paper Scissors"];
@@ -176,6 +176,9 @@ let equipped = {
     goldenSpatula: false 
 };
 
+let pendingAuthEmail = "";
+let pendingAuthPass = "";
+
 async function handleLogin(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     const email = document.getElementById('auth-username').value.trim();
@@ -183,32 +186,86 @@ async function handleLogin(e) {
     const submitBtn = document.getElementById('auth-submit-btn');
 
     if (!email || !pass) return customAlert("Please enter both an email and a password.");
-    submitBtn.innerText = "Checking Account..."; submitBtn.disabled = true;
+    
+    submitBtn.innerText = "Sending Code..."; 
+    submitBtn.disabled = true;
 
     try {
-        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        const methods = await auth.fetchSignInMethodsForEmail(email);
+        const res = await fetch('/api/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
         
-        if (methods.length === 0) {
-            submitBtn.innerText = "Creating Account...";
-            await auth.createUserWithEmailAndPassword(email, pass);
-            fetch('/api/send-alert', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: email, type: 'signup'}) }).catch(()=>{});
-            localStorage.removeItem("carl_guest_mode");
-            document.getElementById('auth-overlay').style.display = 'none';
-            customAlert("Account created successfully! Welcome to Carl AI.");
+        if (data.success) {
+            pendingAuthEmail = email;
+            pendingAuthPass = pass;
+            document.getElementById('auth-step-credentials').style.display = 'none';
+            document.getElementById('auth-step-otp').style.display = 'block';
+            document.getElementById('otp-sent-email-display').innerText = email;
         } else {
-            submitBtn.innerText = "Signing In...";
-            await auth.signInWithEmailAndPassword(email, pass);
-            fetch('/api/send-alert', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: email, type: 'signin'}) }).catch(()=>{});
-            localStorage.removeItem("carl_guest_mode");
-            document.getElementById('auth-overlay').style.display = 'none';
+            customAlert("Failed to send code: " + (data.error || "Unknown error"));
         }
-        document.getElementById('auth-password').value = "";
     } catch (err) {
-        customAlert("Login Error: " + err.message);
-    } finally { 
+        customAlert("Error: " + err.message);
+    } finally {
         submitBtn.innerText = "Sign In / Register"; 
-        submitBtn.disabled = false; 
+        submitBtn.disabled = false;
+    }
+}
+
+function cancelOtpStep() {
+    document.getElementById('auth-step-otp').style.display = 'none';
+    document.getElementById('auth-step-credentials').style.display = 'block';
+    document.getElementById('auth-otp-code').value = "";
+}
+
+async function handleVerifyOtp(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const code = document.getElementById('auth-otp-code').value.trim();
+    const verifyBtn = document.getElementById('otp-verify-btn');
+    
+    if (!code || code.length !== 5) return customAlert("Please enter the 5-digit code.");
+    
+    verifyBtn.innerText = "Verifying...";
+    verifyBtn.disabled = true;
+    
+    try {
+        const res = await fetch('/api/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: pendingAuthEmail, code })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            verifyBtn.innerText = "Signing in...";
+            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            const methods = await auth.fetchSignInMethodsForEmail(pendingAuthEmail);
+            
+            if (methods.length === 0) {
+                await auth.createUserWithEmailAndPassword(pendingAuthEmail, pendingAuthPass);
+                localStorage.removeItem("carl_guest_mode");
+                document.getElementById('auth-overlay').style.display = 'none';
+                customAlert("Account created successfully! Welcome to Carl AI.");
+            } else {
+                await auth.signInWithEmailAndPassword(pendingAuthEmail, pendingAuthPass);
+                localStorage.removeItem("carl_guest_mode");
+                document.getElementById('auth-overlay').style.display = 'none';
+            }
+            document.getElementById('auth-password').value = "";
+            document.getElementById('auth-otp-code').value = "";
+            cancelOtpStep();
+        } else {
+            customAlert("Verification failed: " + (data.error || "Incorrect code"));
+            verifyBtn.innerText = "Verify Code";
+            verifyBtn.disabled = false;
+        }
+    } catch (err) {
+        customAlert("Error: " + err.message);
+        verifyBtn.innerText = "Verify Code";
+        verifyBtn.disabled = false;
     }
 }
 
@@ -245,7 +302,9 @@ function signInWithGoogle() {
         .catch(e => customAlert("Error: " + e.message));
 }
 
-function handleSignOut() {
+async function handleSignOut() {
+    const confirmed = await customConfirm("Are you sure you want to sign out?");
+    if (!confirmed) return;
     localStorage.removeItem("carl_guest_mode");
     isGuest = false;
     isCloudLoaded = false;
@@ -301,7 +360,6 @@ function loadLocalBackup(uidKey) {
         const raw = localStorage.getItem(`carl_backup_${uidKey}`);
         if (!raw) return;
         const data = JSON.parse(raw);
-        if (data.apiKey) customApiKey = data.apiKey;
         if (Array.isArray(data.chats) && data.chats.length > 0) chatsHistory = data.chats;
         if (data.activeChatId) activeChatId = data.activeChatId;
         if (data.username && data.username !== "Guest") currentUser = data.username;
@@ -367,7 +425,10 @@ async function loadUserDataFromCloud(user) {
 
             if (doc.exists) {
                 const data = doc.data(); 
-                customApiKey = data.apiKey || customApiKey || "";
+                if (data.apiKey && !customApiKey) {
+                    customApiKey = data.apiKey;
+                    localStorage.setItem("carl_global_api_key", customApiKey);
+                }
                 if (Array.isArray(data.chats) && data.chats.length > 0) {
                     chatsHistory = data.chats;
                 }
@@ -697,7 +758,10 @@ function updateUsernameFromSettings() {
 function handleAvatarUpload(e) { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(ev){ currentUserAvatar=ev.target.result; updateProfileUI(); saveSessionData(); }; r.readAsDataURL(f); }
 function saveSettings() { 
     const ki=document.getElementById('user-api-key'); 
-    if(ki) customApiKey=ki.value.trim(); 
+    if(ki) {
+        customApiKey = ki.value.trim(); 
+        localStorage.setItem("carl_global_api_key", customApiKey);
+    }
     const np=document.getElementById('settings-new-pass')?.value, cp=document.getElementById('settings-confirm-pass')?.value; 
     if(np||cp){ 
         if(np===cp && auth.currentUser){ 
@@ -1460,6 +1524,7 @@ function saveApiKeyFromModal() {
     customApiKey = key;
     const settingsInput = document.getElementById("user-api-key");
     if (settingsInput) settingsInput.value = customApiKey;
+    localStorage.setItem("carl_global_api_key", customApiKey);
     saveSessionData();
     updateUsageUI();
     closeUsageLimitModal();
@@ -1643,6 +1708,7 @@ async function sendMessage() {
                 textNode.innerText = "Error: Invalid API Key provided. Reverting key settings.";
                 customAlert("The API key provided is invalid! Please check your key in Settings.");
                 customApiKey = "";
+                localStorage.removeItem("carl_global_api_key");
                 const keyInput = document.getElementById('user-api-key'); 
                 if (keyInput) keyInput.value = "";
                 saveSessionData();
