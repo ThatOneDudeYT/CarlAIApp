@@ -1,8 +1,3 @@
-// =========================================================================
-// --- MINIGAME LOGIC ARCHITECTURE ---
-// =========================================================================
-
-// Safe fallback bindings for Game Menu & Burger Clicker
 window.selectGame = window.selectGame || function(imgEl, gameName) {
     selectedGame = gameName;
     document.querySelectorAll('.game-card-img').forEach(el => el.classList.remove('selected'));
@@ -54,9 +49,6 @@ window.launchGame = window.launchGame || function() {
     }
 };
 
-// =========================================================================
-// --- 1. TIC TAC TOE ---
-// =========================================================================
 let board = ["", "", "", "", "", "", "", "", ""];
 let playerTurn = true;
 const winCombos = [
@@ -157,9 +149,6 @@ function checkWin(player) {
     return winCombos.some(combo => combo.every(i => board[i] === player));
 }
 
-// =========================================================================
-// --- 2. ROCK PAPER SCISSORS ---
-// =========================================================================
 let rpsScore = { player: 0, carl: 0 }, rpsPlaying = false;
 const rpsCarlHands = {
     rock: '/static/icons/CarlRock.png',
@@ -226,9 +215,6 @@ function playRps(playerChoice) {
     }, 500);
 }
 
-// =========================================================================
-// --- 3. BLACKJACK ---
-// =========================================================================
 let bjDeck = [], bjPlayerHands = [], bjCarlHand = [], bjActiveHand = 0;
 let bjGameOver = false, bjGameActive = false, bjResults = [], bjBet = 10, bjBets = [], bjPayoutsDone = false;
 
@@ -286,7 +272,11 @@ function initBlackjack() {
     if (betInput) {
         bjBet = parseInt(betInput.value) || 10;
         if (bjBet < 10) { bjBet = 10; betInput.value = 10; }
-        if (userBurgers < bjBet) { alert("Not enough Burgers!"); return; }
+        if (userBurgers < bjBet) { 
+            if(typeof customAlert === "function") customAlert("Not enough Burgers!");
+            else alert("Not enough Burgers!");
+            return; 
+        }
         userBurgers -= bjBet;
         updateBurgerUI();
         betInput.disabled = true;
@@ -516,9 +506,6 @@ function bjDealerTurn() {
     }
 }
 
-// =========================================================================
-// --- 4. HANGMAN ---
-// =========================================================================
 let hmWord = "", hmGuessed = new Set(), hmMistakes = 0, hmPlayerTurn = true, hmGameOver = false;
 const safeDictionary = [
     "ROBLOX", "MINECRAFT", "DEVELOPER", "PYTHON", "KEYBOARD",
@@ -619,9 +606,6 @@ function carlHmMove() {
     if (guess) hmGuess(guess);
 }
 
-// =========================================================================
-// --- 5. CONNECT FOUR (WITH ALL SHOP SKINS SUPPORTED) ---
-// =========================================================================
 const C4_ROWS = 6, C4_COLS = 7;
 let c4Board = [], c4PlayerTurn = true, c4GameOver = false;
 
@@ -806,9 +790,6 @@ function c4UpdateBoardUI() {
     }
 }
 
-// =========================================================================
-// --- 6. BATTLESHIP ---
-// =========================================================================
 const BS_SIZE = 6;
 let bsPlayerGrid = [], bsEnemyGrid = [], bsEnemyShips = [];
 let bsPlayerTurn = true, bsGameOver = false, bsPlacing = true;
@@ -890,7 +871,8 @@ function bsCellClick(r, c) {
 
 function bsConfirmPlacement() {
     if (!bsPlacing || bsPreviewCoords.length === 0) {
-        alert("Please tap a valid spot first!");
+        if(typeof customAlert === "function") customAlert("Please tap a valid spot first!");
+        else alert("Please tap a valid spot first!");
         return;
     }
     bsPreviewCoords.forEach(coord => { bsPlayerGrid[coord.r][coord.c] = 1; });
@@ -1025,9 +1007,6 @@ function bsUpdateBoardsUI() {
     }
 }
 
-// =========================================================================
-// --- 7. CHECKERS ---
-// =========================================================================
 const CHK_SIZE = 8;
 let chkBoard = [], chkSelected = null, chkValidMoves = [], chkPlayerTurn = true, chkGameOver = false;
 
@@ -1222,9 +1201,6 @@ function chkCheckWin(player) {
     return true;
 }
 
-// =========================================================================
-// --- 8. CHESS ---
-// =========================================================================
 const CHS_SIZE = 8;
 let chsBoard = [], chsSelected = null, chsValidMoves = [], chsPlayerTurn = true, chsGameOver = false;
 const chsInitialBoard = [
