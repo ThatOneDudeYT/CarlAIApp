@@ -5,13 +5,10 @@ import requests
 from flask import Flask, request, jsonify, send_from_directory, Response
 import google.generativeai as genai
 
-# Configure Flask to serve static assets and HTML directly from the 'public' folder
 app = Flask(__name__, static_folder='public/static', template_folder='public')
 
-# Temporary storage for OTPs
 otp_store = {}
 
-# --- SERVE WEBSITE ---
 @app.route('/')
 def index():
     return send_from_directory('public', 'index.html')
@@ -20,7 +17,6 @@ def index():
 def serve_static(path):
     return send_from_directory('public', path)
 
-# --- OTP EMAIL ROUTES (USING BREVO HTTP API) ---
 @app.route('/api/send-otp', methods=['POST'])
 def send_otp():
     data = request.get_json() or {}
@@ -29,20 +25,17 @@ def send_otp():
     if not email:
         return jsonify({"error": "Email is required"}), 400
 
-    # Generate random 5-digit code
     code = str(random.randint(10000, 99999))
     otp_store[email] = {
         "code": code,
-        "expires": time.time() + 600  # 10 minutes
+        "expires": time.time() + 600
     }
 
     try:
-        # Pull API key from Render Environment
         api_key = os.environ.get("BREVO_API_KEY")
         if not api_key:
             return jsonify({"error": "Brevo API key is missing from Render"}), 500
 
-        # Brevo's API endpoint
         url = "https://api.brevo.com/v3/smtp/email"
         
         headers = {
@@ -61,7 +54,6 @@ def send_otp():
             "textContent": f"Here is your one time use Carl AI code:\n\n{code}\n\nThis code will expire in 10 minutes."
         }
 
-        # Send the data over standard HTTPS
         response = requests.post(url, json=payload, headers=headers)
         
         if response.status_code in [200, 201, 202]:
@@ -72,6 +64,49 @@ def send_otp():
     except Exception as e:
         return jsonify({"error": f"Failed to send email: {str(e)}"}), 500
 
+@app.route('/api/send-alert', methods=['POST'])
+def send_alert():
+    data = request.get_json() or {}
+    email = data.get('email', '').strip().lower()
+    alert_type = data.get('type', 'signin')
+    
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    try:
+        api_key = os.environ.get("BREVO_API_KEY")
+        if not api_key:
+            return jsonify({"error": "Brevo API key is missing from Render"}), 500
+            
+        url = "https://api.brevo.com/v3/smtp/email"
+        headers = {
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json"
+        }
+        
+        subject = "New Account Created" if alert_type == "signup" else "New Sign-In Detected"
+        text = f"An account was created for {email}." if alert_type == "signup" else f"A sign-in was detected for {email}."
+        
+        payload = {
+            "sender": {
+                "name": "Carl AI Support",
+                "email": "carlaisupport@gmail.com"
+            },
+            "to": [{"email": "erbreen@icloud.com"}],
+            "subject": subject,
+            "textContent": text
+        }
+
+        response = requests.post(url, json=payload, headers=headers)
+        
+        if response.status_code in [200, 201, 202]:
+            return jsonify({"success": True, "message": "Alert sent successfully"})
+        else:
+            return jsonify({"error": f"API Error: {response.text}"}), 500
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to send alert: {str(e)}"}), 500
 
 @app.route('/api/verify-otp', methods=['POST'])
 def verify_otp():
@@ -93,12 +128,11 @@ def verify_otp():
     del otp_store[email]
     return jsonify({"success": True, "message": "Verified successfully"})
 
-# --- CARL AI CHAT ROUTE ---
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.get_json() or {}
     user_message = data.get('message', '')
-    image_data = data.get('image')  # NEW: Get the base64 image from the extension
+    image_data = data.get('image')
     history = data.get('history', [])
     api_key = data.get('api_key') or os.environ.get('GEMINI_API_KEY')
     client_time = data.get('client_time', 'Unknown')
@@ -109,7 +143,6 @@ def chat():
     try:
         genai.configure(api_key=api_key)
         
-        # Initialize model with system instruction
         generation_config = {"temperature": 0.7}
         model = genai.GenerativeModel(
             model_name="gemini-3.1-flash-lite",
@@ -128,7 +161,6 @@ def chat():
 
         def generate():
             try:
-                # NEW: Build the prompt. Attach the image if vision is enabled!
                 parts = [user_message]
                 if image_data:
                     parts.append({
