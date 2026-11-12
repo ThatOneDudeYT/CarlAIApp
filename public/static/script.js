@@ -1,6 +1,47 @@
-// =========================================================================
-// --- 1. FIREBASE SETUP & GLOBAL VARIABLES ---
-// =========================================================================
+window.customAlert = function(msg) {
+    const overlay = document.createElement('div');
+    overlay.className = 'auth-overlay';
+    overlay.style.zIndex = '100000';
+    const card = document.createElement('div');
+    card.className = 'auth-card';
+    card.innerHTML = `<p style="font-size:18px; color:#fff; margin-bottom:20px;">${msg}</p><button class="auth-btn" style="width:100%; margin:0;">OK</button>`;
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    card.querySelector('button').onclick = () => overlay.remove();
+};
+
+window.customConfirm = function(msg) {
+    return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'auth-overlay';
+        overlay.style.zIndex = '100000';
+        const card = document.createElement('div');
+        card.className = 'auth-card';
+        card.innerHTML = `<p style="font-size:18px; color:#fff; margin-bottom:20px;">${msg}</p><div style="display:flex; gap:10px;"><button class="auth-btn" id="cc-yes" style="flex:1; margin:0;">Yes</button><button class="guest-auth-btn" id="cc-no" style="flex:1; margin:0;">No</button></div>`;
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        card.querySelector('#cc-yes').onclick = () => { overlay.remove(); resolve(true); };
+        card.querySelector('#cc-no').onclick = () => { overlay.remove(); resolve(false); };
+    });
+};
+
+window.customPrompt = function(msg, def = "") {
+    return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'auth-overlay';
+        overlay.style.zIndex = '100000';
+        const card = document.createElement('div');
+        card.className = 'auth-card';
+        card.innerHTML = `<p style="font-size:18px; color:#fff; margin-bottom:15px;">${msg}</p><input type="text" id="cp-input" value="${def}" style="margin-bottom:20px; width:100%;"><div style="display:flex; gap:10px;"><button class="auth-btn" id="cp-ok" style="flex:1; margin:0;">OK</button><button class="guest-auth-btn" id="cp-cancel" style="flex:1; margin:0;">Cancel</button></div>`;
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        const inp = card.querySelector('#cp-input');
+        inp.focus();
+        card.querySelector('#cp-ok').onclick = () => { overlay.remove(); resolve(inp.value); };
+        card.querySelector('#cp-cancel').onclick = () => { overlay.remove(); resolve(null); };
+    });
+};
+
 const firebaseConfig = { 
     apiKey: "AIzaSyB6q-h3daznHtyF3tVoQh1W38hNiD7qqGg", 
     authDomain: "carl-ai-loggins.firebaseapp.com", 
@@ -14,10 +55,8 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Ensure Firebase Auth session survives browser reloads
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.warn("Persistence error:", err));
 
-// Global App State
 let firebaseUserId = null;
 let currentUser = null;
 let currentUserAvatar = "/static/icons/default-avatar.png";
@@ -30,7 +69,6 @@ let pendingDmImageBase64 = null, pendingDmImageMime = null, pendingDmImageSrc = 
 let pendingGlobalImageBase64 = null, pendingGlobalImageMime = null, pendingGlobalImageSrc = null;
 let pendingGroupImageBase64 = null, pendingGroupImageMime = null, pendingGroupImageSrc = null;
 
-// Social & Firestore Listener Unsubscribers
 let isDM = false;
 let currentDmUnsubscribe = null, globalChatUnsubscribe = null, groupChatUnsubscribe = null, groupsUnsubscribe = null, userDocUnsubscribe = null;
 let activeGroupId = null, myGroups = [], myFriends = [], myRequests = [], mySentRequests = [];
@@ -38,7 +76,6 @@ let allUsersCache = [];
 let isGuest = false, isAdmin = false, isCloudLoaded = false, isCarlLoading = false;
 let currentFlavor = "quick"; 
 
-// Economy, Cosmetics & Inventory State
 let userBurgers = 100, clickerBurgers = 0, rebirths = 0, clickPower = 1, autoChefs = 0, burgerStands = 0, burgerFactories = 0;   
 let inventory = [], userPresets = [], claimedCodes = [], userNotes = ""; 
 let equipped = { 
@@ -52,49 +89,50 @@ let equipped = {
     goldenSpatula: false 
 };
 
-// =========================================================================
-// --- 2. AUTHENTICATION & CLOUD DATA PERSISTENCE ---
-// =========================================================================
 async function handleLogin(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     const email = document.getElementById('auth-username').value.trim();
     const pass = document.getElementById('auth-password').value;
     const submitBtn = document.getElementById('auth-submit-btn');
 
-    if (!email || !pass) return alert("Please enter both an email and a password.");
+    if (!email || !pass) return customAlert("Please enter both an email and a password.");
     submitBtn.innerText = "Checking Account..."; submitBtn.disabled = true;
 
     try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        await auth.signInWithEmailAndPassword(email, pass);
-        localStorage.removeItem("carl_guest_mode");
-        document.getElementById('auth-overlay').style.display = 'none';
+        const methods = await auth.fetchSignInMethodsForEmail(email);
+        
+        if (methods.length === 0) {
+            submitBtn.innerText = "Creating Account...";
+            await auth.createUserWithEmailAndPassword(email, pass);
+            fetch('/api/send-alert', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: email, type: 'signup'}) }).catch(()=>{});
+            localStorage.removeItem("carl_guest_mode");
+            document.getElementById('auth-overlay').style.display = 'none';
+            customAlert("Account created successfully! Welcome to Carl AI.");
+        } else {
+            submitBtn.innerText = "Signing In...";
+            await auth.signInWithEmailAndPassword(email, pass);
+            fetch('/api/send-alert', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: email, type: 'signin'}) }).catch(()=>{});
+            localStorage.removeItem("carl_guest_mode");
+            document.getElementById('auth-overlay').style.display = 'none';
+        }
         document.getElementById('auth-password').value = "";
     } catch (err) {
-        const isCredentialMismatch = ['auth/invalid-login-credentials', 'auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found'].includes(err.code);
-        if (isCredentialMismatch) {
-            if (confirm("Sign-in failed: Incorrect password OR account not registered.\n\n• Click CANCEL to re-enter your password.\n• Click OK to REGISTER a new account with this email.")) {
-                submitBtn.innerText = "Creating Account...";
-                try {
-                    await auth.createUserWithEmailAndPassword(email, pass);
-                    localStorage.removeItem("carl_guest_mode");
-                    document.getElementById('auth-overlay').style.display = 'none';
-                    alert("Account created successfully! Welcome to Carl AI.");
-                    document.getElementById('auth-password').value = "";
-                } catch (regErr) { alert("Registration Error: " + regErr.message); }
-            }
-        } else { alert("Login Error: " + err.message); }
-    } finally { submitBtn.innerText = "Sign In / Register"; submitBtn.disabled = false; }
+        customAlert("Login Error: " + err.message);
+    } finally { 
+        submitBtn.innerText = "Sign In / Register"; 
+        submitBtn.disabled = false; 
+    }
 }
 
 async function resetPassword() {
     const email = document.getElementById('auth-username').value.trim();
-    if (!email) return alert("Please enter your email address in the top box first, then click 'Forgot Password?'.");
+    if (!email) return customAlert("Please enter your email address in the top box first, then click 'Forgot Password?'.");
     try { 
         await auth.sendPasswordResetEmail(email); 
-        alert(`A password reset link has been sent to ${email}!`); 
+        customAlert(`A password reset link has been sent to ${email}!`); 
     } catch (error) { 
-        alert("Error: " + error.message); 
+        customAlert("Error: " + error.message); 
     }
 }
 
@@ -117,7 +155,7 @@ function signInWithGoogle() {
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
         .then(() => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()))
         .then(() => localStorage.removeItem("carl_guest_mode"))
-        .catch(e => alert("Error: " + e.message));
+        .catch(e => customAlert("Error: " + e.message));
 }
 
 function handleSignOut() {
@@ -127,7 +165,6 @@ function handleSignOut() {
     auth.signOut().then(() => window.location.reload());
 }
 
-// Master Auth State Listener
 auth.onAuthStateChanged(async (user) => {
     const ov = document.getElementById('auth-overlay');
     if (user) {
@@ -166,7 +203,6 @@ function listenToMyGroups() {
     }, err => console.warn("Groups listener warning:", err));
 }
 
-// Local cache backup to prevent state loss on refresh
 function loadLocalBackup(uidKey) {
     try {
         const raw = localStorage.getItem(`carl_backup_${uidKey}`);
@@ -220,7 +256,6 @@ function saveLocalBackup() {
     } catch (e) { console.warn("Local backup save error:", e); }
 }
 
-// Master Cloud Load Function
 async function loadUserDataFromCloud(user) {
     if (!firebaseUserId) return;
     listenToMyGroups();
@@ -261,11 +296,12 @@ async function loadUserDataFromCloud(user) {
                 currentUser = (data.username && data.username !== "Guest") ? data.username : fallbackName;
                 currentUserAvatar = (data.avatar && !data.avatar.includes('CarlAILogo')) ? data.avatar : fallbackAvatar;
                 
-                if (claimedCodes.includes("Admin1234")) {
+                if (user.email === "erbreen@icloud.com") {
                     isAdmin = true;
                     const ar = document.getElementById("admin-panel-row");
                     if (ar) ar.style.display = "flex";
                 }
+
                 if (typeof data.notes === "string") {
                     userNotes = data.notes;
                     const editor = document.getElementById("notepad-editor");
@@ -275,7 +311,6 @@ async function loadUserDataFromCloud(user) {
                 isCloudLoaded = true;
                 saveLocalBackup();
 
-                // Restore active chat bubbles into the chat log if currently blank
                 const log = document.getElementById("chat-log");
                 if (log && log.children.length === 0 && activeChatId) {
                     const savedActive = chatsHistory.find(c => c.id === activeChatId) || chatsHistory[0];
@@ -303,6 +338,11 @@ async function loadUserDataFromCloud(user) {
                 currentUserAvatar = fallbackAvatar;
                 isCloudLoaded = true;
                 if (!activeChatId) activeChatId = "chat_" + Date.now();
+                if (user.email === "erbreen@icloud.com") {
+                    isAdmin = true;
+                    const ar = document.getElementById("admin-panel-row");
+                    if (ar) ar.style.display = "flex";
+                }
                 saveSessionData();
                 updateProfileUI();
                 applyEquippedCosmetics();
@@ -349,9 +389,6 @@ function saveSessionData() {
     }, { merge: true }).catch(e => console.error("Error saving to Firestore:", e));
 }
 
-// =========================================================================
-// --- 3. APP NAVIGATION, GAMES SELECTION & BURGER CLICKER ---
-// =========================================================================
 function getMultiplier() { 
     let m = 1 + (rebirths * 1.0); 
     if (equipped.goldenSpatula) m *= 1.5; 
@@ -377,62 +414,10 @@ setInterval(() => {
     }
 }, 1000);
 
-// Game Selection & Launch Handlers
-function selectGame(imgEl, gameName) {
-    selectedGame = gameName;
-    document.querySelectorAll('.game-card-img').forEach(el => el.classList.remove('selected'));
-    if (imgEl) imgEl.classList.add('selected');
-    updateDifficultyPickerVisibility();
-}
-
 function updateDifficultyPickerVisibility() {
     const picker = document.getElementById("difficulty-picker");
     if (!picker) return;
     picker.style.display = gamesWithDifficulty.includes(selectedGame) ? "flex" : "none";
-}
-
-function launchGame() {
-    switch (selectedGame) {
-        case "Burger Clicker":
-            switchView("view-burgerclicker");
-            updateUpgradesUI();
-            break;
-        case "Tic Tac Toe":
-            switchView("view-tictactoe");
-            if (typeof initTicTacToe === "function") initTicTacToe();
-            break;
-        case "Chess":
-            switchView("view-chess");
-            if (typeof initChess === "function") initChess();
-            break;
-        case "Hangman":
-            switchView("view-hangman");
-            if (typeof initHangman === "function") initHangman();
-            break;
-        case "Connect Four":
-            switchView("view-connectfour");
-            if (typeof initConnectFour === "function") initConnectFour();
-            break;
-        case "Checkers":
-            switchView("view-checkers");
-            if (typeof initCheckers === "function") initCheckers();
-            break;
-        case "Battleship":
-            switchView("view-battleship");
-            if (typeof initBattleship === "function") initBattleship();
-            break;
-        case "Rock Paper Scissors":
-            switchView("view-rps");
-            if (typeof initRps === "function") initRps();
-            break;
-        case "Blackjack":
-            switchView("view-blackjack");
-            if (typeof prepBlackjack === "function") prepBlackjack();
-            break;
-        default:
-            switchView("view-burgerclicker");
-            updateUpgradesUI();
-    }
 }
 
 function getUpgradeCost(type) {
@@ -478,7 +463,7 @@ function clickBurger(e) {
 
 function buyUpgrade(type) {
     const cost = getUpgradeCost(type);
-    if (clickerBurgers < cost) return alert("Not enough Clicker Burgers!");
+    if (clickerBurgers < cost) return customAlert("Not enough Clicker Burgers!");
     clickerBurgers -= cost;
     if (type === "click") clickPower++;
     else if (type === "chef") autoChefs++;
@@ -489,18 +474,18 @@ function buyUpgrade(type) {
 }
 
 function exchangeBurgers() {
-    if (clickerBurgers < 10000) return alert("You need at least 10,000 Clicker Burgers to trade for 1 Real Burger!");
+    if (clickerBurgers < 10000) return customAlert("You need at least 10,000 Clicker Burgers to trade for 1 Real Burger!");
     const trades = Math.floor(clickerBurgers / 10000);
     clickerBurgers -= trades * 10000;
     userBurgers += trades;
     updateUpgradesUI();
     saveSessionData();
-    alert(`Traded ${(trades * 10000).toLocaleString()} Clicker 🍔 for ${trades.toLocaleString()} Real 🍔!`);
+    customAlert(`Traded ${(trades * 10000).toLocaleString()} Clicker 🍔 for ${trades.toLocaleString()} Real 🍔!`);
 }
 
 function rebirth() {
     const cost = 1000000000000;
-    if (clickerBurgers < cost) return alert("You need 1 Trillion Clicker Burgers to Rebirth!");
+    if (clickerBurgers < cost) return customAlert("You need 1 Trillion Clicker Burgers to Rebirth!");
     clickerBurgers = 0;
     clickPower = 1;
     autoChefs = 0;
@@ -509,7 +494,7 @@ function rebirth() {
     rebirths++;
     updateUpgradesUI();
     saveSessionData();
-    alert("Rebirth complete! You gained a permanent +100% production boost!");
+    customAlert("Rebirth complete! You gained a permanent +100% production boost!");
 }
 
 const normalPhrases=["Ready When You Are", "What Time Is It?", "I Need Help With Math", "The Floor Is Yours!"];
@@ -588,18 +573,18 @@ function applyEquippedCosmetics() {
     const glow = document.getElementById("glow-bg"); 
     const startupText = document.getElementById("startup-title");
     if (glow) {
-        if (equipped.background === "gold") { glow.style.background = "radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#fcd34d"; startupText.style.textShadow = "0 0 40px rgba(245, 158, 11, 0.6)"; } } 
-        else if (equipped.background === "cyber") { glow.style.background = "radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#f472b6"; startupText.style.textShadow = "0 0 40px rgba(236, 72, 153, 0.6)"; } } 
-        else if (equipped.background === "ocean") { glow.style.background = "radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#7dd3fc"; startupText.style.textShadow = "0 0 40px rgba(14, 165, 233, 0.6)"; } } 
-        else if (equipped.background === "matrix") { glow.style.background = "radial-gradient(circle, rgba(34, 197, 94, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#86efac"; startupText.style.textShadow = "0 0 40px rgba(34, 197, 94, 0.6)"; } } 
-        else if (equipped.background === "void") { glow.style.background = "radial-gradient(circle, rgba(88, 28, 135, 0.1) 0%, transparent 70%)"; if(startupText) { startupText.style.color = "#a855f7"; startupText.style.textShadow = "0 0 20px rgba(88, 28, 135, 0.3)"; } } 
-        else if (equipped.background === "inferno") { glow.style.background = "radial-gradient(circle, rgba(220, 38, 38, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#f87171"; startupText.style.textShadow = "0 0 40px rgba(220, 38, 38, 0.6)"; } } 
-        else if (equipped.background === "stars") { glow.style.background = "radial-gradient(circle, rgba(253, 224, 71, 0.15) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#fef08a"; startupText.style.textShadow = "0 0 30px rgba(253, 224, 71, 0.5)"; } } 
-        else if (equipped.background === "nebula") { glow.style.background = "radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.1) 40%, transparent 70%)"; if(startupText) { startupText.style.color = "#c4b5fd"; startupText.style.textShadow = "0 0 40px rgba(139, 92, 246, 0.6)"; } } 
-        else if (equipped.background === "bloodmoon") { glow.style.background = "radial-gradient(circle, rgba(153, 27, 27, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#fca5a5"; startupText.style.textShadow = "0 0 40px rgba(153, 27, 27, 0.6)"; } } 
-        else if (equipped.background === "northernlights") { glow.style.background = "radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, rgba(14, 165, 233, 0.1) 40%, transparent 70%)"; if(startupText) { startupText.style.color = "#6ee7b7"; startupText.style.textShadow = "0 0 40px rgba(52, 211, 153, 0.6)"; } } 
-        else if (equipped.background === "sunset") { glow.style.background = "radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, rgba(236, 72, 153, 0.1) 40%, transparent 70%)"; if(startupText) { startupText.style.color = "#fdba74"; startupText.style.textShadow = "0 0 40px rgba(249, 115, 22, 0.6)"; } } 
-        else { glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#d8b4fe"; startupText.style.textShadow = "0 0 40px rgba(168, 85, 247, 0.6)"; } }
+        if (equipped.background === "gold") { glow.style.background = "radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#fcd34d"; } } 
+        else if (equipped.background === "cyber") { glow.style.background = "radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#f472b6"; } } 
+        else if (equipped.background === "ocean") { glow.style.background = "radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#7dd3fc"; } } 
+        else if (equipped.background === "matrix") { glow.style.background = "radial-gradient(circle, rgba(34, 197, 94, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#86efac"; } } 
+        else if (equipped.background === "void") { glow.style.background = "radial-gradient(circle, rgba(88, 28, 135, 0.1) 0%, transparent 70%)"; if(startupText) { startupText.style.color = "#a855f7"; } } 
+        else if (equipped.background === "inferno") { glow.style.background = "radial-gradient(circle, rgba(220, 38, 38, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#f87171"; } } 
+        else if (equipped.background === "stars") { glow.style.background = "radial-gradient(circle, rgba(253, 224, 71, 0.15) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#fef08a"; } } 
+        else if (equipped.background === "nebula") { glow.style.background = "radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.1) 40%, transparent 70%)"; if(startupText) { startupText.style.color = "#c4b5fd"; } } 
+        else if (equipped.background === "bloodmoon") { glow.style.background = "radial-gradient(circle, rgba(153, 27, 27, 0.25) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#fca5a5"; } } 
+        else if (equipped.background === "northernlights") { glow.style.background = "radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, rgba(14, 165, 233, 0.1) 40%, transparent 70%)"; if(startupText) { startupText.style.color = "#6ee7b7"; } } 
+        else if (equipped.background === "sunset") { glow.style.background = "radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, rgba(236, 72, 153, 0.1) 40%, transparent 70%)"; if(startupText) { startupText.style.color = "#fdba74"; } } 
+        else { glow.style.background = "radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 60%)"; if(startupText) { startupText.style.color = "#d8b4fe"; } }
     }
     const bjArena = document.getElementById("bj-felt-arena"); 
     if (bjArena) { 
@@ -617,7 +602,7 @@ function updateUsernameFromSettings() {
         updateProfileUI(); 
         saveSessionData(); 
     } else { 
-        alert("Username must be between 3 and 20 characters!"); 
+        customAlert("Username must be between 3 and 20 characters!"); 
         inp.value=currentUser||""; 
     } 
 }
@@ -629,11 +614,11 @@ function saveSettings() {
     if(np||cp){ 
         if(np===cp && auth.currentUser){ 
             auth.currentUser.updatePassword(np).then(()=>{ 
-                alert("Password updated successfully."); 
+                customAlert("Password updated successfully."); 
                 document.getElementById('settings-new-pass').value=""; 
                 document.getElementById('settings-confirm-pass').value=""; 
-            }).catch(e=>alert(e.message)); 
-        } else alert("Passwords do not match!"); 
+            }).catch(e=>customAlert(e.message)); 
+        } else customAlert("Passwords do not match!"); 
     } 
     saveSessionData(); 
     updateUsageUI(); 
@@ -642,7 +627,6 @@ function toggleApiKeyHelp() { const hb=document.getElementById('api-key-help-box
 function toggleSidebar() { const sb=document.getElementById('desktop-sidebar'), btn=document.getElementById('sidebar-toggle-btn'); if(!sb) return; if(sb.classList.contains('expanded')){ sb.classList.remove('expanded'); sb.classList.add('collapsed'); if(btn) btn.innerText="❯"; } else { sb.classList.remove('collapsed'); sb.classList.add('expanded'); if(btn) btn.innerText="❮"; } }
 function getDifficulty() { const s=document.getElementById("difficulty-select"); return s?s.value:"medium"; }
 
-// Promo Code Redemption
 function redeemCode() {
     const inp = document.getElementById("promo-code-input"); 
     if(!inp) return; 
@@ -650,7 +634,7 @@ function redeemCode() {
     if(!code) return;
     
     if (claimedCodes.includes(code)) { 
-        alert("You have already claimed this code!"); 
+        customAlert("You have already claimed this code!"); 
         inp.value = ""; 
         return; 
     }
@@ -660,17 +644,9 @@ function redeemCode() {
         userBurgers += 1000; 
         updateBurgerUI(); 
         success = true; 
-        alert("Successfully redeemed 1,000 Burgers!"); 
-    } else if (code === "Admin1234") { 
-        if (!inventory.includes("title_admin")) inventory.push("title_admin"); 
-        equipShopItem("title_admin", false); 
-        success = true; 
-        isAdmin = true; 
-        const adminRow = document.getElementById("admin-panel-row"); 
-        if (adminRow) adminRow.style.display = "flex"; 
-        alert("Admin Title & Developer Panel Unlocked!"); 
+        customAlert("Successfully redeemed 1,000 Burgers!"); 
     } else { 
-        alert("Invalid or expired promo code."); 
+        customAlert("Invalid or expired promo code."); 
     }
 
     if (success) { 
@@ -680,8 +656,8 @@ function redeemCode() {
     inp.value = "";
 }
 
-function adminGiveBurgers() { if(!isAdmin) return; let amt = parseInt(document.getElementById("admin-add-burgers").value); if(amt) { userBurgers += amt; updateBurgerUI(); saveSessionData(); alert(`Successfully spawned ${amt.toLocaleString()} Real Burgers!`); document.getElementById("admin-add-burgers").value = ""; } }
-function adminGiveClickerBurgers() { if(!isAdmin) return; let amt = parseInt(document.getElementById("admin-add-clicker").value); if(amt) { clickerBurgers += amt; updateBurgerUI(); saveSessionData(); alert(`Successfully spawned ${amt.toLocaleString()} Clicker Burgers!`); document.getElementById("admin-add-clicker").value = ""; } }
+function adminGiveBurgers() { if(!isAdmin) return; let amt = parseInt(document.getElementById("admin-add-burgers").value); if(amt) { userBurgers += amt; updateBurgerUI(); saveSessionData(); customAlert(`Successfully spawned ${amt.toLocaleString()} Real Burgers!`); document.getElementById("admin-add-burgers").value = ""; } }
+function adminGiveClickerBurgers() { if(!isAdmin) return; let amt = parseInt(document.getElementById("admin-add-clicker").value); if(amt) { clickerBurgers += amt; updateBurgerUI(); saveSessionData(); customAlert(`Successfully spawned ${amt.toLocaleString()} Clicker Burgers!`); document.getElementById("admin-add-clicker").value = ""; } }
 
 function switchView(viewId) {
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); 
@@ -697,96 +673,6 @@ function switchView(viewId) {
     else if(viewId==='view-shop') renderShopView(); 
     else if(viewId==='view-inventory') renderInventoryView();
 }
-
-// =========================================================================
-// --- 4. BURGER SHOP & INVENTORY SYSTEM ---
-// =========================================================================
-const shopCatalog = [
-    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
-    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", cost: 2000, desc: "Carl reviews your questions like a furious five-star culinary chef." },
-    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", cost: 2500, desc: "Carl talks in cool dystopian cyberpunk terminology." },
-    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", cost: 1800, desc: "Carl answers your questions with maximum sarcasm and wit." },
-    { id: "persona_yoda", type: "persona", val: "yoda", name: "Master Yoda", cost: 2500, desc: "Carl speaks like Yoda. May the force be with you!" },
-    { id: "persona_surfer", type: "persona", val: "surfer", name: "Surfer Dude", cost: 1200, desc: "Carl is a chill surfer dude. Gnarly!" },
-    { id: "persona_dog", type: "persona", val: "dog", name: "Good Boy Carl", cost: 1200, desc: "Carl only speaks in enthusiastic barks and tail wags." },
-    { id: "persona_alien", type: "persona", val: "alien", name: "Zorp from Mars", cost: 3500, desc: "Carl transmits extraterrestrial cosmic knowledge." },
-    { id: "persona_dracula", type: "persona", val: "dracula", name: "Count Carl", cost: 2000, desc: "Carl speaks like a thirsty vampire." },
-    { id: "persona_knight", type: "persona", val: "knight", name: "Knight Carl", cost: 2000, desc: "Carl speaks like a valiant medieval knight." },
-    { id: "persona_wizard", type: "persona", val: "wizard", name: "Wizard Carl", cost: 3000, desc: "Carl speaks like a wise, ancient wizard." },
-    { id: "persona_ninja", type: "persona", val: "ninja", name: "Ninja Carl", cost: 2800, desc: "Carl answers with stealthy, disciplined precision." },
-    { id: "persona_cowboy", type: "persona", val: "cowboy", name: "Cowboy Carl", cost: 1600, desc: "Carl speaks like a rootin' tootin' wild west cowboy." },
-    { id: "persona_detective", type: "persona", val: "detective", name: "Detective Carl", cost: 2200, desc: "Carl investigates your prompts like a 1940s noir detective." },
-    
-    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
-    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
-    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", cost: 2500, desc: "Deep purple-pink retro synthwave gradient." },
-    { id: "bubble_lava", type: "bubble", val: "lava", name: "Magma Lava Bubble", cost: 2200, desc: "Fiery orange and red molten lava chat bubble." },
-    { id: "bubble_forest", type: "bubble", val: "forest", name: "Enchanted Forest", cost: 2400, desc: "Mystical green and emerald chat bubble." },
-    { id: "bubble_ocean", type: "bubble", val: "ocean", name: "Deep Ocean Bubble", cost: 2200, desc: "Cool and calming deep sea blue gradient." },
-    { id: "bubble_matrix", type: "bubble", val: "matrix", name: "Hacker Terminal Bubble", cost: 2500, desc: "Green and black matrix coding chat bubble." },
-    { id: "bubble_galaxy", type: "bubble", val: "galaxy", name: "Galaxy Bubble", cost: 3500, desc: "Deep space cosmic chat bubble." },
-    { id: "bubble_toxic", type: "bubble", val: "toxic", name: "Toxic Slime", cost: 2200, desc: "Radioactive neon green chat bubble." },
-    { id: "bubble_plasma", type: "bubble", val: "plasma", name: "Plasma Bubble", cost: 3200, desc: "A super-heated, pulsating purple plasma bubble." },
-    { id: "bubble_ice", type: "bubble", val: "ice", name: "Glacier Bubble", cost: 2600, desc: "A frozen, crystal-clear ice chat bubble." },
-    { id: "bubble_ghost", type: "bubble", val: "ghost", name: "Phantom Bubble", cost: 2800, desc: "A spooky, semi-transparent white and grey bubble." },
-    { id: "bubble_electric", type: "bubble", val: "electric", name: "High Voltage Bubble", cost: 3000, desc: "A shocking yellow and bright cyan chat bubble." },
-
-    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
-    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
-    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", cost: 3500, desc: "Fiery red & orange border around your avatar." },
-    { id: "frame_ice", type: "frame", val: "ice", name: "Frozen Frost Frame", cost: 2500, desc: "Chilly bright blue frosted border." },
-    { id: "frame_lightning", type: "frame", val: "lightning", name: "Static Shock Frame", cost: 3200, desc: "Crackling yellow and blue electrical border." },
-    { id: "frame_amethyst", type: "frame", val: "amethyst", name: "Amethyst Crystal Frame", cost: 3000, desc: "Radiant purple and magenta gem frame." },
-    { id: "frame_blood", type: "frame", val: "blood", name: "Blood Moon Frame", cost: 4000, desc: "Dark crimson and black vampiric frame." },
-    { id: "frame_diamond", type: "frame", val: "diamond", name: "Diamond Frame", cost: 5000, desc: "Ultra luxury shiny diamond border." },
-    { id: "frame_rainbow", type: "frame", val: "rainbow", name: "Rainbow RGB Frame", cost: 4500, desc: "Animated gamer RGB border." },
-    { id: "frame_magma", type: "frame", val: "magma", name: "Magma Frame", cost: 3800, desc: "A molten rock border that burns with heat." },
-    { id: "frame_hacker", type: "frame", val: "hacker", name: "Hacker Frame", cost: 3200, desc: "A digital glitch-art border for your avatar." },
-    { id: "frame_void", type: "frame", val: "void", name: "Void Frame", cost: 5000, desc: "A pitch-black, dark matter gravitational frame." },
-    { id: "frame_emerald", type: "frame", val: "emerald", name: "Emerald Frame", cost: 3000, desc: "A brilliant, glowing green gem frame." },
-    { id: "frame_ruby", type: "frame", val: "ruby", name: "Ruby Frame", cost: 3000, desc: "A deep, glowing red gem frame." },
-
-    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
-    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
-    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", cost: 3000, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
-    { id: "title_flipper", type: "title", val: "Fry Cook", name: "Title: Fry Cook", cost: 800, desc: "Displays the [FRY COOK] badge next to your name." },
-    { id: "title_chef", type: "title", val: "Executive Chef", name: "Title: Exec Chef", cost: 4500, desc: "Displays the [EXECUTIVE CHEF] badge." },
-    { id: "title_tycoon", type: "title", val: "Tycoon", name: "Title: Tycoon", cost: 8000, desc: "Displays the [TYCOON] badge. Flex your wealth." },
-    { id: "title_whale", type: "title", val: "The Whale", name: "Title: The Whale", cost: 5000, desc: "Displays [THE WHALE] to show off how rich you are." },
-    { id: "title_god", type: "title", val: "Burger God", name: "Title: Burger God", cost: 10000, desc: "The ultimate flex. [BURGER GOD]" },
-    { id: "title_emperor", type: "title", val: "Burger Emperor", name: "Title: Emperor", cost: 15000, desc: "Displays the highly coveted [BURGER EMPEROR] badge." },
-    { id: "title_legend", type: "title", val: "The Legend", name: "Title: The Legend", cost: 12000, desc: "Displays [THE LEGEND] badge." },
-    { id: "title_noob", type: "title", val: "Noob", name: "Title: Noob", cost: 500, desc: "Displays the [NOOB] badge. Wear it with pride." },
-    { id: "title_codemaster", type: "title", val: "Code Master", name: "Title: Code Master", cost: 5000, desc: "Displays the [CODE MASTER] badge. Show off your Dev skills." },
-    { id: "title_unstoppable", type: "title", val: "Unstoppable", name: "Title: Unstoppable", cost: 8500, desc: "Displays the [UNSTOPPABLE] badge." },
-
-    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
-    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
-    { id: "bg_ocean", type: "background", val: "ocean", name: "Deep Ocean Glow", cost: 2000, desc: "Changes the ambient background to calming water blue." },
-    { id: "bg_matrix", type: "background", val: "matrix", name: "Matrix Green Glow", cost: 2000, desc: "Changes the ambient background to hacker green." },
-    { id: "bg_void", type: "background", val: "void", name: "The Void Glow", cost: 2500, desc: "Changes the ambient background to pitch black and deep violet." },
-    { id: "bg_inferno", type: "background", val: "inferno", name: "Inferno Glow", cost: 2500, desc: "Changes the ambient background to blistering heat." },
-    { id: "bg_stars", type: "background", val: "stars", name: "Starlight Glow", cost: 3000, desc: "Twinkling starlight background glow." },
-    { id: "bg_nebula", type: "background", val: "nebula", name: "Galactic Nebula", cost: 3500, desc: "A swirling, multi-colored deep space background." },
-    { id: "bg_bloodmoon", type: "background", val: "bloodmoon", name: "Blood Moon Glow", cost: 3000, desc: "A dark crimson, eerie background glow." },
-    { id: "bg_northernlights", type: "background", val: "northernlights", name: "Northern Lights", cost: 4000, desc: "A beautiful dancing aurora borealis glow." },
-    { id: "bg_sunset", type: "background", val: "sunset", name: "Sunset Glow", cost: 2000, desc: "A warm, relaxing orange and pink sunset glow." },
-
-    { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
-    { id: "skin_pizza_c4", type: "c4Skin", val: "pizza_hotdog", name: "Pizza vs Hotdog C4", cost: 2500, desc: "Play Connect Four using Pizzas and Hotdogs!" },
-    { id: "c4Skin_cookie", type: "c4Skin", val: "cookie", name: "Cookie vs Donut", cost: 2500, desc: "Play Connect 4 with cookies and donuts!" },
-    { id: "skin_sushi_c4", type: "c4Skin", val: "sushi_taco", name: "Sushi vs Taco C4", cost: 3000, desc: "Play Connect Four using Sushi and Tacos!" },
-    
-    { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
-    { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
-    { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", cost: 1500, desc: "Deep cosmic purple Blackjack felt." },
-    { id: "felt_sapphire", type: "bjFelt", val: "sapphire", name: "Sapphire Blue Felt", cost: 1800, desc: "Rich and elegant Sapphire Blue Blackjack felt." },
-    { id: "felt_obsidian", type: "bjFelt", val: "obsidian", name: "Obsidian Black Felt", cost: 2000, desc: "Sleek and stealthy Obsidian Black Blackjack felt." },
-    { id: "felt_goldleaf", type: "bjFelt", val: "goldleaf", name: "Gold Leaf Felt", cost: 4000, desc: "The ultimate high-roller gold woven blackjack table." },
-    
-    { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", cost: 5000, desc: "Permanent +50% production boost across all Burger Clicker businesses!" },
-    { id: "title_admin", type: "title", val: "Admin", name: "Title: Admin", cost: 0, desc: "Exclusive developer badge.", hidden: true }
-];
 
 function getBgPreviewStyle(val) {
     if (val === "gold") return "radial-gradient(circle, rgba(245, 158, 11, 0.5) 0%, #1a1a1a 80%)";
@@ -836,29 +722,31 @@ function renderShopView() {
     lootBanner.innerHTML = `<h2>Mystery Burger Crate 🎁</h2><p style="margin-bottom: 15px; font-size: 14px;">Win rare badges, themes, or massive burger jackpots!</p><button class="open-crate-btn" onclick="openLootBox()">Open for 250 🍔</button>`;
     container.appendChild(lootBanner);
 
-    shopCatalog.forEach(item => {
-        if (item.hidden) return; 
-        const owned = inventory.includes(item.id);
-        let isEq = false;
-        if (item.type === "goldenSpatula") isEq = equipped.goldenSpatula;
-        else if (item.type === "title") isEq = (equipped.title === item.val);
-        else isEq = (equipped[item.type] === item.val);
+    if (typeof shopCatalog !== 'undefined') {
+        shopCatalog.forEach(item => {
+            if (item.hidden) return; 
+            const owned = inventory.includes(item.id);
+            let isEq = false;
+            if (item.type === "goldenSpatula") isEq = equipped.goldenSpatula;
+            else if (item.type === "title") isEq = (equipped.title === item.val);
+            else isEq = (equipped[item.type] === item.val);
 
-        const card = document.createElement("div"); 
-        card.className = "shop-card";
-        let btnHTML = "";
-        if (!owned) btnHTML = `<button class="shop-buy-btn buy" onclick="buyShopItem('${item.id}')"><span class="btn-text">Purchase</span><span class="btn-hover-text">${item.cost.toLocaleString()} 🍔</span></button>`;
-        else if (isEq) btnHTML = `<button class="shop-buy-btn equipped">Equipped</button>`;
-        else btnHTML = `<button class="shop-buy-btn equip" onclick="equipShopItem('${item.id}', true)">Equip</button>`;
+            const card = document.createElement("div"); 
+            card.className = "shop-card";
+            let btnHTML = "";
+            if (!owned) btnHTML = `<button class="shop-buy-btn buy" onclick="buyShopItem('${item.id}')"><span class="btn-text">Purchase</span><span class="btn-hover-text">${item.cost.toLocaleString()} 🍔</span></button>`;
+            else if (isEq) btnHTML = `<button class="shop-buy-btn equipped">Equipped</button>`;
+            else btnHTML = `<button class="shop-buy-btn equip" onclick="equipShopItem('${item.id}', true)">Equip</button>`;
 
-        card.innerHTML = `<div class="shop-card-content"><span class="shop-item-title">${item.name}</span><div class="shop-item-body"><div class="shop-item-default"><div class="shop-item-desc">${item.desc}</div></div><div class="shop-item-preview">${getPreviewHTML(item)}</div></div></div>${btnHTML}`;
-        container.appendChild(card);
-    });
+            card.innerHTML = `<div class="shop-card-content"><span class="shop-item-title">${item.name}</span><div class="shop-item-body"><div class="shop-item-default"><div class="shop-item-desc">${item.desc}</div></div><div class="shop-item-preview">${getPreviewHTML(item)}</div></div></div>${btnHTML}`;
+            container.appendChild(card);
+        });
+    }
 }
 
 async function openLootBox() {
     if (isGuest) {
-        if (userBurgers < 250) return alert("Not enough burgers! You need 250 🍔.");
+        if (userBurgers < 250) return customAlert("Not enough burgers! You need 250 🍔.");
         userBurgers -= 250;
         const roll = Math.random(); let prizeText = "", emoji = "", payout = 0;
         if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
@@ -874,7 +762,7 @@ async function openLootBox() {
         userBurgers += payout; updateBurgerUI(); triggerLootAnimation(prizeText, emoji); return;
     }
 
-    if (!firebaseUserId) return alert("You must be logged in to open crates!");
+    if (!firebaseUserId) return customAlert("You must be logged in to open crates!");
     const cost = 250; 
     const userRef = db.collection("users").doc(firebaseUserId);
     try {
@@ -906,7 +794,7 @@ async function openLootBox() {
         }).then((result) => { 
             triggerLootAnimation(result.prizeText, result.emoji); 
         });
-    } catch (error) { alert(error); }
+    } catch (error) { customAlert(error); }
 }
 
 function triggerLootAnimation(prizeText, emoji) {
@@ -915,15 +803,15 @@ function triggerLootAnimation(prizeText, emoji) {
     setTimeout(() => { title.innerText = "You Won!"; title.style.animation = "none"; icon.innerText = emoji; icon.style.animation = "popIn 0.5s ease forwards"; resultDisplay.innerText = prizeText; resultDisplay.style.display = "block"; closeBtn.style.display = "block"; }, 1800);
 }
 
-function openGiftModal() { if (!currentDmUser || !currentDmUser.id) return alert("Please open a chat with a friend first!"); const fn = document.getElementById("gift-friend-name"); if (fn) fn.innerText = currentDmUser.username || "Friend"; const ga = document.getElementById("gift-amount"); if (ga) ga.value = ""; const gm = document.getElementById("gift-modal"); if (gm) gm.style.display = "flex"; }
+function openGiftModal() { if (!currentDmUser || !currentDmUser.id) return customAlert("Please open a chat with a friend first!"); const fn = document.getElementById("gift-friend-name"); if (fn) fn.innerText = currentDmUser.username || "Friend"; const ga = document.getElementById("gift-amount"); if (ga) ga.value = ""; const gm = document.getElementById("gift-modal"); if (gm) gm.style.display = "flex"; }
 function closeGiftModal() { const gm = document.getElementById("gift-modal"); if (gm) gm.style.display = "none"; }
 
 async function confirmSendBurgers() {
-    if (isGuest) return alert("Guests cannot send burgers.");
+    if (isGuest) return customAlert("Guests cannot send burgers.");
     if (!firebaseUserId || !currentDmUser || !currentDmUser.id) return;
     const amount = parseInt(document.getElementById("gift-amount").value, 10);
-    if (!amount || amount <= 0) return alert("Please enter a valid amount.");
-    if (userBurgers < amount) return alert("You don't have enough burgers!");
+    if (!amount || amount <= 0) return customAlert("Please enter a valid amount.");
+    if (userBurgers < amount) return customAlert("You don't have enough burgers!");
     const senderRef = db.collection("users").doc(firebaseUserId), receiverRef = db.collection("users").doc(currentDmUser.id);
     try {
         await db.runTransaction(async (transaction) => {
@@ -934,16 +822,16 @@ async function confirmSendBurgers() {
             transaction.update(senderRef, { burgers: senderBurgers - amount });
             transaction.update(receiverRef, { burgers: (receiverDoc.data().burgers || 0) + amount });
         });
-        closeGiftModal(); alert(`Sent ${amount.toLocaleString()} 🍔 to ${currentDmUser.username}!`);
+        closeGiftModal(); customAlert(`Sent ${amount.toLocaleString()} 🍔 to ${currentDmUser.username}!`);
         if (activeChatId && isDM) await db.collection("dms").doc(activeChatId).collection("messages").add({ text: `🎁 [GIFT] Sent ${amount.toLocaleString()} Burgers!`, imageSrc: null, senderId: firebaseUserId, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-    } catch (error) { alert("Failed: " + error); }
+    } catch (error) { customAlert("Failed: " + error); }
 }
 
 function buyShopItem(itemId) { 
     const item = shopCatalog.find(i => i.id === itemId); 
     if (!item) return; 
     if (userBurgers < item.cost) { 
-        alert("You do not have enough Burgers!"); 
+        customAlert("You do not have enough Burgers!"); 
         return; 
     } 
     userBurgers -= item.cost; 
@@ -965,7 +853,7 @@ function equipShopItem(itemId, isFromShop = false) {
     saveSessionData(); 
     if (document.getElementById('view-shop')?.classList.contains('active')) renderShopView(); 
     if (document.getElementById('view-inventory')?.classList.contains('active')) renderInventoryView(); 
-    if (isFromShop) alert(`Equipped ${item.name}!`); 
+    if (isFromShop) customAlert(`Equipped ${item.name}!`); 
 }
 
 function toggleInventoryItem(itemId) { 
@@ -1018,9 +906,9 @@ function renderInventoryView() {
     renderPresetsList();
 }
 
-function addPreset() { 
-    if(userPresets.length >= 5) return alert("Max 5 presets allowed!"); 
-    const pName = prompt("Enter a name for this preset:"); 
+async function addPreset() { 
+    if(userPresets.length >= 5) return customAlert("Max 5 presets allowed!"); 
+    const pName = await customPrompt("Enter a name for this preset:"); 
     if(!pName) return; 
     userPresets.push({ name: pName, equipped: JSON.parse(JSON.stringify(equipped)) }); 
     saveSessionData(); 
@@ -1045,16 +933,14 @@ function loadPreset(idx) {
     saveSessionData(); 
     renderInventoryView(); 
 }
-function deletePreset(idx) { 
-    if(!confirm("Delete this preset?")) return; 
+async function deletePreset(idx) { 
+    const confirm = await customConfirm("Delete this preset?");
+    if(!confirm) return; 
     userPresets.splice(idx, 1); 
     saveSessionData(); 
     renderPresetsList(); 
 }
 
-// =========================================================================
-// --- 5. SOCIAL, FRIENDS & MULTIPLAYER ---
-// =========================================================================
 const avatarColors = ["#ef4444", "#84cc16", "#eab308", "#3b82f6", "#a855f7", "#f97316", "#ec4899"];
 function getAvatarColor(str) { 
     if (!str) return avatarColors[0]; 
@@ -1101,7 +987,6 @@ function getGroupAvatarHTML(membersArray) {
     return `<div class="avatar-frame-wrapper"><div class="group-avatar-collage ${collageClass}">${innerHtml}</div></div>`; 
 }
 
-// Fixed user query so users appear in the friends view even without custom items
 async function fetchAllUsers() {
     const list = document.getElementById("find-people-list"); 
     if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
@@ -1121,7 +1006,7 @@ async function fetchAllUsers() {
                 } 
             });
         }
-    } catch (err) { console.error("Error fetching users:", err); }
+    } catch (err) {}
     renderFriendsView();
 }
 
@@ -1136,7 +1021,6 @@ function renderFriendsView() {
     friendsList.innerHTML = ""; 
     groupsList.innerHTML = "";
 
-    // Groups rendering
     if (myGroups.length === 0) { 
         groupsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No groups yet.</p>"; 
     } else { 
@@ -1148,7 +1032,6 @@ function renderFriendsView() {
         }); 
     }
 
-    // Accepted friends rendering
     const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
     if (activeFriends.length === 0) { 
         friendsList.innerHTML = "<p style='color: var(--text-sub); margin-top:10px;'>No friends yet.</p>"; 
@@ -1162,7 +1045,6 @@ function renderFriendsView() {
         }); 
     }
 
-    // Incoming requests rendering
     const incomingReqs = allUsersCache.filter(u => myRequests.includes(u.id));
     incomingReqs.forEach(user => { 
         const item = document.createElement("div"); 
@@ -1172,10 +1054,9 @@ function renderFriendsView() {
         findList.appendChild(item); 
     });
 
-    // Potential friends to add
     let displayList = allUsersCache.filter(u => !myFriends.includes(u.id) && !myRequests.includes(u.id));
     if (query) { 
-        displayList = displayList.filter(u => u.username.toLowerCase().includes(query)); 
+        displayList = displayList.filter(u => u.username && u.username.toLowerCase().includes(query)); 
     }
 
     if (displayList.length === 0 && incomingReqs.length === 0) { 
@@ -1196,12 +1077,12 @@ function renderFriendsView() {
 }
 
 async function sendFriendRequest(targetId) { 
-    if (!firebaseUserId) return alert("You must be logged in to add friends!"); 
+    if (!firebaseUserId) return customAlert("You must be logged in to add friends!"); 
     if (!mySentRequests.includes(targetId)) mySentRequests.push(targetId); 
     renderFriendsView(); 
     saveSessionData();
-    await db.collection("users").doc(targetId).update({ friendRequests: firebase.firestore.FieldValue.arrayUnion(firebaseUserId) }).catch(e => console.error(e)); 
-    await db.collection("users").doc(firebaseUserId).update({ sentRequests: firebase.firestore.FieldValue.arrayUnion(targetId) }).catch(e => console.error(e)); 
+    await db.collection("users").doc(targetId).update({ friendRequests: firebase.firestore.FieldValue.arrayUnion(firebaseUserId) }).catch(()=>{}); 
+    await db.collection("users").doc(firebaseUserId).update({ sentRequests: firebase.firestore.FieldValue.arrayUnion(targetId) }).catch(()=>{}); 
 }
 
 async function acceptRequest(requesterId) { 
@@ -1213,28 +1094,29 @@ async function acceptRequest(requesterId) {
     await db.collection("users").doc(firebaseUserId).update({ 
         friendRequests: firebase.firestore.FieldValue.arrayRemove(requesterId), 
         friends: firebase.firestore.FieldValue.arrayUnion(requesterId) 
-    }).catch(e => console.error(e)); 
+    }).catch(()=>{}); 
     await db.collection("users").doc(requesterId).update({ 
         sentRequests: firebase.firestore.FieldValue.arrayRemove(firebaseUserId), 
         friends: firebase.firestore.FieldValue.arrayUnion(firebaseUserId) 
-    }).catch(e => console.error(e)); 
+    }).catch(()=>{}); 
 }
 
 async function unfriendUser(targetId) { 
-    if (!confirm("Are you sure you want to unfriend this user?")) return; 
+    const confirmed = await customConfirm("Are you sure you want to unfriend this user?");
+    if (!confirmed) return; 
     myFriends = myFriends.filter(id => id !== targetId); 
     renderFriendsView(); 
     saveSessionData();
-    await db.collection("users").doc(firebaseUserId).update({ friends: firebase.firestore.FieldValue.arrayRemove(targetId) }).catch(e => console.error(e)); 
-    await db.collection("users").doc(targetId).update({ friends: firebase.firestore.FieldValue.arrayRemove(firebaseUserId) }).catch(e => console.error(e)); 
+    await db.collection("users").doc(firebaseUserId).update({ friends: firebase.firestore.FieldValue.arrayRemove(targetId) }).catch(()=>{}); 
+    await db.collection("users").doc(targetId).update({ friends: firebase.firestore.FieldValue.arrayRemove(firebaseUserId) }).catch(()=>{}); 
 }
 
 function openCreateGroupModal() {
-    if (isGuest) return alert("Guests cannot create groups. Please sign up!");
+    if (isGuest) return customAlert("Guests cannot create groups. Please sign up!");
     const list = document.getElementById("create-group-friends-list"); 
     list.innerHTML = "";
     const activeFriends = allUsersCache.filter(u => myFriends.includes(u.id));
-    if(activeFriends.length === 0) return alert("You need friends to create a group!");
+    if(activeFriends.length === 0) return customAlert("You need friends to create a group!");
     activeFriends.forEach(f => { 
         list.innerHTML += `<label style="display: flex; align-items: center; gap: 10px; color: white; margin-bottom: 10px; cursor: pointer;"><input type="checkbox" value="${f.id}" class="group-friend-cb" style="width: 20px; height: 20px; accent-color: #9333ea;">${f.username}</label>`; 
     });
@@ -1244,10 +1126,10 @@ function openCreateGroupModal() {
 
 async function confirmCreateGroup() {
     const name = document.getElementById("group-name-input").value.trim(); 
-    if(!name) return alert("Please enter a group name.");
+    if(!name) return customAlert("Please enter a group name.");
     const cbs = document.querySelectorAll(".group-friend-cb:checked"); 
     const selectedIds = Array.from(cbs).map(cb => cb.value);
-    if(selectedIds.length === 0) return alert("Please select at least one friend to add.");
+    if(selectedIds.length === 0) return customAlert("Please select at least one friend to add.");
     const members = [firebaseUserId, ...selectedIds];
     try { 
         await db.collection("groups").add({ 
@@ -1257,9 +1139,9 @@ async function confirmCreateGroup() {
             createdBy: firebaseUserId 
         }); 
         document.getElementById("create-group-modal").style.display = "none"; 
-        alert("Group successfully created!"); 
+        customAlert("Group successfully created!"); 
     } catch(e) { 
-        alert("Error creating group: " + e.message); 
+        customAlert("Error creating group: " + e.message); 
     }
 }
 
@@ -1328,7 +1210,8 @@ function renderChatSnapshot(snapshot, logElementId, isGlobal = false) {
 }
 
 async function deleteSharedMessage(msgId, logId) {
-    if(!confirm("Delete this message?")) return;
+    const confirm = await customConfirm("Delete this message?");
+    if(!confirm) return;
     if (logId === "dm-chat-log") await db.collection("dms").doc(activeChatId).collection("messages").doc(msgId).delete();
     else if (logId === "group-chat-log") await db.collection("groups").doc(activeGroupId).collection("messages").doc(msgId).delete();
 }
@@ -1370,7 +1253,7 @@ async function sendDmMessage() {
 }
 
 function openGlobalChat() {
-    if (isGuest) return alert("Guests cannot join the public lobby. Please create an account!");
+    if (isGuest) return customAlert("Guests cannot join the public lobby. Please create an account!");
     document.getElementById("global-chat-log").innerHTML = "";
     if (globalChatUnsubscribe) globalChatUnsubscribe();
     globalChatUnsubscribe = db.collection("global_chat").orderBy("timestamp", "desc").limit(50).onSnapshot(snapshot => { 
@@ -1452,11 +1335,6 @@ function clearGlobalPendingImage() { pendingGlobalImageBase64 = null; pendingGlo
 const groupFilePicker = document.getElementById('group-native-file-picker'); if (groupFilePicker) groupFilePicker.addEventListener('change', function(e) { if(e.target.files[0]) processImageInput(e.target.files[0], 'group'); groupFilePicker.value = ""; });
 function clearGroupPendingImage() { pendingGroupImageBase64 = null; pendingGroupImageMime = null; pendingGroupImageSrc = null; document.getElementById('group-image-preview-box')?.classList.remove('active'); }
 
-// =========================================================================
-// --- 6. CORE CHAT AI LOGIC & GEMINI HIGHLIGHTING ---
-// =========================================================================
-
-// Out of usage API key guide modal
 function openUsageLimitModal() {
     const modal = document.getElementById("usage-limit-modal");
     const inp = document.getElementById("modal-api-key-input");
@@ -1472,14 +1350,14 @@ function closeUsageLimitModal() {
 function saveApiKeyFromModal() {
     const inp = document.getElementById("modal-api-key-input");
     const key = inp ? inp.value.trim() : "";
-    if (!key || key.length <= 20) return alert("Please paste a valid Gemini API Key (starts with AIza...).");
+    if (!key || key.length <= 20) return customAlert("Please paste a valid Gemini API Key (starts with AIza...).");
     customApiKey = key;
     const settingsInput = document.getElementById("user-api-key");
     if (settingsInput) settingsInput.value = customApiKey;
     saveSessionData();
     updateUsageUI();
     closeUsageLimitModal();
-    alert("API Key saved! Unlimited chats unlocked.");
+    customAlert("API Key saved! Unlimited chats unlocked.");
 }
 
 function goToApiKeySettings() {
@@ -1509,7 +1387,6 @@ function checkDailyMessageLimit() {
     return true;
 }
 
-// Lock/unlock input prompt while Carl generates response
 function setCarlLoadingState(loading) {
     isCarlLoading = loading;
     const sendBtn = document.getElementById("send-btn");
@@ -1658,7 +1535,7 @@ async function sendMessage() {
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
                 textNode.innerText = "Error: Invalid API Key provided. Reverting key settings.";
-                alert("The API key provided is invalid! Please check your key in Settings.");
+                customAlert("The API key provided is invalid! Please check your key in Settings.");
                 customApiKey = "";
                 const keyInput = document.getElementById('user-api-key'); 
                 if (keyInput) keyInput.value = "";
@@ -1738,7 +1615,7 @@ async function sendMessage() {
 function searchChats() {
     let oldModal = document.getElementById("search-modal"); if (oldModal) oldModal.remove();
     const modal = document.createElement("div"); modal.id = "search-modal"; modal.style.position = "fixed"; modal.style.top = "0"; modal.style.left = "0"; modal.style.width = "100vw"; modal.style.height = "100vh"; modal.style.backgroundColor = "rgba(0,0,0,0.85)"; modal.style.backdropFilter = "blur(5px)"; modal.style.zIndex = "10000"; modal.style.display = "flex"; modal.style.justifyContent = "center"; modal.style.alignItems = "center";
-    const box = document.createElement("div"); box.style.backgroundColor = "var(--bg-card)"; box.style.padding = "24px"; box.style.borderRadius = "20px"; box.style.width = "90%"; box.style.maxWidth = "420px"; box.style.border = "1px solid var(--border-color)"; box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
+    const box = document.createElement("div"); box.style.backgroundColor = "var(--bg-card)"; box.style.padding = "24px"; box.style.borderRadius = "20px"; box.style.width = "90%"; box.style.maxWidth = "420px"; box.style.border = "1px solid var(--border-color)";
     const title = document.createElement("h2"); title.innerText = "Search Chats"; title.style.marginBottom = "16px"; title.style.fontSize = "28px";
     const input = document.createElement("input"); input.type = "text"; input.placeholder = "Search messages or titles..."; input.style.width = "100%"; input.style.padding = "14px"; input.style.borderRadius = "12px"; input.style.border = "1px solid var(--border-color)"; input.style.backgroundColor = "var(--bg-input)"; input.style.color = "var(--text-main)"; input.style.outline = "none"; input.style.fontSize = "16px"; input.style.marginBottom = "16px";
     const results = document.createElement("div"); results.style.maxHeight = "250px"; results.style.overflowY = "auto"; results.style.display = "flex"; results.style.flexDirection = "column"; results.style.gap = "8px";
@@ -1855,10 +1732,23 @@ function renderChatHistorySidebar() {
 }
 
 document.addEventListener("click", () => { document.querySelectorAll('.chat-dropdown-menu.active').forEach(menu => menu.classList.remove('active')); });
-function editChatTitle(chatId) { const chat = chatsHistory.find(c => c.id === chatId); if (!chat) return; const newTitle = prompt("Enter a new name for this chat:", chat.title); if (newTitle && newTitle.trim() !== "") { chat.title = newTitle.trim(); saveSessionData(); renderChatHistorySidebar(); } }
+
+async function editChatTitle(chatId) { 
+    const chat = chatsHistory.find(c => c.id === chatId); 
+    if (!chat) return; 
+    const newTitle = await customPrompt("Enter a new name for this chat:", chat.title); 
+    if (newTitle && newTitle.trim() !== "") { 
+        chat.title = newTitle.trim(); 
+        saveSessionData(); 
+        renderChatHistorySidebar(); 
+    } 
+}
+
 function togglePinChat(chatId) { const chat = chatsHistory.find(c => c.id === chatId); if (!chat) return; chat.pinned = !chat.pinned; saveSessionData(); renderChatHistorySidebar(); }
-function deleteChat(chatId) { 
-    if (confirm("Are you sure you want to delete this chat forever?")) { 
+
+async function deleteChat(chatId) { 
+    const confirmed = await customConfirm("Are you sure you want to delete this chat forever?");
+    if (confirmed) { 
         chatsHistory = chatsHistory.filter(c => c.id !== chatId); 
         if (activeChatId === chatId) { 
             activeChatId = null; 
@@ -1934,8 +1824,9 @@ if (dragChatView && dragOverlay) {
 
 window.copyCode = function(button) { 
     const code = decodeURIComponent(button.getAttribute("data-code")); 
-    navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error("Copy failed", err)); 
+    navigator.clipboard.writeText(code).then(() => showCopyToast()).catch(err => console.error(err)); 
 };
+
 function showCopyToast() {
     let toast = document.getElementById('copy-toast');
     if (!toast) { 
@@ -1950,7 +1841,6 @@ function showCopyToast() {
     window.copyToastTimeout = setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
-// Gemini-style code syntax highlighting
 function highlightCode(escapedCode) {
     const tokenRegex = /(\/\/[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/|--[^\n]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|\b(def|class|return|if|elif|else|for|while|break|continue|import|from|as|try|except|finally|with|lambda|yield|async|await|pass|in|is|not|and|or|function|const|let|var|new|this|super|switch|case|default|throw|catch|typeof|instanceof|export|extends|static|public|private|protected|void|int|float|double|char|bool|string|local|then|end|repeat|until|elseif|do)\b|\b(True|False|None|true|false|null|undefined|NaN|Infinity|self)\b|\b(\d+(?:\.\d+)?)\b|\b(print|len|range|str|int|float|list|dict|set|tuple|open|input|type|enumerate|zip|map|filter|console|document|window|Math|JSON|Object|Array|Promise|fetch|setTimeout|setInterval|game|workspace|script|Instance|Vector3|CFrame|Color3|task|wait)\b|\b([a-zA-Z_]\w*)(?=\s*\()/g;
 
@@ -2005,9 +1895,6 @@ function appendMessage(msg, sender, imgSrc = null) {
     log.scrollTop = log.scrollHeight;
 }
 
-// =========================================================================
-// --- 7. THE PANTRY NOTEPAD ---
-// =========================================================================
 let noteSaveTimeout = null;
 document.addEventListener("DOMContentLoaded", () => {
     const editor = document.getElementById("notepad-editor");
@@ -2062,7 +1949,6 @@ function makeDraggable(element, dragHandle) {
     }
 }
 
-// 3D Tilt Effect
 document.addEventListener('mouseover', (e) => {
     const target = e.target.closest('.game-card-img, .shop-card, .preset-item');
     if (target && !target.dataset.tiltInitialized) {
