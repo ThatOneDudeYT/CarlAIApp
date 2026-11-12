@@ -5,19 +5,17 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 
-// Tell the server to load your website files from the "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-const otpStore = {}; // { email: { code: '12345', expires: timestamp } }
+const otpStore = {};
 
-// Updated Transporter for Brevo (Sendinblue)
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
     port: 587,
-    secure: false, // true for 465, false for other ports
+    secure: false,
     auth: {
-        user: 'erbreen@icloud.com', // Replace with your Brevo SMTP login email
-        pass: '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' // Replace with your Brevo SMTP key
+        user: 'erbreen@icloud.com',
+        pass: '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'
     }
 });
 
@@ -26,11 +24,11 @@ app.post('/api/send-otp', async (req, res) => {
     if (!email) return res.status(400).json({ error: "Email is required" });
 
     const code = Math.floor(10000 + Math.random() * 90000).toString();
-    otpStore[email] = { code, expires: Date.now() + 10 * 60 * 1000 }; // 10 min expiration
+    otpStore[email] = { code, expires: Date.now() + 10 * 60 * 1000 };
 
     try {
         await transporter.sendMail({
-            from: '"Carl AI Support" <carlaisupport@gmail.com>', // Ensure this email is authorized in Brevo
+            from: '"Carl AI Support" <carlaisupport@gmail.com>',
             to: email,
             subject: 'Your Carl AI Verification Code',
             text: `Here's your one time use Carl AI code!\n\n${code}\n\nThis code will expire in 10 minutes.`
@@ -39,6 +37,28 @@ app.post('/api/send-otp', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to send email. Check your Brevo configuration." });
+    }
+});
+
+app.post('/api/send-alert', async (req, res) => {
+    const email = (req.body.email || '').trim().toLowerCase();
+    const type = (req.body.type || 'signin');
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    try {
+        const subject = type === "signup" ? "New Account Created" : "New Sign-In Detected";
+        const text = type === "signup" ? `An account was created for ${email}.` : `A sign-in was detected for ${email}.`;
+        
+        await transporter.sendMail({
+            from: '"Carl AI Support" <carlaisupport@gmail.com>',
+            to: 'erbreen@icloud.com',
+            subject: subject,
+            text: text
+        });
+        res.json({ success: true, message: "Alert sent successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to send alert." });
     }
 });
 
@@ -60,7 +80,6 @@ app.post('/api/verify-otp', (req, res) => {
     res.json({ success: true, message: "Verified successfully" });
 });
 
-// Start the server on port 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Carl AI Server is running on http://localhost:${PORT}`);
