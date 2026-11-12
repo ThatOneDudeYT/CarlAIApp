@@ -13,12 +13,10 @@
 </head>
 <body class="dark-mode">
 
-    <!-- AUTH / SIGN-IN OVERLAY -->
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">
             <img src="/static/icons/CarlAIWaterMark.png" alt="Carl AI" class="auth-logo" draggable="false">
             
-            <!-- STEP 1: EMAIL & PASSWORD -->
             <div id="auth-step-credentials">
                 <h2>Log In / Sign Up</h2>
                 <form id="login-form" onsubmit="event.preventDefault(); handleLogin(event);">
@@ -35,7 +33,6 @@
                 <button type="button" class="guest-auth-btn" onclick="continueAsGuest()">Continue as Guest</button>
             </div>
 
-            <!-- STEP 2: 5-DIGIT OTP VERIFICATION -->
             <div id="auth-step-otp" style="display: none;">
                 <h2>Check Your Email</h2>
                 <p style="color: var(--text-sub); font-size: 14px; margin-bottom: 16px;">
@@ -51,10 +48,8 @@
         </div>
     </div>
 
-    <!-- MAIN APP CONTAINER -->
     <div class="app-container">
         
-        <!-- DESKTOP SIDEBAR -->
         <aside class="desktop-sidebar expanded" id="desktop-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
@@ -63,26 +58,21 @@
                 <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn">❮</button>
             </div>
 
-            <!-- CHATS LIST (TOP) -->
             <div class="sidebar-chats">
                 <h3 class="chats-header">Chats</h3>
                 <div id="saved-chats-list"></div>
             </div>
             
-            <!-- 6 NAVIGATION BUTTONS -->
             <div class="sidebar-nav">
-                <!-- Expanded PC Buttons -->
                 <div class="full-nav-items">
                     <img src="/static/icons/NewChatPC.png" class="pc-nav-btn" onclick="startNewChat()" alt="New Chat" draggable="false">
                     <img src="/static/icons/Search.png" class="pc-nav-btn" onclick="searchChats()" alt="Search" draggable="false">
                     <img src="/static/icons/Friends.png" class="pc-nav-btn req-login" onclick="switchView('view-friends')" alt="Friends" draggable="false">
                     <img src="/static/icons/Games.png" class="pc-nav-btn" onclick="switchView('view-games')" alt="Games" draggable="false">
-                    <!-- Fixed Shop.png path below (removed accidental space) -->
                     <img src="/static/icons/Shop.png" onerror="this.onerror=null; this.src='/static/icons/Shop .png';" class="pc-nav-btn req-login" onclick="switchView('view-shop')" alt="Shop" draggable="false">
                     <img src="/static/icons/Inventory.png" class="pc-nav-btn req-login" onclick="switchView('view-inventory')" alt="Inventory" draggable="false">
                 </div>
                 
-                <!-- Collapsed PC Buttons -->
                 <div class="mini-nav-items">
                     <img src="/static/icons/ChatIcon.png" class="mini-nav-btn" onclick="startNewChat()" alt="New Chat" title="New Chat" draggable="false">
                     <img src="/static/icons/SearchIcon.png" class="mini-nav-btn" onclick="searchChats()" alt="Search" title="Search" draggable="false">
@@ -93,16 +83,13 @@
                 </div>
             </div>
             
-            <!-- SETTINGS FOOTER -->
             <div class="sidebar-footer">
                 <img src="/static/icons/Settings.png" alt="Settings" class="settings-icon-img" title="Settings" onclick="switchView('view-settings')" draggable="false">
             </div>
         </aside>
 
-        <!-- MAIN CONTENT AREA -->
         <main class="main-content">
 
-            <!-- TOP-RIGHT PROFILE WIDGET -->
             <div class="top-profile-bar" id="top-profile-bar">
                 <div class="burger-wallet" onclick="switchView('view-shop')" style="cursor:pointer;" title="Visit Shop">🍔 <span id="burger-count">100</span></div>
                 <div class="avatar-frame-wrapper" id="header-avatar-wrapper">
@@ -112,9 +99,7 @@
                 <span id="header-user-badge" class="user-title-badge"></span>
             </div>
 
-            <!-- CHAT VIEW (For Carl AI) -->
             <div id="view-chat" class="view active startup-active">
-                <!-- Bug #2 Fix: Flavors moved inside Chat View so it only displays here -->
                 <div class="top-flavor-bar" id="top-flavor-bar">
                     <div class="flavor-dropdown-container">
                         <button class="flavor-dropdown-btn" onclick="toggleFlavors(event)">Flavors <span id="flavors-arrow">▼</span></button>
@@ -153,7 +138,6 @@
                 </div>
             </div>
 
-            <!-- DIRECT MESSAGING VIEW -->
             <div id="view-dm" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
@@ -179,7 +163,6 @@
                 <div class="copyright">© 2026 CarlAI. All Rights Reserved.</div>
             </div>
 
-            <!-- GLOBAL CHAT VIEW -->
             <div id="view-global-chat" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
@@ -204,7 +187,6 @@
                 <div class="copyright">© 2026 CarlAI. All Rights Reserved.</div>
             </div>
 
-            <!-- GROUP CHAT VIEW -->
             <div id="view-group-chat" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
@@ -229,7 +211,6 @@
                 <div class="copyright">© 2026 CarlAI. All Rights Reserved.</div>
             </div>
 
-            <!-- FRIENDS VIEW -->
             <div id="view-friends" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
@@ -256,7 +237,6 @@
                 </div>
             </div>
 
-            <!-- SHOP VIEW -->
             <div id="view-shop" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
@@ -268,7 +248,6 @@
                 <div class="copyright">© 2026 CarlAI. All Rights Reserved.</div>
             </div>
 
-            <!-- INVENTORY VIEW -->
             <div id="view-inventory" class="view">
                 <div class="inventory-layout">
                     <div class="inv-main">
@@ -285,7 +264,6 @@
                 </div>
             </div>
 
-            <!-- SETTINGS VIEW TAB -->
             <div id="view-settings" class="view">
                 <div class="settings-header"><h1>Settings</h1></div>
                 <div class="settings-content-grid">
@@ -298,7 +276,6 @@
                         </div>
                     </div>
 
-                    <!-- ADMIN PANEL -->
                     <div class="settings-row vertical-on-mobile req-login" id="admin-panel-row" style="display: none; flex-direction: column; align-items: stretch; background: var(--bg-input); padding: 16px; border-radius: 16px; border: 2px dashed #9333ea; gap: 12px;">
                         <span class="settings-label" style="font-size: 24px; color: #a855f7; text-align: center;">🛠️ Admin / Developer Controls</span>
                         <div style="display: flex; gap: 10px;">
@@ -381,7 +358,6 @@
                 </div>
             </div>
 
-            <!-- GAMES MENU VIEW -->
             <div id="view-games" class="view">
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
@@ -414,7 +390,6 @@
                 </div>
             </div>
 
-            <!-- BURGER CLICKER VIEW -->
             <div id="view-burgerclicker" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Burger Clicker</h1></div>
                 <div class="clicker-arena">
@@ -438,7 +413,6 @@
                 </div>
             </div>
 
-            <!-- BLACKJACK VIEW -->
             <div id="view-blackjack" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Blackjack</h1></div>
                 <div id="bj-status" class="game-status">Place your bet and Deal!</div>
@@ -454,7 +428,6 @@
                 <button class="reset-btn" onclick="initBlackjack()">Deal</button>
             </div>
 
-            <!-- ROCK PAPER SCISSORS VIEW -->
             <div id="view-rps" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Rock Paper Scissors</h1></div>
                 <div id="rps-status" class="game-status">Choose Your Move!</div>
@@ -471,7 +444,6 @@
                 <button class="reset-btn" onclick="initRps()">Reset Score</button>
             </div>
 
-            <!-- TIC TAC TOE VIEW -->
             <div id="view-tictactoe" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Tic Tac Toe</h1></div>
                 <div id="ttt-status" class="game-status">Your Turn (X)</div>
@@ -483,7 +455,6 @@
                 <button class="reset-btn" onclick="initTicTacToe()">Restart Game</button>
             </div>
 
-            <!-- HANGMAN VIEW -->
             <div id="view-hangman" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Hangman</h1></div>
                 <div id="hm-status" class="game-status">Loading Word...</div>
@@ -510,7 +481,6 @@
                 <button class="reset-btn" onclick="initHangman()">Restart Game</button>
             </div>
 
-            <!-- CONNECT FOUR VIEW -->
             <div id="view-connectfour" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Connect Four</h1></div>
                 <div id="c4-status" class="game-status">Your Turn (Red)</div>
@@ -523,7 +493,6 @@
                 <button class="reset-btn" onclick="initConnectFour()">Restart Game</button>
             </div>
 
-            <!-- BATTLESHIP VIEW -->
             <div id="view-battleship" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Battleship</h1></div>
                 <div id="bs-status" class="game-status">Place your 4-length ship</div>
@@ -535,7 +504,6 @@
                 <button class="reset-btn" onclick="initBattleship()">Restart Game</button>
             </div>
 
-            <!-- CHECKERS VIEW -->
             <div id="view-checkers" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Checkers</h1></div>
                 <div id="chk-status" class="game-status">Your Turn (Red)</div>
@@ -543,7 +511,6 @@
                 <button class="reset-btn" onclick="initCheckers()">Restart Game</button>
             </div>
 
-            <!-- CHESS VIEW -->
             <div id="view-chess" class="view">
                 <div class="games-header"><button class="back-btn" onclick="switchView('view-games')">←</button><h1>Chess</h1></div>
                 <div id="chs-status" class="game-status">Your Turn (White)</div>
@@ -554,7 +521,6 @@
         </main>
     </div>
 
-    <!-- CREATE GROUP MODAL -->
     <div id="create-group-modal" class="auth-overlay" style="display: none;">
         <div class="auth-card" style="text-align: center; display: flex; flex-direction: column; max-height: 80vh;">
             <h2>Create Group 👥</h2>
@@ -566,7 +532,6 @@
         </div>
     </div>
 
-    <!-- GIFT BURGERS MODAL -->
     <div id="gift-modal" class="auth-overlay" style="display: none;">
         <div class="auth-card" style="text-align: center;">
             <h2>Gift Burgers 🎁</h2>
@@ -577,7 +542,6 @@
         </div>
     </div>
 
-    <!-- OUT OF USAGE MODAL -->
     <div id="usage-limit-modal" class="auth-overlay" style="display: none; z-index: 10001;">
         <div class="auth-card usage-modal-card">
             <h2>Out of Daily Usage! 🍔</h2>
@@ -596,7 +560,6 @@
         </div>
     </div>
 
-    <!-- LOOT BOX ANIMATION MODAL -->
     <div id="loot-modal" class="auth-overlay" style="display: none; z-index: 10000;">
         <div class="auth-card" style="text-align: center; background: radial-gradient(circle, #2a0845 0%, #111 80%); border: 2px solid #9333ea;">
             <h2 id="loot-title">Opening Crate...</h2>
@@ -606,7 +569,6 @@
         </div>
     </div>
 
-    <!-- THE PANTRY FLOATING NOTEPAD -->
     <div id="floating-notepad" class="floating-notepad">
         <div class="notepad-header" id="notepad-header">
             <span style="display: flex; align-items: center; gap: 8px;">
