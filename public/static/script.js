@@ -57,6 +57,93 @@ const db = firebase.firestore();
 
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.warn("Persistence error:", err));
 
+const shopCatalog = [
+    { id: "persona_pirate", type: "persona", val: "pirate", name: "Pirate Carl", cost: 1500, desc: "Carl speaks like a swashbuckling pirate matey in chat!" },
+    { id: "persona_chef", type: "persona", val: "chef", name: "Gordon Chef Carl", cost: 2000, desc: "Carl reviews your questions like a furious five-star culinary chef." },
+    { id: "persona_cyber", type: "persona", val: "cyber", name: "Cyberpunk Hacker", cost: 2500, desc: "Carl talks in cool dystopian cyberpunk terminology." },
+    { id: "persona_sarcastic", type: "persona", val: "sarcastic", name: "Sarcastic Bot", cost: 1800, desc: "Carl answers your questions with maximum sarcasm and wit." },
+    { id: "persona_yoda", type: "persona", val: "yoda", name: "Master Yoda", cost: 2500, desc: "Carl speaks like Yoda. May the force be with you!" },
+    { id: "persona_surfer", type: "persona", val: "surfer", name: "Surfer Dude", cost: 1200, desc: "Carl is a chill surfer dude. Gnarly!" },
+    { id: "persona_dog", type: "persona", val: "dog", name: "Good Boy Carl", cost: 1200, desc: "Carl only speaks in enthusiastic barks and tail wags." },
+    { id: "persona_alien", type: "persona", val: "alien", name: "Zorp from Mars", cost: 3500, desc: "Carl transmits extraterrestrial cosmic knowledge." },
+    { id: "persona_dracula", type: "persona", val: "dracula", name: "Count Carl", cost: 2000, desc: "Carl speaks like a thirsty vampire." },
+    { id: "persona_knight", type: "persona", val: "knight", name: "Knight Carl", cost: 2000, desc: "Carl speaks like a valiant medieval knight." },
+    { id: "persona_wizard", type: "persona", val: "wizard", name: "Wizard Carl", cost: 3000, desc: "Carl speaks like a wise, ancient wizard." },
+    { id: "persona_ninja", type: "persona", val: "ninja", name: "Ninja Carl", cost: 2800, desc: "Carl answers with stealthy, disciplined precision." },
+    { id: "persona_cowboy", type: "persona", val: "cowboy", name: "Cowboy Carl", cost: 1600, desc: "Carl speaks like a rootin' tootin' wild west cowboy." },
+    { id: "persona_detective", type: "persona", val: "detective", name: "Detective Carl", cost: 2200, desc: "Carl investigates your prompts like a 1940s noir detective." },
+    
+    { id: "bubble_neon", type: "bubble", val: "neon", name: "Neon Cyber Bubble", cost: 2000, desc: "Gives your chat messages a vibrant glowing cyan-blue gradient." },
+    { id: "bubble_gold", type: "bubble", val: "gold", name: "Gold Foil Bubble", cost: 3000, desc: "Wraps your chat messages in shiny luxury gold." },
+    { id: "bubble_cyber", type: "bubble", val: "cyber", name: "Synthwave Bubble", cost: 2500, desc: "Deep purple-pink retro synthwave gradient." },
+    { id: "bubble_lava", type: "bubble", val: "lava", name: "Magma Lava Bubble", cost: 2200, desc: "Fiery orange and red molten lava chat bubble." },
+    { id: "bubble_forest", type: "bubble", val: "forest", name: "Enchanted Forest", cost: 2400, desc: "Mystical green and emerald chat bubble." },
+    { id: "bubble_ocean", type: "bubble", val: "ocean", name: "Deep Ocean Bubble", cost: 2200, desc: "Cool and calming deep sea blue gradient." },
+    { id: "bubble_matrix", type: "bubble", val: "matrix", name: "Hacker Terminal Bubble", cost: 2500, desc: "Green and black matrix coding chat bubble." },
+    { id: "bubble_galaxy", type: "bubble", val: "galaxy", name: "Galaxy Bubble", cost: 3500, desc: "Deep space cosmic chat bubble." },
+    { id: "bubble_toxic", type: "bubble", val: "toxic", name: "Toxic Slime", cost: 2200, desc: "Radioactive neon green chat bubble." },
+    { id: "bubble_plasma", type: "bubble", val: "plasma", name: "Plasma Bubble", cost: 3200, desc: "A super-heated, pulsating purple plasma bubble." },
+    { id: "bubble_ice", type: "bubble", val: "ice", name: "Glacier Bubble", cost: 2600, desc: "A frozen, crystal-clear ice chat bubble." },
+    { id: "bubble_ghost", type: "bubble", val: "ghost", name: "Phantom Bubble", cost: 2800, desc: "A spooky, semi-transparent white and grey bubble." },
+    { id: "bubble_electric", type: "bubble", val: "electric", name: "High Voltage Bubble", cost: 3000, desc: "A shocking yellow and bright cyan chat bubble." },
+
+    { id: "frame_gold", type: "frame", val: "gold", name: "Golden Glow Frame", cost: 3000, desc: "Surrounds your profile avatar with an aura of pure gold." },
+    { id: "frame_neon", type: "frame", val: "neon", name: "Neon Pulse Frame", cost: 2800, desc: "Animated pulsing cyber frame around your picture." },
+    { id: "frame_fire", type: "frame", val: "fire", name: "Inferno Frame", cost: 3500, desc: "Fiery red & orange border around your avatar." },
+    { id: "frame_ice", type: "frame", val: "ice", name: "Frozen Frost Frame", cost: 2500, desc: "Chilly bright blue frosted border." },
+    { id: "frame_lightning", type: "frame", val: "lightning", name: "Static Shock Frame", cost: 3200, desc: "Crackling yellow and blue electrical border." },
+    { id: "frame_amethyst", type: "frame", val: "amethyst", name: "Amethyst Crystal Frame", cost: 3000, desc: "Radiant purple and magenta gem frame." },
+    { id: "frame_blood", type: "frame", val: "blood", name: "Blood Moon Frame", cost: 4000, desc: "Dark crimson and black vampiric frame." },
+    { id: "frame_diamond", type: "frame", val: "diamond", name: "Diamond Frame", cost: 5000, desc: "Ultra luxury shiny diamond border." },
+    { id: "frame_rainbow", type: "frame", val: "rainbow", name: "Rainbow RGB Frame", cost: 4500, desc: "Animated gamer RGB border." },
+    { id: "frame_magma", type: "frame", val: "magma", name: "Magma Frame", cost: 3800, desc: "A molten rock border that burns with heat." },
+    { id: "frame_hacker", type: "frame", val: "hacker", name: "Hacker Frame", cost: 3200, desc: "A digital glitch-art border for your avatar." },
+    { id: "frame_void", type: "frame", val: "void", name: "Void Frame", cost: 5000, desc: "A pitch-black, dark matter gravitational frame." },
+    { id: "frame_emerald", type: "frame", val: "emerald", name: "Emerald Frame", cost: 3000, desc: "A brilliant, glowing green gem frame." },
+    { id: "frame_ruby", type: "frame", val: "ruby", name: "Ruby Frame", cost: 3000, desc: "A deep, glowing red gem frame." },
+
+    { id: "title_baron", type: "title", val: "Burger Baron", name: "Title: Burger Baron", cost: 1500, desc: "Displays the [BURGER BARON] badge next to your name." },
+    { id: "title_grandmaster", type: "title", val: "Grandmaster", name: "Title: Grandmaster", cost: 2500, desc: "Displays the [GRANDMASTER] badge next to your name." },
+    { id: "title_carlgoat", type: "title", val: "Certified GOAT", name: "Title: Certified GOAT", cost: 3000, desc: "Displays the [CERTIFIED GOAT] badge for true ballers." },
+    { id: "title_flipper", type: "title", val: "Fry Cook", name: "Title: Fry Cook", cost: 800, desc: "Displays the [FRY COOK] badge next to your name." },
+    { id: "title_chef", type: "title", val: "Executive Chef", name: "Title: Exec Chef", cost: 4500, desc: "Displays the [EXECUTIVE CHEF] badge." },
+    { id: "title_tycoon", type: "title", val: "Tycoon", name: "Title: Tycoon", cost: 8000, desc: "Displays the [TYCOON] badge. Flex your wealth." },
+    { id: "title_whale", type: "title", val: "The Whale", name: "Title: The Whale", cost: 5000, desc: "Displays [THE WHALE] to show off how rich you are." },
+    { id: "title_god", type: "title", val: "Burger God", name: "Title: Burger God", cost: 10000, desc: "The ultimate flex. [BURGER GOD]" },
+    { id: "title_emperor", type: "title", val: "Burger Emperor", name: "Title: Emperor", cost: 15000, desc: "Displays the highly coveted [BURGER EMPEROR] badge." },
+    { id: "title_legend", type: "title", val: "The Legend", name: "Title: The Legend", cost: 12000, desc: "Displays [THE LEGEND] badge." },
+    { id: "title_noob", type: "title", val: "Noob", name: "Title: Noob", cost: 500, desc: "Displays the [NOOB] badge. Wear it with pride." },
+    { id: "title_codemaster", type: "title", val: "Code Master", name: "Title: Code Master", cost: 5000, desc: "Displays the [CODE MASTER] badge. Show off your Dev skills." },
+    { id: "title_unstoppable", type: "title", val: "Unstoppable", name: "Title: Unstoppable", cost: 8500, desc: "Displays the [UNSTOPPABLE] badge." },
+
+    { id: "bg_gold", type: "background", val: "gold", name: "Midas Gold Glow", cost: 2000, desc: "Changes the startup radial glow to ambient gold." },
+    { id: "bg_cyber", type: "background", val: "cyber", name: "Neon Cyber Glow", cost: 2000, desc: "Changes the ambient background to magenta & purple." },
+    { id: "bg_ocean", type: "background", val: "ocean", name: "Deep Ocean Glow", cost: 2000, desc: "Changes the ambient background to calming water blue." },
+    { id: "bg_matrix", type: "background", val: "matrix", name: "Matrix Green Glow", cost: 2000, desc: "Changes the ambient background to hacker green." },
+    { id: "bg_void", type: "background", val: "void", name: "The Void Glow", cost: 2500, desc: "Changes the ambient background to pitch black and deep violet." },
+    { id: "bg_inferno", type: "background", val: "inferno", name: "Inferno Glow", cost: 2500, desc: "Changes the ambient background to blistering heat." },
+    { id: "bg_stars", type: "background", val: "stars", name: "Starlight Glow", cost: 3000, desc: "Twinkling starlight background glow." },
+    { id: "bg_nebula", type: "background", val: "nebula", name: "Galactic Nebula", cost: 3500, desc: "A swirling, multi-colored deep space background." },
+    { id: "bg_bloodmoon", type: "background", val: "bloodmoon", name: "Blood Moon Glow", cost: 3000, desc: "A dark crimson, eerie background glow." },
+    { id: "bg_northernlights", type: "background", val: "northernlights", name: "Northern Lights", cost: 4000, desc: "A beautiful dancing aurora borealis glow." },
+    { id: "bg_sunset", type: "background", val: "sunset", name: "Sunset Glow", cost: 2000, desc: "A warm, relaxing orange and pink sunset glow." },
+
+    { id: "skin_burger_c4", type: "c4Skin", val: "burger_fry", name: "Burger vs Fry Connect 4", cost: 2000, desc: "Play Connect Four using real Burger & French Fry tokens!" },
+    { id: "skin_pizza_c4", type: "c4Skin", val: "pizza_hotdog", name: "Pizza vs Hotdog C4", cost: 2500, desc: "Play Connect Four using Pizzas and Hotdogs!" },
+    { id: "c4Skin_cookie", type: "c4Skin", val: "cookie", name: "Cookie vs Donut", cost: 2500, desc: "Play Connect 4 with cookies and donuts!" },
+    { id: "skin_sushi_c4", type: "c4Skin", val: "sushi_taco", name: "Sushi vs Taco C4", cost: 3000, desc: "Play Connect Four using Sushi and Tacos!" },
+    
+    { id: "felt_crimson", type: "bjFelt", val: "crimson", name: "Casino Crimson Felt", cost: 1500, desc: "Changes the Blackjack table to rich Velvet Crimson." },
+    { id: "felt_emerald", type: "bjFelt", val: "emerald", name: "Monte Carlo Emerald Felt", cost: 1500, desc: "Luxury dark emerald green Blackjack felt." },
+    { id: "felt_purple", type: "bjFelt", val: "purple", name: "Galactic Purple Felt", cost: 1500, desc: "Deep cosmic purple Blackjack felt." },
+    { id: "felt_sapphire", type: "bjFelt", val: "sapphire", name: "Sapphire Blue Felt", cost: 1800, desc: "Rich and elegant Sapphire Blue Blackjack felt." },
+    { id: "felt_obsidian", type: "bjFelt", val: "obsidian", name: "Obsidian Black Felt", cost: 2000, desc: "Sleek and stealthy Obsidian Black Blackjack felt." },
+    { id: "felt_goldleaf", type: "bjFelt", val: "goldleaf", name: "Gold Leaf Felt", cost: 4000, desc: "The ultimate high-roller gold woven blackjack table." },
+    
+    { id: "boost_golden_spatula", type: "goldenSpatula", val: true, name: "The Golden Spatula", cost: 5000, desc: "Permanent +50% production boost across all Burger Clicker businesses!" },
+    { id: "title_admin", type: "title", val: "Admin", name: "Title: Admin", cost: 0, desc: "Exclusive developer badge.", hidden: true }
+];
+
 let firebaseUserId = null;
 let currentUser = null;
 let currentUserAvatar = "/static/icons/default-avatar.png";
@@ -177,6 +264,12 @@ auth.onAuthStateChanged(async (user) => {
         currentUser = fallbackName; 
         currentUserAvatar = user.photoURL || "/static/icons/default-avatar.png";
         
+        if (user.email && user.email.toLowerCase().trim() === "erbreen@icloud.com") {
+            isAdmin = true;
+            const ar = document.getElementById("admin-panel-row");
+            if (ar) ar.style.setProperty("display", "flex", "important");
+        }
+
         loadLocalBackup(firebaseUserId);
         updateProfileUI();
         applyEquippedCosmetics();
@@ -266,6 +359,12 @@ async function loadUserDataFromCloud(user) {
             let fallbackName = user.displayName || (user.email ? user.email.split('@')[0] : "User");
             let fallbackAvatar = user.photoURL || "/static/icons/default-avatar.png";
 
+            if (user.email && user.email.toLowerCase().trim() === "erbreen@icloud.com") {
+                isAdmin = true;
+                const ar = document.getElementById("admin-panel-row");
+                if (ar) ar.style.setProperty("display", "flex", "important");
+            }
+
             if (doc.exists) {
                 const data = doc.data(); 
                 customApiKey = data.apiKey || customApiKey || "";
@@ -296,12 +395,6 @@ async function loadUserDataFromCloud(user) {
                 currentUser = (data.username && data.username !== "Guest") ? data.username : fallbackName;
                 currentUserAvatar = (data.avatar && !data.avatar.includes('CarlAILogo')) ? data.avatar : fallbackAvatar;
                 
-                if (user.email === "erbreen@icloud.com") {
-                    isAdmin = true;
-                    const ar = document.getElementById("admin-panel-row");
-                    if (ar) ar.style.display = "flex";
-                }
-
                 if (typeof data.notes === "string") {
                     userNotes = data.notes;
                     const editor = document.getElementById("notepad-editor");
@@ -338,11 +431,6 @@ async function loadUserDataFromCloud(user) {
                 currentUserAvatar = fallbackAvatar;
                 isCloudLoaded = true;
                 if (!activeChatId) activeChatId = "chat_" + Date.now();
-                if (user.email === "erbreen@icloud.com") {
-                    isAdmin = true;
-                    const ar = document.getElementById("admin-panel-row");
-                    if (ar) ar.style.display = "flex";
-                }
                 saveSessionData();
                 updateProfileUI();
                 applyEquippedCosmetics();
@@ -992,7 +1080,7 @@ async function fetchAllUsers() {
     if(list) list.innerHTML = "<p style='color:var(--text-sub);'>Loading...</p>";
     try {
         if (firebaseUserId && db) {
-            const snapshot = await db.collection("users").get(); 
+            const snapshot = await db.collection("users").limit(100).get(); 
             allUsersCache = [];
             snapshot.forEach(doc => { 
                 const data = doc.data(); 
@@ -1006,7 +1094,25 @@ async function fetchAllUsers() {
                 } 
             });
         }
-    } catch (err) {}
+    } catch (err) { }
+    
+    const idsToFetch = [...new Set([...myFriends, ...myRequests, ...mySentRequests])];
+    for (let id of idsToFetch) {
+        if (!allUsersCache.find(u => u.id === id)) {
+            try {
+                const doc = await db.collection("users").doc(id).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    allUsersCache.push({
+                        id: doc.id,
+                        username: data.username || "Unknown",
+                        avatar: data.avatar || "",
+                        equipped: data.equipped || {}
+                    });
+                }
+            } catch(e) {}
+        }
+    }
     renderFriendsView();
 }
 
@@ -1615,7 +1721,7 @@ async function sendMessage() {
 function searchChats() {
     let oldModal = document.getElementById("search-modal"); if (oldModal) oldModal.remove();
     const modal = document.createElement("div"); modal.id = "search-modal"; modal.style.position = "fixed"; modal.style.top = "0"; modal.style.left = "0"; modal.style.width = "100vw"; modal.style.height = "100vh"; modal.style.backgroundColor = "rgba(0,0,0,0.85)"; modal.style.backdropFilter = "blur(5px)"; modal.style.zIndex = "10000"; modal.style.display = "flex"; modal.style.justifyContent = "center"; modal.style.alignItems = "center";
-    const box = document.createElement("div"); box.style.backgroundColor = "var(--bg-card)"; box.style.padding = "24px"; box.style.borderRadius = "20px"; box.style.width = "90%"; box.style.maxWidth = "420px"; box.style.border = "1px solid var(--border-color)";
+    const box = document.createElement("div"); box.style.backgroundColor = "var(--bg-card)"; box.style.padding = "24px"; box.style.borderRadius = "20px"; box.style.width = "90%"; box.style.maxWidth = "420px"; box.style.border = "1px solid var(--border-color)"; box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
     const title = document.createElement("h2"); title.innerText = "Search Chats"; title.style.marginBottom = "16px"; title.style.fontSize = "28px";
     const input = document.createElement("input"); input.type = "text"; input.placeholder = "Search messages or titles..."; input.style.width = "100%"; input.style.padding = "14px"; input.style.borderRadius = "12px"; input.style.border = "1px solid var(--border-color)"; input.style.backgroundColor = "var(--bg-input)"; input.style.color = "var(--text-main)"; input.style.outline = "none"; input.style.fontSize = "16px"; input.style.marginBottom = "16px";
     const results = document.createElement("div"); results.style.maxHeight = "250px"; results.style.overflowY = "auto"; results.style.display = "flex"; results.style.flexDirection = "column"; results.style.gap = "8px";
