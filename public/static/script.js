@@ -187,10 +187,24 @@ async function handleLogin(e) {
 
     if (!email || !pass) return customAlert("Please enter both an email and a password.");
     
-    submitBtn.innerText = "Sending Code..."; 
+    submitBtn.innerText = "Checking Details..."; 
     submitBtn.disabled = true;
 
     try {
+        const methods = await auth.fetchSignInMethodsForEmail(email);
+        
+        if (methods.length > 0) {
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+                await auth.signOut(); 
+            } catch (err) {
+                submitBtn.innerText = "Sign In / Register"; 
+                submitBtn.disabled = false;
+                return customAlert("Incorrect password for this registered account.");
+            }
+        }
+        
+        submitBtn.innerText = "Sending Code...";
         const res = await fetch('/api/send-otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -246,11 +260,13 @@ async function handleVerifyOtp(e) {
             
             if (methods.length === 0) {
                 await auth.createUserWithEmailAndPassword(pendingAuthEmail, pendingAuthPass);
+                fetch('/api/send-alert', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: pendingAuthEmail, type: 'signup'}) }).catch(()=>{});
                 localStorage.removeItem("carl_guest_mode");
                 document.getElementById('auth-overlay').style.display = 'none';
                 customAlert("Account created successfully! Welcome to Carl AI.");
             } else {
                 await auth.signInWithEmailAndPassword(pendingAuthEmail, pendingAuthPass);
+                fetch('/api/send-alert', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: pendingAuthEmail, type: 'signin'}) }).catch(()=>{});
                 localStorage.removeItem("carl_guest_mode");
                 document.getElementById('auth-overlay').style.display = 'none';
             }
@@ -842,7 +858,7 @@ function getBgPreviewStyle(val) {
 }
 
 function getPersonaPreviewText(val) {
-    const lines = { pirate: "Ahoy there, matey!", chef: "This code is raw!!", cyber: "Accessing mainframe...", sarcastic: "Oh, brilliant idea.", yoda: "Help you, I will.", surfer: "That's totally gnarly, dude.", dog: "Woof! *wags tail*", alien: "Greetings, earthling.", dracula: "I vant to answer your prompt...", knight: "I shall defend this code!", wizard: "A wizard is never late.", ninja: "...", cowboy: "Howdy, partner!", detective: "Let's investigate this..." };
+    const lines = { pirate: "Ahoy there, matey!", chef: "This code is raw!!", cyber: "Accessing mainframe...", sarcastic: "Oh, brilliant idea.", yoda: "Help you, I will.", surfer: "That's totally gnarly, dude.", dog: "Woof!", alien: "Greetings, earthling.", dracula: "I vant to answer your prompt...", knight: "I shall defend this code!", wizard: "A wizard is never late.", ninja: "...", cowboy: "Howdy, partner!", detective: "Let's investigate this..." };
     return lines[val] || "Hello!";
 }
 
@@ -859,7 +875,7 @@ function getPreviewHTML(item) {
         else if (item.val === "sushi_taco") { p1 = "🍣"; p2 = "🌮"; }
         return `<div style="font-size: 32px; display:flex; gap:10px; background:#111; padding:10px 20px; border-radius:12px;"><span>${p1}</span><span>${p2}</span></div>`;
     }
-    if (item.type === "persona") return `<div style="display:flex; flex-direction:column; align-items:center; gap:8px;"><span style="font-size:32px;">💬</span><span style="font-size:13px; font-style:italic; color:#aaa; text-align:center;">"${getPersonaPreviewText(item.val)}"</span></div>`;
+    if (item.type === "persona") return `<div style="display:flex; flex-direction:column; align-items:center; gap:8px;"><span style="font-size:13px; font-style:italic; color:#aaa; text-align:center;">"${getPersonaPreviewText(item.val)}"</span></div>`;
     if (item.type === "goldenSpatula") return `<div style="font-size: 42px;">🍳</div><div style="color:#84cc16; font-weight:bold; margin-top:5px;">+50% Boost</div>`;
     return `<div>Preview</div>`;
 }
@@ -871,7 +887,7 @@ function renderShopView() {
     
     const lootBanner = document.createElement("div"); 
     lootBanner.className = "loot-box-banner";
-    lootBanner.innerHTML = `<h2>Mystery Burger Crate 🎁</h2><p style="margin-bottom: 15px; font-size: 14px;">Win rare badges, themes, or massive burger jackpots!</p><button class="open-crate-btn" onclick="openLootBox()">Open for 250 🍔</button>`;
+    lootBanner.innerHTML = `<h2>Mystery Burger Crate</h2><p style="margin-bottom: 15px; font-size: 14px;">Win rare badges, themes, or massive burger jackpots!</p><button class="open-crate-btn" onclick="openLootBox()">Open for 250 🍔</button>`;
     container.appendChild(lootBanner);
 
     if (typeof shopCatalog !== 'undefined') {
@@ -901,15 +917,15 @@ async function openLootBox() {
         if (userBurgers < 250) return customAlert("Not enough burgers! You need 250 🍔.");
         userBurgers -= 250;
         const roll = Math.random(); let prizeText = "", emoji = "", payout = 0;
-        if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
-        else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
+        if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "Jackpot!"; payout = 5000; }
+        else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "Awesome!"; payout = 1000; }
         else if (roll < 0.45) { 
             const availableItems = shopCatalog.filter(i => !i.hidden);
             const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-            if (inventory.includes(randomItem.id)) { prizeText = "Duplicate Item! Refunded 500 🍔."; emoji = "♻️"; payout = 500; } 
-            else { prizeText = "LUCKY DROP! Unlocked: " + randomItem.name + "!"; emoji = "📦"; inventory.push(randomItem.id); saveSessionData(); }
+            if (inventory.includes(randomItem.id)) { prizeText = "Duplicate Item! Refunded 500 🍔."; emoji = "Duplicate"; payout = 500; } 
+            else { prizeText = "LUCKY DROP! Unlocked: " + randomItem.name + "!"; emoji = "Unlocked!"; inventory.push(randomItem.id); saveSessionData(); }
         }
-        else if (roll < 0.70) { prizeText = "RARE! 500 🍔 Refund!"; emoji = "✨"; payout = 500; }
+        else if (roll < 0.70) { prizeText = "RARE! 500 🍔 Refund!"; emoji = "Rare!"; payout = 500; }
         else { prizeText = "Common. Here is 50 🍔 back."; emoji = "🍔"; payout = 50; }
         userBurgers += payout; updateBurgerUI(); triggerLootAnimation(prizeText, emoji); return;
     }
@@ -925,15 +941,15 @@ async function openLootBox() {
             if (currentBurgers < cost) throw "Not enough burgers! You need 250 🍔.";
             const roll = Math.random(); 
             let prizeText = "", emoji = "", payout = 0, itemWon = null;
-            if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "👑"; payout = 5000; }
-            else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "🔥"; payout = 1000; }
+            if (roll < 0.03) { prizeText = "LEGENDARY! 5,000 🍔 Jackpot!"; emoji = "Jackpot!"; payout = 5000; }
+            else if (roll < 0.15) { prizeText = "EPIC! 1,000 🍔 Refund!"; emoji = "Awesome!"; payout = 1000; }
             else if (roll < 0.45) { 
                 const availableItems = shopCatalog.filter(i => !i.hidden);
                 const randomItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-                if (inventory.includes(randomItem.id)) { prizeText = "Duplicate Item! Refunded 500 🍔."; emoji = "♻️"; payout = 500; } 
-                else { prizeText = "LUCKY DROP! Unlocked: " + randomItem.name + "!"; emoji = "📦"; itemWon = randomItem.id; }
+                if (inventory.includes(randomItem.id)) { prizeText = "Duplicate Item! Refunded 500 🍔."; emoji = "Duplicate"; payout = 500; } 
+                else { prizeText = "LUCKY DROP! Unlocked: " + randomItem.name + "!"; emoji = "Unlocked!"; itemWon = randomItem.id; }
             }
-            else if (roll < 0.70) { prizeText = "RARE! 500 🍔 Refund!"; emoji = "✨"; payout = 500; }
+            else if (roll < 0.70) { prizeText = "RARE! 500 🍔 Refund!"; emoji = "Rare!"; payout = 500; }
             else { prizeText = "Common. Here is 50 🍔 back."; emoji = "🍔"; payout = 50; }
             
             if (itemWon) { 
@@ -951,7 +967,7 @@ async function openLootBox() {
 
 function triggerLootAnimation(prizeText, emoji) {
     const modal = document.getElementById("loot-modal"), title = document.getElementById("loot-title"), icon = document.getElementById("loot-icon"), resultDisplay = document.getElementById("loot-result-text"), closeBtn = document.getElementById("loot-close-btn");
-    modal.style.display = "flex"; title.innerText = "Opening Crate..."; title.style.animation = "pulse 1s infinite"; icon.innerText = "📦"; icon.style.animation = "shake 0.5s infinite"; resultDisplay.style.display = "none"; closeBtn.style.display = "none";
+    modal.style.display = "flex"; title.innerText = "Opening Crate..."; title.style.animation = "pulse 1s infinite"; icon.innerText = "Mystery"; icon.style.animation = "shake 0.5s infinite"; resultDisplay.style.display = "none"; closeBtn.style.display = "none";
     setTimeout(() => { title.innerText = "You Won!"; title.style.animation = "none"; icon.innerText = emoji; icon.style.animation = "popIn 0.5s ease forwards"; resultDisplay.innerText = prizeText; resultDisplay.style.display = "block"; closeBtn.style.display = "block"; }, 1800);
 }
 
@@ -975,7 +991,7 @@ async function confirmSendBurgers() {
             transaction.update(receiverRef, { burgers: (receiverDoc.data().burgers || 0) + amount });
         });
         closeGiftModal(); customAlert(`Sent ${amount.toLocaleString()} 🍔 to ${currentDmUser.username}!`);
-        if (activeChatId && isDM) await db.collection("dms").doc(activeChatId).collection("messages").add({ text: `🎁 [GIFT] Sent ${amount.toLocaleString()} Burgers!`, imageSrc: null, senderId: firebaseUserId, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+        if (activeChatId && isDM) await db.collection("dms").doc(activeChatId).collection("messages").add({ text: `[GIFT] Sent ${amount.toLocaleString()} Burgers!`, imageSrc: null, senderId: firebaseUserId, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
     } catch (error) { customAlert("Failed: " + error); }
 }
 
