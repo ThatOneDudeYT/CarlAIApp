@@ -143,7 +143,7 @@
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
                     <div id="dm-header-avatar" class="dm-header-avatar-container"></div>
                     <h1 id="dm-header-name">Friend</h1>
-                    <button class="dm-call-btn" onclick="openGiftModal()" title="Gift Burgers">🎁</button>
+                    <button class="dm-call-btn" onclick="openGiftModal()" title="Gift Burgers">🍔</button>
                 </div>
                 <div id="dm-chat-log" class="dm-chat-log"></div>
                 <div class="dm-input-wrapper">
@@ -166,7 +166,7 @@
             <div id="view-global-chat" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
-                    <div class="dm-header-avatar-container"><div class="text-avatar" style="background-color: #a855f7;">🌐</div></div>
+                    <div class="dm-header-avatar-container"><div class="text-avatar" style="background-color: #a855f7;">GL</div></div>
                     <h1 id="global-header-name">Public Lobby</h1>
                 </div>
                 <div id="global-chat-log" class="dm-chat-log"></div>
@@ -190,7 +190,7 @@
             <div id="view-group-chat" class="view">
                 <div class="dm-header">
                     <button class="back-btn" onclick="switchView('view-friends')">←</button>
-                    <div id="group-header-avatar" class="dm-header-avatar-container"><div class="text-avatar" style="background-color: #3b82f6;">👥</div></div>
+                    <div id="group-header-avatar" class="dm-header-avatar-container"><div class="text-avatar" style="background-color: #3b82f6;">GR</div></div>
                     <h1 id="group-header-name">Group</h1>
                 </div>
                 <div id="group-chat-log" class="dm-chat-log"></div>
@@ -215,8 +215,8 @@
                 <div class="games-header">
                     <button class="back-btn" onclick="switchView('view-chat')">←</button>
                     <div style="display: flex; gap: 10px; margin-right: 20px;">
-                        <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px;" onclick="openGlobalChat()">🌐 Public Lobby</button>
-                        <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px; background-color: #3b82f6;" onclick="openCreateGroupModal()">👥 New Group</button>
+                        <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px;" onclick="openGlobalChat()">Public Lobby</button>
+                        <button class="auth-btn" style="padding: 8px 16px; margin: 0; font-size: 16px; background-color: #3b82f6;" onclick="openCreateGroupModal()">New Group</button>
                     </div>
                 </div>
                 <div class="friends-search-container">
@@ -277,14 +277,14 @@
                     </div>
 
                     <div class="settings-row vertical-on-mobile req-login" id="admin-panel-row" style="display: none; flex-direction: column; align-items: stretch; background: var(--bg-input); padding: 16px; border-radius: 16px; border: 2px dashed #9333ea; gap: 12px;">
-                        <span class="settings-label" style="font-size: 24px; color: #a855f7; text-align: center;">🛠️ Admin / Developer Controls</span>
+                        <span class="settings-label" style="font-size: 24px; color: #a855f7; text-align: center;">Admin / Developer Controls</span>
                         <div style="display: flex; gap: 10px;">
-                            <input type="number" id="admin-add-burgers" placeholder="Spawn Real Burgers (🍔)" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-card); color: white;">
-                            <button type="button" class="settings-upload-btn" onclick="adminGiveBurgers()" style="border-color: #84cc16;">Give</button>
+                            <input type="number" id="admin-add-burgers" placeholder="Real Burgers Amount" style="flex: 1; padding: 10px; border-radius: 10px; border: 2px solid #555; background: #333; color: white; outline: none;">
+                            <button type="button" class="settings-upload-btn" onclick="adminGiveBurgers()" style="border-color: #84cc16;">Give Real Burgers</button>
                         </div>
                         <div style="display: flex; gap: 10px;">
-                            <input type="number" id="admin-add-clicker" placeholder="Spawn Clicker Burgers" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-card); color: white;">
-                            <button type="button" class="settings-upload-btn" onclick="adminGiveClickerBurgers()" style="border-color: #a855f7;">Give</button>
+                            <input type="number" id="admin-add-clicker" placeholder="Clicker Burgers Amount" style="flex: 1; padding: 10px; border-radius: 10px; border: 2px solid #555; background: #333; color: white; outline: none;">
+                            <button type="button" class="settings-upload-btn" onclick="adminGiveClickerBurgers()" style="border-color: #a855f7;">Give Clicker Burgers</button>
                         </div>
                     </div>
                     
@@ -523,7 +523,7 @@
 
     <div id="create-group-modal" class="auth-overlay" style="display: none;">
         <div class="auth-card" style="text-align: center; display: flex; flex-direction: column; max-height: 80vh;">
-            <h2>Create Group 👥</h2>
+            <h2>Create Group</h2>
             <p style="color: var(--text-sub); margin-bottom: 15px;">Select friends to add to your new group.</p>
             <input type="text" id="group-name-input" placeholder="Group Name" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); margin-bottom: 15px; text-align: center; font-size: 18px; outline: none;" autocomplete="off">
             <div id="create-group-friends-list" style="overflow-y: auto; flex: 1; text-align: left; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; background: var(--bg-input);"></div>
@@ -534,7 +534,7 @@
 
     <div id="gift-modal" class="auth-overlay" style="display: none;">
         <div class="auth-card" style="text-align: center;">
-            <h2>Gift Burgers 🎁</h2>
+            <h2>Gift Burgers</h2>
             <p style="color: var(--text-sub); margin-bottom: 15px;">Send burgers to <b id="gift-friend-name" style="color: #fff;">Friend</b></p>
             <input type="number" id="gift-amount" placeholder="Amount (🍔)" min="1" style="margin-bottom: 15px; text-align: center;">
             <button class="auth-btn" style="width: 100%; margin-bottom: 10px;" onclick="confirmSendBurgers()">Send Gift</button>
@@ -544,7 +544,7 @@
 
     <div id="usage-limit-modal" class="auth-overlay" style="display: none; z-index: 10001;">
         <div class="auth-card usage-modal-card">
-            <h2>Out of Daily Usage! 🍔</h2>
+            <h2>Out of Daily Usage!</h2>
             <p style="color: var(--text-sub); margin-bottom: 14px; font-size: 14px;">
                 You've used all <strong>10/10</strong> free daily tokens. Add your own free Gemini API Key to unlock <strong>Unlimited Chats</strong>!
             </p>
@@ -563,7 +563,7 @@
     <div id="loot-modal" class="auth-overlay" style="display: none; z-index: 10000;">
         <div class="auth-card" style="text-align: center; background: radial-gradient(circle, #2a0845 0%, #111 80%); border: 2px solid #9333ea;">
             <h2 id="loot-title">Opening Crate...</h2>
-            <div id="loot-icon" style="font-size: 80px; margin: 30px 0;">📦</div>
+            <div id="loot-icon" style="font-size: 80px; margin: 30px 0; font-family: Arial, sans-serif;">Mystery</div>
             <p id="loot-result-text" style="color: #fff; font-size: 18px; margin-bottom: 20px; display: none;"></p>
             <button id="loot-close-btn" class="auth-btn" style="width: 100%; display: none;" onclick="document.getElementById('loot-modal').style.display='none'">Awesome!</button>
         </div>
@@ -580,6 +580,5 @@
     </div>
 
     <script src="/static/script.js"></script>
-    <script src="/static/games.js"></script>
 </body>
 </html>
