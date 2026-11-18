@@ -12,6 +12,156 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body class="dark-mode">
+    <script>
+        (function() {
+            var p = (window.location.pathname || "").replace(/\/+$/, "").toLowerCase();
+            var q = window.location.search || "";
+            var h = window.location.hash || "";
+            if (p !== "/app" && q.indexOf("app=1") === -1 && h !== "#app") {
+                document.body.classList.add("landing-active");
+            }
+        })();
+    </script>
+
+    <!-- CARL AI LANDING PAGE (IMAGE 7 + IMAGE 10) -->
+    <div id="carl-landing-page" class="carl-landing-page">
+        <!-- TOP PURPLE HERO SECTION (IMAGE 7) -->
+        <section id="landing-hero" class="landing-hero">
+            <div class="landing-hero-inner">
+                
+                <!-- LEFT: JUGGLING CARL (Animated juggling 3 balls + 2 moving hands) -->
+                <div class="juggle-stage" id="juggle-stage">
+                    <div class="juggle-ball ball-red" id="juggle-ball-0"></div>
+                    <div class="juggle-ball ball-yellow" id="juggle-ball-1"></div>
+                    <div class="juggle-ball ball-blue" id="juggle-ball-2"></div>
+                    <img src="/static/icons/CarlJuggle.png" alt="Juggling Carl" class="juggle-carl-head" id="juggle-carl-head" draggable="false">
+                    <div class="juggle-hand hand-left" id="juggle-hand-left"></div>
+                    <div class="juggle-hand hand-right" id="juggle-hand-right"></div>
+                </div>
+
+                <!-- TOP-CENTER-RIGHT: EATING CARL (Always doing Minecraft eat animation + 2x2 pixel crumbs) -->
+                <div class="eating-stage" id="eating-stage">
+                    <img src="/static/icons/OpenMouth.png" alt="Eating Carl" class="eating-carl-head" id="eating-carl-head" draggable="false">
+                    <div class="eating-burger-hand-group" id="eating-burger-hand-group">
+                        <img src="/static/icons/Burger1.png" alt="Burger" class="eating-burger-img" draggable="false">
+                        <img src="/static/icons/Hand.png" alt="Hand" class="eating-hand-img" draggable="false">
+                    </div>
+                    <canvas id="minecraft-crumbs-canvas" class="minecraft-crumbs-canvas" width="260" height="280"></canvas>
+                </div>
+
+                <!-- TOP-RIGHT: ANIMATED MINECRAFT CARL -->
+                <div class="mc-carl-stage">
+                    <img src="/static/icons/CarlMC_cropped.gif" alt="Minecraft Carl" class="mc-carl-img" draggable="false">
+                </div>
+
+                <!-- BOTTOM-CENTER: 3D "GET CARL" BUTTON -->
+                <div class="get-carl-btn-wrap">
+                    <button type="button" id="get-carl-btn" class="get-carl-3d-btn" onclick="handleGetCarlClick()" aria-label="Get Carl">
+                        <span class="get-carl-3d-base"></span>
+                        <img src="/static/icons/GetCarlTop.png" alt="Get Carl" class="get-carl-3d-top" draggable="false">
+                    </button>
+                </div>
+
+                <!-- BOTTOM-RIGHT: CHUD CARL -->
+                <div class="chud-carl-stage">
+                    <img src="/static/icons/ChudCarl.png" alt="Carl" class="chud-carl-img" draggable="false">
+                </div>
+
+            </div>
+        </section>
+
+        <!-- BOTTOM DARK DOWNLOAD SECTION (IMAGE 10) -->
+        <section id="landing-download" class="landing-download">
+            <div class="landing-download-inner">
+                
+                <!-- LEFT COLUMN: DOWNLOAD CARL! + 2x2 BUTTONS -->
+                <div class="download-left-col">
+                    <h2 class="download-carl-title" data-text="Download Carl!">Download Carl!</h2>
+                    
+                    <div class="download-buttons-grid">
+                        <!-- 1. Windows -> Downloads Carl.exe -->
+                        <div class="dl-item">
+                            <a href="/download/Carl.exe" download="Carl.exe" class="dl-3d-tile tile-windows" aria-label="Download Carl for Windows">
+                                <span class="dl-tile-face">
+                                    <svg class="dl-tile-svg win-svg" viewBox="0 0 100 100" fill="none">
+                                        <defs>
+                                            <linearGradient id="winSqGrad1" x1="0" y1="0" x2="1" y2="1">
+                                                <stop offset="0%" stop-color="#6ee7ff"/>
+                                                <stop offset="100%" stop-color="#29b6f6"/>
+                                            </linearGradient>
+                                            <linearGradient id="winSqGrad2" x1="0" y1="0" x2="1" y2="1">
+                                                <stop offset="0%" stop-color="#4dd0ff"/>
+                                                <stop offset="100%" stop-color="#039be5"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <rect x="8" y="8" width="40" height="40" rx="2" fill="url(#winSqGrad1)" stroke="#0091ea" stroke-width="2"/>
+                                        <rect x="52" y="8" width="40" height="40" rx="2" fill="url(#winSqGrad1)" stroke="#0091ea" stroke-width="2"/>
+                                        <rect x="8" y="52" width="40" height="40" rx="2" fill="url(#winSqGrad2)" stroke="#0091ea" stroke-width="2"/>
+                                        <rect x="52" y="52" width="40" height="40" rx="2" fill="url(#winSqGrad2)" stroke="#0091ea" stroke-width="2"/>
+                                    </svg>
+                                </span>
+                            </a>
+                            <span class="dl-item-label">Windows</span>
+                        </div>
+
+                        <!-- 2. VirusTotal -->
+                        <div class="dl-item">
+                            <a href="https://www.virustotal.com/gui/file/8bbf126e9532fa22016c5a7ccf085e55d954dde0c2b44c81d6f782f2db24b5d4?nocache=1" target="_blank" rel="noopener noreferrer" class="dl-3d-tile tile-virustotal" aria-label="VirusTotal Scan">
+                                <span class="dl-tile-face">
+                                    <svg class="dl-tile-svg vt-svg" viewBox="0 0 100 100" fill="none">
+                                        <path d="M16 20H84V80H16L48 50L16 20Z" stroke="#0d52d6" stroke-width="9" stroke-linejoin="miter" stroke-miterlimit="10" fill="none"/>
+                                    </svg>
+                                </span>
+                            </a>
+                            <span class="dl-item-label">VirusTotal</span>
+                        </div>
+
+                        <!-- 3. Github Repo -->
+                        <div class="dl-item">
+                            <a href="https://github.com/ThatOneDudeYT/CarlAIApp" target="_blank" rel="noopener noreferrer" class="dl-3d-tile tile-github" aria-label="Github Repo">
+                                <span class="dl-tile-face">
+                                    <svg class="dl-tile-svg gh-svg" viewBox="0 0 98 96" fill="none">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" fill="#1b1f23"/>
+                                    </svg>
+                                </span>
+                            </a>
+                            <span class="dl-item-label">Github Repo</span>
+                        </div>
+
+                        <!-- 4. Continue in Browser -->
+                        <div class="dl-item">
+                            <a href="/app" onclick="return openCarlInBrowser(event)" class="dl-3d-tile tile-browser" aria-label="Continue in Browser">
+                                <span class="dl-tile-face">
+                                    <svg class="dl-tile-svg google-svg" viewBox="0 0 48 48">
+                                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                                    </svg>
+                                </span>
+                            </a>
+                            <span class="dl-item-label">Continue in<br>Browser</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: WINDOWS SMARTSCREEN NOTE + WINDOWS1 & WINDOWS2 IMAGES -->
+                <div class="download-right-col">
+                    <p class="windows-safe-note">
+                        Hey! If you got a popup from Windows<br>
+                        I promise it's safe, I currently have a<br>
+                        Windows patent to make this not<br>
+                        popup because it is safe.
+                    </p>
+                    <div class="windows-screenshots-row">
+                        <img src="/static/icons/Windows1.png" alt="Windows SmartScreen More info" class="windows-popup-img" draggable="false">
+                        <img src="/static/icons/Windows2.png" alt="Windows SmartScreen Run anyway" class="windows-popup-img" draggable="false">
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
 
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">

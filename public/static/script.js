@@ -2152,3 +2152,241 @@ document.addEventListener('mouseover', (e) => {
         });
     }
 });
+
+// =========================================================================
+// --- CARL AI LANDING PAGE (JUGGLING CARL, MINECRAFT EATING CARL & 3D SCROLL) ---
+// =========================================================================
+function handleGetCarlClick() {
+    const btn = document.getElementById("get-carl-btn");
+    const landingPage = document.getElementById("carl-landing-page");
+    const downloadSection = document.getElementById("landing-download");
+    if (btn) {
+        btn.classList.add("pressing");
+        setTimeout(() => {
+            btn.classList.remove("pressing");
+        }, 220);
+    }
+    setTimeout(() => {
+        if (landingPage && downloadSection) {
+            const targetTop = landingPage.scrollHeight - landingPage.clientHeight;
+            landingPage.scrollTo({
+                top: targetTop > 0 ? targetTop : downloadSection.offsetTop - 75,
+                behavior: "smooth"
+            });
+        } else if (downloadSection) {
+            downloadSection.scrollIntoView({ behavior: "smooth" });
+        }
+    }, 150);
+}
+
+function openCarlInBrowser(e) {
+    if (e) e.preventDefault();
+    try {
+        window.history.pushState({ carlApp: true }, "", "/app");
+    } catch (err) {
+        window.location.hash = "app";
+    }
+    document.body.classList.remove("landing-active");
+    return false;
+}
+
+window.addEventListener("popstate", () => {
+    const p = (window.location.pathname || "").replace(/\/+$/, "").toLowerCase();
+    const q = window.location.search || "";
+    const h = window.location.hash || "";
+    if (p === "/app" || q.indexOf("app=1") !== -1 || h === "#app") {
+        document.body.classList.remove("landing-active");
+    } else {
+        document.body.classList.add("landing-active");
+    }
+});
+
+(function initLandingPageAnimations() {
+    const CRUMB_PALETTES = [
+        // Green lettuce (2x2 pixel shades)
+        ["#8ea818", "#6f860d", "#5c7009", "#a3be22"],
+        // Golden-orange bun (2x2 pixel shades)
+        ["#e09132", "#c87a24", "#d4852a", "#b86b1b"],
+        // Dark brown patty (2x2 pixel shades)
+        ["#9b6b43", "#5c341d", "#74472b", "#3d1e0d"],
+        // Red tomato (2x2 pixel shades)
+        ["#e03c1f", "#b92210", "#c92b15", "#8a1609"]
+    ];
+
+    const crumbs = [];
+
+    function spawnCrumb(initialProgress) {
+        const pal = CRUMB_PALETTES[Math.floor(Math.random() * CRUMB_PALETTES.length)];
+        const angle = (Math.random() * 0.7 - 0.35);
+        const c = {
+            x: 78 + (Math.random() * 34 - 14),
+            y: 112 + (Math.random() * 16 - 8),
+            vx: (Math.random() * 2.4 - 1.35),
+            vy: -(Math.random() * 2.2 + 0.6),
+            rot: angle || 0.22,
+            vrot: (Math.random() * 0.06 - 0.03),
+            size: 10 + Math.floor(Math.random() * 2), // each sub-pixel is ~10-11px (2x2 = ~20-22px square like Image 7)
+            palette: pal,
+            alpha: 1.0,
+            life: 0,
+            maxLife: 42 + Math.floor(Math.random() * 18)
+        };
+        if (typeof initialProgress === "number" && initialProgress > 0) {
+            const steps = Math.floor(c.maxLife * initialProgress);
+            for (let i = 0; i < steps; i++) {
+                c.x += c.vx;
+                c.y += c.vy;
+                c.vy += 0.16;
+                c.rot += c.vrot;
+                c.life++;
+            }
+        }
+        crumbs.push(c);
+    }
+
+    // Seed initial crumbs so they're immediately visible on frame 1
+    for (let i = 0; i < 5; i++) {
+        spawnCrumb(i / 5);
+    }
+
+    let lastSpawnTime = 0;
+
+    function animateLanding(timestamp) {
+        const t = timestamp * 0.001;
+
+        // --- 1. JUGGLING CARL ANIMATION ---
+        const ball0 = document.getElementById("juggle-ball-0");
+        const ball1 = document.getElementById("juggle-ball-1");
+        const ball2 = document.getElementById("juggle-ball-2");
+        const handL = document.getElementById("juggle-hand-left");
+        const handR = document.getElementById("juggle-hand-right");
+        const juggleHead = document.getElementById("juggle-carl-head");
+
+        if (ball0 && ball1 && ball2 && handL && handR) {
+            const speed = 2.6; // Juggling cadence
+            const leftPivotX = 48, leftPivotY = 228;
+            const rightPivotX = 258, rightPivotY = 196;
+            const handRadius = 16;
+
+            // Hands move in juggling circles tossing from inside to outside
+            const hlAngle = t * speed * Math.PI;
+            const hrAngle = hlAngle + Math.PI;
+
+            const hlX = leftPivotX + Math.cos(hlAngle) * handRadius;
+            const hlY = leftPivotY + Math.sin(hlAngle) * handRadius;
+            const hrX = rightPivotX - Math.cos(hrAngle) * handRadius;
+            const hrY = rightPivotY + Math.sin(hrAngle) * handRadius;
+
+            handL.style.transform = `translate3d(${hlX.toFixed(1)}px, ${hlY.toFixed(1)}px, 0)`;
+            handR.style.transform = `translate3d(${hrX.toFixed(1)}px, ${hrY.toFixed(1)}px, 0)`;
+
+            if (juggleHead) {
+                const headTilt = Math.sin(t * speed * Math.PI) * 3.5;
+                const headBob = Math.abs(Math.cos(t * speed * Math.PI)) * -4.0;
+                juggleHead.style.transform = `translate3d(0, ${headBob.toFixed(1)}px, 0) rotate(${headTilt.toFixed(2)}deg)`;
+            }
+
+            // 3-ball cascade trajectory connecting left hand -> high peak above Carl -> right hand
+            const balls = [ball0, ball1, ball2];
+            for (let i = 0; i < 3; i++) {
+                // Normalized cycle u in [0, 2) where [0,1) is Left->Peak->Right and [1,2) is Right->Peak->Left
+                const u = ((t * (speed * 0.5)) + (i / 3) * 2) % 2;
+                let bx, by;
+                const peakY = 18;
+
+                if (u < 1.0) {
+                    // Toss from Left Hand to Right Hand over high arc
+                    const p = u; // 0..1
+                    const startX = leftPivotX + 4;
+                    const startY = leftPivotY - 12;
+                    const endX = rightPivotX - 4;
+                    const endY = rightPivotY - 12;
+                    bx = startX + (endX - startX) * p;
+                    // Parabolic arc peaking at peakY
+                    const midY = (startY + endY) * 0.5;
+                    const arcHeight = midY - peakY;
+                    by = (startY + (endY - startY) * p) - (4 * p * (1 - p) * arcHeight);
+                } else {
+                    // Toss from Right Hand to Left Hand over slightly lower/inner cascade arc
+                    const p = u - 1.0; // 0..1
+                    const startX = rightPivotX + 4;
+                    const startY = rightPivotY - 6;
+                    const endX = leftPivotX - 4;
+                    const endY = leftPivotY - 6;
+                    bx = startX + (endX - startX) * p;
+                    const midY = (startY + endY) * 0.5;
+                    const arcHeight = (midY - (peakY + 26));
+                    by = (startY + (endY - startY) * p) - (4 * p * (1 - p) * arcHeight);
+                }
+
+                balls[i].style.transform = `translate3d(${bx.toFixed(1)}px, ${by.toFixed(1)}px, 0)`;
+            }
+        }
+
+        // --- 2. EATING CARL (MINECRAFT EATING BOB + 2x2 PIXEL CRUMBS) ---
+        const burgerGroup = document.getElementById("eating-burger-hand-group");
+        const eatingHead = document.getElementById("eating-carl-head");
+        const canvas = document.getElementById("minecraft-crumbs-canvas");
+
+        if (burgerGroup) {
+            // Classic Minecraft rapid vertical eating bob + slight chew jitter
+            const eatBobY = Math.sin(t * 22.0) * 6.5 + Math.cos(t * 11.0) * 2.0;
+            const eatBobX = Math.cos(t * 18.0) * 3.0;
+            const eatRot = Math.sin(t * 22.0) * 5.5;
+            burgerGroup.style.transform = `translate3d(${eatBobX.toFixed(1)}px, ${eatBobY.toFixed(1)}px, 0) rotate(${eatRot.toFixed(2)}deg)`;
+        }
+        if (eatingHead) {
+            const headChewY = Math.sin(t * 22.0 + Math.PI) * 2.2;
+            const headChewRot = Math.cos(t * 11.0) * 1.8;
+            eatingHead.style.transform = `translate3d(0, ${headChewY.toFixed(1)}px, 0) rotate(${headChewRot.toFixed(2)}deg)`;
+        }
+
+        if (canvas) {
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (timestamp - lastSpawnTime > 125) {
+                spawnCrumb(0);
+                lastSpawnTime = timestamp;
+            }
+
+            for (let i = crumbs.length - 1; i >= 0; i--) {
+                const c = crumbs[i];
+                c.x += c.vx;
+                c.y += c.vy;
+                c.vy += 0.14;
+                c.rot += c.vrot;
+                c.life++;
+
+                if (c.life > c.maxLife * 0.72) {
+                    c.alpha = Math.max(0, 1 - (c.life - c.maxLife * 0.72) / (c.maxLife * 0.28));
+                }
+
+                if (c.life >= c.maxLife || c.alpha <= 0.01) {
+                    crumbs.splice(i, 1);
+                    continue;
+                }
+
+                // Draw crisp 2x2 Minecraft pixel block rotated like Image 7
+                ctx.save();
+                ctx.globalAlpha = c.alpha;
+                ctx.translate(c.x, c.y);
+                ctx.rotate(c.rot);
+                const s = c.size;
+                ctx.fillStyle = c.palette[0];
+                ctx.fillRect(-s, -s, s, s);
+                ctx.fillStyle = c.palette[1];
+                ctx.fillRect(0, -s, s, s);
+                ctx.fillStyle = c.palette[2];
+                ctx.fillRect(-s, 0, s, s);
+                ctx.fillStyle = c.palette[3];
+                ctx.fillRect(0, 0, s, s);
+                ctx.restore();
+            }
+        }
+
+        requestAnimationFrame(animateLanding);
+    }
+
+    requestAnimationFrame(animateLanding);
+})();

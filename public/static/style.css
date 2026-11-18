@@ -590,3 +590,487 @@ h1 { font-size: 48px; letter-spacing: 1px; }
 .notepad-editor { flex: 1; background: transparent; color: var(--text-main); padding: 15px; font-size: 15px; font-family: Arial, sans-serif; outline: none; overflow-y: auto; text-align: left; white-space: pre-wrap; word-break: break-word; border: none; }
 .notepad-editor img { max-width: 100%; border-radius: 6px; margin: 5px 0; }
 .notepad-editor:empty:before { content: attr(data-placeholder); color: var(--text-sub); pointer-events: none; display: block; }
+
+/* =========================================================================
+   CARL AI LANDING PAGE (IMAGE 7 HERO + IMAGE 10 DOWNLOAD SECTION)
+   ========================================================================= */
+.carl-landing-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #1a1a1a;
+    z-index: 20000;
+    display: none;
+    scroll-behavior: smooth;
+    user-select: none;
+}
+
+body.landing-active .carl-landing-page {
+    display: block;
+}
+
+body.landing-active #auth-overlay,
+body.landing-active .app-container,
+body.landing-active #floating-notepad {
+    display: none !important;
+}
+
+/* --- TOP PURPLE HERO (IMAGE 7) --- */
+.landing-hero {
+    width: 100%;
+    height: 87dvh;
+    min-height: 500px;
+    max-height: 780px;
+    background-color: #af03aa;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.landing-hero-inner {
+    position: relative;
+    width: 100%;
+    max-width: 1180px;
+    height: 100%;
+    margin: 0 auto;
+}
+
+/* 1. Juggling Carl Stage (Left) */
+.juggle-stage {
+    position: absolute;
+    left: 4%;
+    top: 6%;
+    width: 340px;
+    height: 330px;
+    pointer-events: none;
+}
+
+.juggle-carl-head {
+    position: absolute;
+    left: 95px;
+    top: 122px;
+    width: 148px;
+    height: auto;
+    z-index: 3;
+    transform-origin: center bottom;
+    will-change: transform;
+}
+
+.juggle-ball {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    z-index: 2;
+    will-change: transform;
+    left: 0;
+    top: 0;
+}
+
+.juggle-ball.ball-red {
+    background-color: #ff3c3c;
+    border: 4.5px solid #801e1e;
+}
+
+.juggle-ball.ball-yellow {
+    background-color: #ffb43c;
+    border: 4.5px solid #805a1e;
+}
+
+.juggle-ball.ball-blue {
+    background-color: #3c94ff;
+    border: 4.5px solid #1e4a80;
+}
+
+.juggle-hand {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: #505164;
+    border: 4.5px solid #282934;
+    z-index: 4;
+    will-change: transform;
+    left: 0;
+    top: 0;
+}
+
+/* 2. Eating Carl Stage (Top Center-Right) */
+.eating-stage {
+    position: absolute;
+    left: 53.5%;
+    top: 4%;
+    width: 220px;
+    height: 240px;
+    pointer-events: none;
+}
+
+.eating-carl-head {
+    position: absolute;
+    left: 16px;
+    top: 4px;
+    width: 148px;
+    height: auto;
+    z-index: 2;
+    will-change: transform;
+}
+
+.eating-burger-hand-group {
+    position: absolute;
+    left: 68px;
+    top: 76px;
+    width: 110px;
+    height: 95px;
+    z-index: 3;
+    will-change: transform;
+}
+
+.eating-burger-img {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 82px;
+    height: auto;
+    z-index: 3;
+}
+
+.eating-hand-img {
+    position: absolute;
+    left: 34px;
+    top: 18px;
+    width: 58px;
+    height: auto;
+    z-index: 4;
+}
+
+.minecraft-crumbs-canvas {
+    position: absolute;
+    left: -10px;
+    top: -10px;
+    width: 260px;
+    height: 280px;
+    z-index: 5;
+    pointer-events: none;
+    image-rendering: pixelated;
+}
+
+/* 3. Minecraft Carl Stage (Top Right) */
+.mc-carl-stage {
+    position: absolute;
+    right: 11%;
+    top: 7.5%;
+    width: 140px;
+    height: 210px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+.mc-carl-img {
+    height: 198px;
+    width: auto;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: contrast(1.15) brightness(1.08);
+}
+
+/* 4. Chud Carl Stage (Bottom Right) */
+.chud-carl-stage {
+    position: absolute;
+    right: 7.5%;
+    bottom: 6%;
+    width: 155px;
+    height: 160px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+.chud-carl-img {
+    width: 148px;
+    height: auto;
+    transform: rotate(7deg);
+    animation: chudFloat 3.2s ease-in-out infinite;
+}
+
+@keyframes chudFloat {
+    0%, 100% { transform: rotate(7deg) translateY(0px); }
+    50% { transform: rotate(9deg) translateY(-6px); }
+}
+
+/* 5. 3D "Get Carl" Button (Bottom Center) */
+.get-carl-btn-wrap {
+    position: absolute;
+    left: 50%;
+    bottom: 11%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+.get-carl-3d-btn {
+    position: relative;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 304px;
+    cursor: pointer;
+    outline: none;
+    display: inline-block;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.get-carl-3d-base {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 16px;
+    bottom: -16px;
+    background-color: #83027f;
+    border-radius: 38px;
+    z-index: 1;
+    transition: transform 0.12s ease;
+}
+
+.get-carl-3d-top {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: auto;
+    z-index: 2;
+    transform: translateY(0px);
+    transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.get-carl-3d-btn:hover .get-carl-3d-top {
+    transform: translateY(3px);
+}
+
+.get-carl-3d-btn:active .get-carl-3d-top,
+.get-carl-3d-btn.pressing .get-carl-3d-top {
+    transform: translateY(16px) !important;
+}
+
+/* --- BOTTOM DARK DOWNLOAD SECTION (IMAGE 10) --- */
+.landing-download {
+    width: 100%;
+    min-height: 87dvh;
+    background-color: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 32px 48px 32px;
+}
+
+.landing-download-inner {
+    width: 100%;
+    max-width: 1120px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 48px;
+    margin: 0 auto;
+}
+
+.download-left-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-shrink: 0;
+}
+
+.download-carl-title {
+    position: relative;
+    font-family: 'Lilita One', cursive, sans-serif;
+    font-size: 52px;
+    color: #ffffff;
+    letter-spacing: 1px;
+    margin: 0 0 18px 0;
+    line-height: 1.05;
+    z-index: 1;
+    -webkit-text-stroke: 10px #7e027a;
+    paint-order: stroke fill;
+    text-shadow:
+        0 4px 0 #7e027a,
+        -3px -3px 0 #7e027a,
+        3px -3px 0 #7e027a,
+        -3px 3px 0 #7e027a,
+        3px 3px 0 #7e027a;
+}
+
+.download-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 142px);
+    column-gap: 24px;
+    row-gap: 20px;
+    align-items: start;
+}
+
+.dl-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.dl-3d-tile {
+    position: relative;
+    display: block;
+    width: 140px;
+    height: 126px;
+    border-radius: 22px;
+    text-decoration: none;
+    cursor: pointer;
+    margin-bottom: 22px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.dl-3d-tile::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 12px;
+    bottom: -12px;
+    border-radius: 22px;
+    z-index: 1;
+}
+
+.dl-tile-face {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    border-radius: 22px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translateY(0);
+    transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dl-3d-tile:hover .dl-tile-face {
+    transform: translateY(3px);
+}
+
+.dl-3d-tile:active .dl-tile-face {
+    transform: translateY(12px);
+}
+
+/* Tile 1: Windows */
+.tile-windows .dl-tile-face { background-color: #b104ab; }
+.tile-windows::before { background-color: #7c0b77; }
+.win-svg { width: 96px; height: 96px; }
+
+/* Tile 2: VirusTotal */
+.tile-virustotal .dl-tile-face { background-color: #2d3b5e; }
+.tile-virustotal::before { background-color: #232b42; }
+.vt-svg { width: 94px; height: 94px; }
+
+/* Tile 3: Github Repo */
+.tile-github .dl-tile-face { background-color: #ffffff; }
+.tile-github::before { background-color: #bfbfbf; }
+.gh-svg { width: 94px; height: 94px; }
+
+/* Tile 4: Continue in Browser */
+.tile-browser .dl-tile-face { background-color: #b8b8b8; }
+.tile-browser::before { background-color: #898989; }
+.google-svg { width: 88px; height: 88px; }
+
+.dl-item-label {
+    font-family: 'Lilita One', cursive, sans-serif;
+    font-size: 25px;
+    color: #ffffff;
+    line-height: 1.12;
+    letter-spacing: 0.4px;
+}
+
+/* Right column: Windows SmartScreen note + Windows1 & Windows2 images */
+.download-right-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-top: 64px;
+    max-width: 620px;
+}
+
+.windows-safe-note {
+    font-family: 'Lilita One', cursive, sans-serif;
+    font-size: 22px;
+    color: #ffffff;
+    line-height: 1.25;
+    letter-spacing: 0.4px;
+    margin: 0 0 18px 0;
+}
+
+.windows-screenshots-row {
+    display: flex;
+    flex-direction: row;
+    gap: 14px;
+    width: 100%;
+    align-items: flex-start;
+}
+
+.windows-popup-img {
+    width: calc(50% - 7px);
+    max-width: 280px;
+    height: auto;
+    border-radius: 10px;
+    object-fit: contain;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 900px) {
+    .landing-hero {
+        height: auto;
+        min-height: 540px;
+    }
+    .juggle-stage {
+        transform: scale(0.78);
+        transform-origin: top left;
+        left: 2%;
+    }
+    .eating-stage {
+        transform: scale(0.82);
+        transform-origin: top center;
+        left: 44%;
+    }
+    .mc-carl-stage {
+        transform: scale(0.82);
+        transform-origin: top right;
+        right: 3%;
+    }
+    .chud-carl-stage {
+        transform: scale(0.82);
+        transform-origin: bottom right;
+        right: 3%;
+    }
+    .landing-download-inner {
+        flex-direction: column;
+        align-items: center;
+    }
+    .download-left-col {
+        align-items: center;
+    }
+    .download-right-col {
+        padding-top: 16px;
+        align-items: center;
+        text-align: center;
+    }
+    .windows-screenshots-row {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .windows-popup-img {
+        width: 250px;
+    }
+}

@@ -1,9 +1,52 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
+
+app.get(['/download/Carl.exe', '/Carl.exe'], (req, res) => {
+    const fullExe = path.join(__dirname, 'public', 'Carl.exe');
+    if (fs.existsSync(fullExe)) {
+        return res.download(fullExe, 'Carl.exe');
+    }
+    const partsDir = path.join(__dirname, 'public', 'static', 'downloads');
+    if (fs.existsSync(partsDir)) {
+        const partFiles = fs.readdirSync(partsDir)
+            .filter(f => f.startsWith('Carl.exe.part'))
+            .sort()
+            .map(f => path.join(partsDir, f));
+        if (partFiles.length > 0) {
+            const totalSize = partFiles.reduce((acc, p) => acc + fs.statSync(p).size, 0);
+            res.setHeader('Content-Type', 'application/octet-stream');
+            res.setHeader('Content-Disposition', 'attachment; filename="Carl.exe"');
+            res.setHeader('Content-Length', totalSize.toString());
+
+            const streamNext = (idx) => {
+                if (idx >= partFiles.length) {
+                    res.end();
+                    return;
+                }
+                const stream = fs.createReadStream(partFiles[idx]);
+                stream.on('end', () => streamNext(idx + 1));
+                stream.on('error', (err) => {
+                    console.error(err);
+                    if (!res.headersSent) res.status(500).end();
+                    else res.end();
+                });
+                stream.pipe(res, { end: false });
+            };
+            streamNext(0);
+            return;
+        }
+    }
+    res.status(404).send('Carl.exe not found');
+});
+
+app.get(['/app', '/app/'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 

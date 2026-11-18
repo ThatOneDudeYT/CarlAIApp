@@ -13,6 +13,46 @@ otp_store = {}
 def index():
     return send_from_directory('public', 'index.html')
 
+@app.route('/app')
+@app.route('/app/')
+def web_app():
+    return send_from_directory('public', 'index.html')
+
+@app.route('/download/Carl.exe')
+@app.route('/Carl.exe')
+def download_carl_exe():
+    full_exe = os.path.join('public', 'Carl.exe')
+    if os.path.exists(full_exe):
+        return send_from_directory('public', 'Carl.exe', as_attachment=True, download_name='Carl.exe')
+
+    parts_dir = os.path.join('public', 'static', 'downloads')
+    if os.path.isdir(parts_dir):
+        part_files = sorted(
+            os.path.join(parts_dir, f)
+            for f in os.listdir(parts_dir)
+            if f.startswith('Carl.exe.part')
+        )
+        if part_files:
+            total_size = sum(os.path.getsize(p) for p in part_files)
+
+            def stream_parts():
+                for p in part_files:
+                    with open(p, 'rb') as pf:
+                        while True:
+                            chunk = pf.read(1024 * 1024)
+                            if not chunk:
+                                break
+                            yield chunk
+
+            headers = {
+                'Content-Disposition': 'attachment; filename="Carl.exe"',
+                'Content-Length': str(total_size),
+                'Cache-Control': 'public, max-age=3600'
+            }
+            return Response(stream_parts(), mimetype='application/octet-stream', headers=headers)
+
+    return jsonify({"error": "Carl.exe not found on server"}), 404
+
 @app.route('/<path:path>')
 def serve_static(path):
     return send_from_directory('public', path)
