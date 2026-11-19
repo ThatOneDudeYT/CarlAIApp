@@ -15,11 +15,50 @@ body.guest-mode .req-login { display: none !important; }
 body.guest-mode .burger-wallet { display: none !important; }
 
 .top-profile-bar { position: absolute; top: 16px; right: 20px; display: flex; align-items: center; gap: 12px; z-index: 50; background-color: #1f1f1f; border: 1px solid #333; padding: 6px 16px 6px 6px; border-radius: 40px; }
-.burger-wallet { background-color: #333333; color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 16px; display: flex; align-items: center; gap: 6px; font-weight: bold; transition: transform 0.1s; }
+.profile-user-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.burger-wallet { background-color: #333333; color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 16px; display: flex; align-items: center; gap: 6px; font-weight: bold; transition: transform 0.1s; flex-shrink: 0; }
 .burger-wallet:active { transform: scale(0.95); }
 .top-profile-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
 .top-profile-name { font-size: 16px; color: #fff; font-weight: bold; letter-spacing: 0.5px; }
-.user-title-badge { font-size: 11px; padding: 4px 10px; border-radius: 12px; background: #9333ea; color: #fff; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; display: none; }
+.user-title-badge { font-size: 11px; padding: 4px 10px; border-radius: 12px; background: #9333ea; color: #fff; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; display: none; flex-shrink: 0; }
+
+@media (max-width: 767px) {
+    .mobile-top-header { top: 16px; left: 14px; }
+    .top-flavor-bar { top: 14px; left: 56px; }
+    .top-profile-bar {
+        top: 10px;
+        right: 12px;
+        flex-direction: column-reverse;
+        align-items: flex-end;
+        gap: 4px;
+        padding: 6px 12px;
+        border-radius: 22px;
+        max-width: calc(100% - 170px);
+    }
+    .profile-user-group {
+        gap: 8px;
+        max-width: 100%;
+    }
+    .top-profile-avatar {
+        width: 24px;
+        height: 24px;
+    }
+    .top-profile-name {
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .user-title-badge {
+        font-size: 9px;
+        padding: 2px 6px;
+    }
+    .burger-wallet {
+        padding: 3px 10px;
+        font-size: 13px;
+        gap: 4px;
+    }
+}
 
 .avatar-frame-wrapper { position: relative; display: flex; align-items: center; justify-content: center; border-radius: 50%; padding: 2px; }
 .avatar-frame-wrapper.frame-gold { border: 2px solid #fbbf24; }
@@ -642,10 +681,19 @@ body.landing-active #floating-notepad {
 }
 
 /* 1. Juggling Carl Stage (Left) */
-.juggle-stage {
+.juggle-slot {
     position: absolute;
     left: 4%;
     top: 6%;
+    width: 340px;
+    height: 330px;
+    pointer-events: none;
+}
+
+.juggle-stage {
+    position: relative;
+    left: 0;
+    top: 0;
     width: 340px;
     height: 330px;
     pointer-events: none;
@@ -702,10 +750,19 @@ body.landing-active #floating-notepad {
 }
 
 /* 2. Eating Carl Stage (Top Center-Right) */
-.eating-stage {
+.eating-slot {
     position: absolute;
     left: 53.5%;
     top: 4%;
+    width: 220px;
+    height: 240px;
+    pointer-events: none;
+}
+
+.eating-stage {
+    position: relative;
+    left: 0;
+    top: 0;
     width: 220px;
     height: 240px;
     pointer-events: none;
@@ -1029,48 +1086,221 @@ body.landing-active #floating-notepad {
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
 }
 
+@media (max-width: 1120px) and (min-width: 901px) {
+    .juggle-slot {
+        left: 2%;
+        transform: scale(0.88);
+        transform-origin: top left;
+    }
+    .eating-slot {
+        left: 47%;
+        transform: scale(0.9);
+        transform-origin: top center;
+    }
+    .mc-carl-stage {
+        right: 6%;
+    }
+    .chud-carl-stage {
+        right: 5%;
+    }
+}
+
 @media (max-width: 900px) {
     .landing-hero {
         height: auto;
-        min-height: 540px;
+        min-height: 0;
+        max-height: none;
+        padding: 20px 12px 34px 12px;
     }
-    .juggle-stage {
-        transform: scale(0.78);
+    .landing-hero-inner {
+        height: auto;
+        max-width: 540px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-areas:
+            "juggle eating"
+            "mc chud"
+            "cta cta";
+        align-items: center;
+        justify-items: center;
+        row-gap: 14px;
+        column-gap: 8px;
+    }
+    .juggle-slot {
+        grid-area: juggle;
+        position: relative;
+        left: auto;
+        top: auto;
+        width: 164px;
+        height: 160px;
+    }
+    .juggle-slot .juggle-stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform: scale(0.48);
         transform-origin: top left;
-        left: 2%;
     }
-    .eating-stage {
-        transform: scale(0.82);
-        transform-origin: top center;
-        left: 44%;
+    .eating-slot {
+        grid-area: eating;
+        position: relative;
+        left: auto;
+        top: auto;
+        width: 158px;
+        height: 166px;
+    }
+    .eating-slot .eating-stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform: scale(0.72);
+        transform-origin: top left;
     }
     .mc-carl-stage {
-        transform: scale(0.82);
-        transform-origin: top right;
-        right: 3%;
+        grid-area: mc;
+        position: relative;
+        right: auto;
+        top: auto;
+        width: 100%;
+        height: 155px;
+    }
+    .mc-carl-img {
+        height: 148px;
     }
     .chud-carl-stage {
-        transform: scale(0.82);
-        transform-origin: bottom right;
-        right: 3%;
+        grid-area: chud;
+        position: relative;
+        right: auto;
+        bottom: auto;
+        width: 100%;
+        height: 155px;
+    }
+    .chud-carl-img {
+        width: 124px;
+    }
+    .get-carl-btn-wrap {
+        grid-area: cta;
+        position: relative;
+        left: auto;
+        bottom: auto;
+        transform: none;
+        margin-top: 4px;
+        margin-bottom: 18px;
+    }
+    .get-carl-3d-btn {
+        width: 260px;
+    }
+    .landing-download {
+        min-height: auto;
+        padding: 28px 16px 48px 16px;
     }
     .landing-download-inner {
         flex-direction: column;
         align-items: center;
+        gap: 32px;
     }
     .download-left-col {
         align-items: center;
     }
+    .download-carl-title {
+        font-size: clamp(36px, 9.5vw, 48px);
+        text-align: center;
+    }
+    .download-buttons-grid {
+        grid-template-columns: repeat(2, 132px);
+        column-gap: 20px;
+        row-gap: 18px;
+        justify-content: center;
+    }
+    .dl-3d-tile {
+        width: 130px;
+        height: 118px;
+    }
+    .dl-item-label {
+        font-size: 21px;
+    }
     .download-right-col {
-        padding-top: 16px;
+        padding-top: 8px;
         align-items: center;
         text-align: center;
+    }
+    .windows-safe-note {
+        font-size: 18px;
     }
     .windows-screenshots-row {
         justify-content: center;
         flex-wrap: wrap;
+        gap: 12px;
     }
     .windows-popup-img {
-        width: 250px;
+        width: calc(50% - 6px);
+        min-width: 148px;
+        max-width: 245px;
+    }
+}
+
+@media (max-width: 900px) and (min-width: 540px) {
+    .juggle-slot {
+        width: 218px;
+        height: 212px;
+    }
+    .juggle-slot .juggle-stage {
+        transform: scale(0.64);
+    }
+    .eating-slot {
+        width: 194px;
+        height: 204px;
+    }
+    .eating-slot .eating-stage {
+        transform: scale(0.88);
+    }
+    .mc-carl-stage, .chud-carl-stage {
+        height: 185px;
+    }
+    .mc-carl-img {
+        height: 178px;
+    }
+    .chud-carl-img {
+        width: 142px;
+    }
+    .get-carl-3d-btn {
+        width: 290px;
+    }
+}
+
+@media (max-width: 360px) {
+    .juggle-slot {
+        width: 142px;
+        height: 140px;
+    }
+    .juggle-slot .juggle-stage {
+        transform: scale(0.42);
+    }
+    .eating-slot {
+        width: 140px;
+        height: 148px;
+    }
+    .eating-slot .eating-stage {
+        transform: scale(0.64);
+    }
+    .mc-carl-stage, .chud-carl-stage {
+        height: 135px;
+    }
+    .mc-carl-img {
+        height: 128px;
+    }
+    .chud-carl-img {
+        width: 108px;
+    }
+    .get-carl-3d-btn {
+        width: 232px;
+    }
+    .download-buttons-grid {
+        grid-template-columns: repeat(2, 120px);
+        column-gap: 14px;
+    }
+    .dl-3d-tile {
+        width: 118px;
+        height: 108px;
     }
 }

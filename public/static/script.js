@@ -2168,9 +2168,13 @@ function handleGetCarlClick() {
     }
     setTimeout(() => {
         if (landingPage && downloadSection) {
-            const targetTop = landingPage.scrollHeight - landingPage.clientHeight;
+            const maxScroll = Math.max(0, landingPage.scrollHeight - landingPage.clientHeight);
+            const isMobile = window.innerWidth <= 900;
+            const targetTop = isMobile
+                ? Math.min(maxScroll, Math.max(0, downloadSection.offsetTop - 20))
+                : maxScroll;
             landingPage.scrollTo({
-                top: targetTop > 0 ? targetTop : downloadSection.offsetTop - 75,
+                top: targetTop > 0 ? targetTop : downloadSection.offsetTop,
                 behavior: "smooth"
             });
         } else if (downloadSection) {
@@ -2221,22 +2225,22 @@ window.addEventListener("popstate", () => {
         const c = {
             x: 78 + (Math.random() * 34 - 14),
             y: 112 + (Math.random() * 16 - 8),
-            vx: (Math.random() * 2.4 - 1.35),
-            vy: -(Math.random() * 2.2 + 0.6),
+            vx: (Math.random() * 3.1 - 1.7),
+            vy: -(Math.random() * 2.8 + 0.8),
             rot: angle || 0.22,
-            vrot: (Math.random() * 0.06 - 0.03),
+            vrot: (Math.random() * 0.08 - 0.04),
             size: 10 + Math.floor(Math.random() * 2), // each sub-pixel is ~10-11px (2x2 = ~20-22px square like Image 7)
             palette: pal,
             alpha: 1.0,
             life: 0,
-            maxLife: 42 + Math.floor(Math.random() * 18)
+            maxLife: 32 + Math.floor(Math.random() * 12)
         };
         if (typeof initialProgress === "number" && initialProgress > 0) {
             const steps = Math.floor(c.maxLife * initialProgress);
             for (let i = 0; i < steps; i++) {
                 c.x += c.vx;
                 c.y += c.vy;
-                c.vy += 0.16;
+                c.vy += 0.21;
                 c.rot += c.vrot;
                 c.life++;
             }
@@ -2250,9 +2254,12 @@ window.addEventListener("popstate", () => {
     }
 
     let lastSpawnTime = 0;
+    let prevTimestamp = 0;
 
     function animateLanding(timestamp) {
         const t = timestamp * 0.001;
+        const dtFrames = prevTimestamp ? Math.min(2.5, Math.max(0.25, ((timestamp - prevTimestamp) * 0.06))) : 1.0;
+        prevTimestamp = timestamp;
 
         // --- 1. JUGGLING CARL ANIMATION ---
         const ball0 = document.getElementById("juggle-ball-0");
@@ -2329,15 +2336,15 @@ window.addEventListener("popstate", () => {
         const canvas = document.getElementById("minecraft-crumbs-canvas");
 
         if (burgerGroup) {
-            // Classic Minecraft rapid vertical eating bob + slight chew jitter
-            const eatBobY = Math.sin(t * 22.0) * 6.5 + Math.cos(t * 11.0) * 2.0;
-            const eatBobX = Math.cos(t * 18.0) * 3.0;
-            const eatRot = Math.sin(t * 22.0) * 5.5;
+            // Fast classic Minecraft vertical eating bob + snappy chew jitter
+            const eatBobY = Math.sin(t * 36.0) * 7.5 + Math.cos(t * 18.0) * 2.2;
+            const eatBobX = Math.cos(t * 28.0) * 3.5;
+            const eatRot = Math.sin(t * 36.0) * 6.5;
             burgerGroup.style.transform = `translate3d(${eatBobX.toFixed(1)}px, ${eatBobY.toFixed(1)}px, 0) rotate(${eatRot.toFixed(2)}deg)`;
         }
         if (eatingHead) {
-            const headChewY = Math.sin(t * 22.0 + Math.PI) * 2.2;
-            const headChewRot = Math.cos(t * 11.0) * 1.8;
+            const headChewY = Math.sin(t * 36.0 + Math.PI) * 2.6;
+            const headChewRot = Math.cos(t * 18.0) * 2.2;
             eatingHead.style.transform = `translate3d(0, ${headChewY.toFixed(1)}px, 0) rotate(${headChewRot.toFixed(2)}deg)`;
         }
 
@@ -2345,18 +2352,18 @@ window.addEventListener("popstate", () => {
             const ctx = canvas.getContext("2d");
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (timestamp - lastSpawnTime > 125) {
+            if (timestamp - lastSpawnTime > 75) {
                 spawnCrumb(0);
                 lastSpawnTime = timestamp;
             }
 
             for (let i = crumbs.length - 1; i >= 0; i--) {
                 const c = crumbs[i];
-                c.x += c.vx;
-                c.y += c.vy;
-                c.vy += 0.14;
-                c.rot += c.vrot;
-                c.life++;
+                c.x += c.vx * dtFrames;
+                c.y += c.vy * dtFrames;
+                c.vy += 0.21 * dtFrames;
+                c.rot += c.vrot * dtFrames;
+                c.life += dtFrames;
 
                 if (c.life > c.maxLife * 0.72) {
                     c.alpha = Math.max(0, 1 - (c.life - c.maxLife * 0.72) / (c.maxLife * 0.28));

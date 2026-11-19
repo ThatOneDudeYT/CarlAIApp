@@ -30,23 +30,27 @@
             <div class="landing-hero-inner">
                 
                 <!-- LEFT: JUGGLING CARL (Animated juggling 3 balls + 2 moving hands) -->
-                <div class="juggle-stage" id="juggle-stage">
-                    <div class="juggle-ball ball-red" id="juggle-ball-0"></div>
-                    <div class="juggle-ball ball-yellow" id="juggle-ball-1"></div>
-                    <div class="juggle-ball ball-blue" id="juggle-ball-2"></div>
-                    <img src="/static/icons/CarlJuggle.png" alt="Juggling Carl" class="juggle-carl-head" id="juggle-carl-head" draggable="false">
-                    <div class="juggle-hand hand-left" id="juggle-hand-left"></div>
-                    <div class="juggle-hand hand-right" id="juggle-hand-right"></div>
+                <div class="juggle-slot">
+                    <div class="juggle-stage" id="juggle-stage">
+                        <div class="juggle-ball ball-red" id="juggle-ball-0"></div>
+                        <div class="juggle-ball ball-yellow" id="juggle-ball-1"></div>
+                        <div class="juggle-ball ball-blue" id="juggle-ball-2"></div>
+                        <img src="/static/icons/CarlJuggle.png" alt="Juggling Carl" class="juggle-carl-head" id="juggle-carl-head" draggable="false">
+                        <div class="juggle-hand hand-left" id="juggle-hand-left"></div>
+                        <div class="juggle-hand hand-right" id="juggle-hand-right"></div>
+                    </div>
                 </div>
 
                 <!-- TOP-CENTER-RIGHT: EATING CARL (Always doing Minecraft eat animation + 2x2 pixel crumbs) -->
-                <div class="eating-stage" id="eating-stage">
-                    <img src="/static/icons/OpenMouth.png" alt="Eating Carl" class="eating-carl-head" id="eating-carl-head" draggable="false">
-                    <div class="eating-burger-hand-group" id="eating-burger-hand-group">
-                        <img src="/static/icons/Burger1.png" alt="Burger" class="eating-burger-img" draggable="false">
-                        <img src="/static/icons/Hand.png" alt="Hand" class="eating-hand-img" draggable="false">
+                <div class="eating-slot">
+                    <div class="eating-stage" id="eating-stage">
+                        <img src="/static/icons/OpenMouth.png" alt="Eating Carl" class="eating-carl-head" id="eating-carl-head" draggable="false">
+                        <div class="eating-burger-hand-group" id="eating-burger-hand-group">
+                            <img src="/static/icons/Burger1.png" alt="Burger" class="eating-burger-img" draggable="false">
+                            <img src="/static/icons/Hand.png" alt="Hand" class="eating-hand-img" draggable="false">
+                        </div>
+                        <canvas id="minecraft-crumbs-canvas" class="minecraft-crumbs-canvas" width="260" height="280"></canvas>
                     </div>
-                    <canvas id="minecraft-crumbs-canvas" class="minecraft-crumbs-canvas" width="260" height="280"></canvas>
                 </div>
 
                 <!-- TOP-RIGHT: ANIMATED MINECRAFT CARL -->
@@ -242,11 +246,13 @@
 
             <div class="top-profile-bar" id="top-profile-bar">
                 <div class="burger-wallet" onclick="switchView('view-shop')" style="cursor:pointer;" title="Visit Shop">🍔 <span id="burger-count">100</span></div>
-                <div class="avatar-frame-wrapper" id="header-avatar-wrapper">
-                    <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar" draggable="false">
+                <div class="profile-user-group">
+                    <div class="avatar-frame-wrapper" id="header-avatar-wrapper">
+                        <img id="header-user-avatar" src="/static/icons/default-avatar.png" alt="Profile" class="top-profile-avatar" draggable="false">
+                    </div>
+                    <span id="header-user-name" class="top-profile-name">Guest</span>
+                    <span id="header-user-badge" class="user-title-badge"></span>
                 </div>
-                <span id="header-user-name" class="top-profile-name">Guest</span>
-                <span id="header-user-badge" class="user-title-badge"></span>
             </div>
 
             <div id="view-chat" class="view active startup-active">
