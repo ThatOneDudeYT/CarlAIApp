@@ -2156,6 +2156,47 @@ document.addEventListener('mouseover', (e) => {
 // =========================================================================
 // --- CARL AI LANDING PAGE (JUGGLING CARL, MINECRAFT EATING CARL & 3D SCROLL) ---
 // =========================================================================
+function updateLandingScale() {
+    const hero = document.getElementById("landing-hero");
+    const heroInner = document.querySelector(".landing-hero-inner");
+    const dlSection = document.getElementById("landing-download");
+    const dlInner = document.querySelector(".landing-download-inner");
+    if (!hero || !heroInner) return;
+
+    if (window.innerWidth <= 900) {
+        heroInner.style.removeProperty("--hero-scale");
+        if (dlInner) {
+            dlInner.style.removeProperty("--dl-scale");
+            dlInner.style.removeProperty("margin-bottom");
+        }
+        return;
+    }
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const heroW = hero.clientWidth || vw;
+    const heroH = hero.clientHeight || vh * 0.87;
+
+    // Reference desktop hero canvas is 1180 x 620; scale proportionally to fill screen size
+    const heroScale = Math.max(0.72, Math.min(2.6, Math.min(heroW / 1180, heroH / 620)));
+    heroInner.style.setProperty("--hero-scale", heroScale.toFixed(4));
+
+    if (dlSection && dlInner) {
+        const dlAvailW = Math.max(600, (dlSection.clientWidth || vw) - 64);
+        const dlAvailH = Math.max(460, vh * 0.80);
+        const dlScale = Math.max(0.75, Math.min(2.4, Math.min(dlAvailW / 1100, dlAvailH / 520)));
+        dlInner.style.setProperty("--dl-scale", dlScale.toFixed(4));
+        const naturalH = dlInner.offsetHeight || 500;
+        const extraH = (dlScale - 1) * naturalH;
+        dlInner.style.marginBottom = extraH > 0 ? `${Math.round(extraH)}px` : "0px";
+    }
+}
+
+updateLandingScale();
+window.addEventListener("resize", updateLandingScale);
+window.addEventListener("load", updateLandingScale);
+window.addEventListener("popstate", updateLandingScale);
+
 function handleGetCarlClick() {
     const btn = document.getElementById("get-carl-btn");
     const landingPage = document.getElementById("carl-landing-page");
